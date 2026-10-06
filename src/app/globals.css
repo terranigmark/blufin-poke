@@ -1,0 +1,59 @@
+:root {
+  --navy: #10304d;
+  --navy-2: #1c4466;
+  --navy-deep: #0a1e30;
+  --blue: #2f5e82;
+  --cream: #f2eadb;
+  --cream-2: #ebe1cf;
+  --cream-light: #f6efe2;
+  --card: #fbf7ef;
+  --ink-2: #33475a;
+  --muted: #4f5f6e;
+  --sand: #f2b56b;
+  --line: rgba(16, 48, 77, 0.16);
+
+  --bebas: var(--font-bebas), "Bebas Neue", sans-serif;
+  --barlow: var(--font-barlow), "Barlow", system-ui, sans-serif;
+  --script: var(--font-kaushan), "Kaushan Script", cursive;
+
+  /* Sticky header height (mobile has a taller 48px hamburger target). */
+  --header-h: 67px;
+}
+@media (max-width: 759px) {
+  :root {
+    --header-h: 69px;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--cream);
+  color: var(--navy);
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--barlow);
+}
+* {
+  box-sizing: border-box;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+a {
+  color: var(--navy);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+a:hover {
+  color: var(--blue);
+}
+img {
+  display: block;
+}
+h1,
+h2 {
+  font-weight: 400;
+}

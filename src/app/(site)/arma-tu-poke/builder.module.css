@@ -1,0 +1,1204 @@
+/*
+ * "Arma tu poke" flow.
+ * Desktop (≥760px): every screen fits the viewport with no page scroll
+ * (falls back to scrolling below ~670px of window height).
+ * Mobile (<760px): intro and steps 1–6 fit one screen; summary, drinks and
+ * the QR screen scroll with a sticky bottom bar.
+ */
+.main {
+  --screen: max(calc(100dvh - var(--header-h)), 600px);
+  min-height: calc(100dvh - var(--header-h));
+  height: var(--screen);
+  overflow: clip;
+}
+
+.mobileOnly,
+.mobileOnlyBlock {
+  display: none;
+}
+
+/* ================================================================ Intro */
+.introMob {
+  display: none;
+}
+.introDesk {
+  max-width: 1200px;
+  height: var(--screen);
+  margin: 0 auto;
+  padding: clamp(20px, 4vh, 48px) clamp(16px, 4vw, 40px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: clamp(28px, 5vw, 64px);
+  align-items: center;
+}
+.introDeskCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.introDeskCopy h1 {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: clamp(64px, min(10vw, 14vh), 144px);
+  line-height: 0.85;
+}
+.introDeskRule {
+  width: 180px;
+  height: 7px;
+  border-radius: 4px;
+  background: var(--navy);
+  transform: rotate(-1.5deg);
+}
+.introDeskCopy p {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.introDeskList {
+  list-style: none;
+  margin: clamp(8px, 2vh, 18px) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0px, 0.5vh, 4px);
+}
+.introDeskList li {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(4px, 0.9vh, 8px) 0;
+}
+.listNum {
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bebas);
+  font-size: 22px;
+  padding-top: 2px;
+}
+.listTitle {
+  font-family: var(--bebas);
+  font-size: 25px;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid rgba(16, 48, 77, 0.2);
+}
+.introDeskCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+}
+.startBtn {
+  flex: 0 1 320px;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 26px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--cream);
+  font-family: var(--bebas);
+  font-size: 24px;
+  letter-spacing: 0.08em;
+}
+.startBtn:hover {
+  background: var(--navy-2);
+}
+.arrow {
+  font-family: var(--barlow);
+}
+.introDeskPhoto {
+  position: relative;
+  width: 100%;
+  max-width: min(100%, calc(100vh - 160px));
+  justify-self: center;
+}
+.introDeskPhoto img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 10px solid var(--card);
+  box-shadow: 0 30px 60px rgba(16, 48, 77, 0.18);
+}
+.introDeskPhoto span {
+  position: absolute;
+  right: 4%;
+  bottom: 2%;
+  font-family: var(--script);
+  font-size: clamp(26px, 3vw, 36px);
+  line-height: 1.05;
+  transform: rotate(-8deg);
+  background: var(--cream);
+  padding: 6px 14px;
+  border-radius: 12px;
+}
+
+/* ================================================================ Steps 1–6 */
+.stepBox {
+  max-width: 1320px;
+  height: var(--screen);
+  margin: 0 auto;
+  padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 40px) clamp(12px, 2vh, 20px);
+  display: flex;
+  gap: clamp(24px, 3vw, 48px);
+  align-items: flex-start;
+}
+.step {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 20px);
+}
+.progress {
+  display: flex;
+  gap: 6px;
+}
+.progress span {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--line);
+  transition: background 0.45s ease;
+}
+.progress span[data-on="true"] {
+  background: var(--navy);
+}
+.stepHead {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.stepTitle,
+.screenTitle {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: clamp(44px, min(5vw, 8vh), 80px);
+  line-height: 0.88;
+}
+.countRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  min-height: 30px;
+}
+.count {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--blue);
+}
+.notice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 6px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 14px;
+  font-weight: 600;
+}
+.notice > span {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* Option grid. Columns mirror the design's width-based rules:
+ * 4 options → 4 cols, or 2 where the "Tu bowl" panel squeezes the grid;
+ * 5–9 options → 3 cols; 10 options → 4 cols (5 when the panel is hidden but there's room). */
+.grid {
+  display: grid;
+  grid-auto-rows: minmax(auto, 1fr);
+  align-content: stretch;
+  flex: 1 1 0;
+  min-height: auto;
+  gap: clamp(10px, 1.6vw, 18px);
+}
+.cols3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.cols4,
+.cols10 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+@media (min-width: 760px) and (max-width: 899px), (min-width: 1080px) and (max-width: 1259px) {
+  .cols4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 980px) and (max-width: 1079px) {
+  .cols10 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  min-height: 0;
+  gap: 8px;
+  padding: 8px 8px 14px;
+  border-radius: 18px;
+  border: 2.5px solid transparent;
+  background: var(--card);
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(16, 48, 77, 0.08);
+  transition: box-shadow 0.2s ease;
+}
+.card:hover {
+  box-shadow: 0 10px 24px rgba(16, 48, 77, 0.14);
+}
+.card[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: #fff;
+}
+.cardImg {
+  width: 100%;
+  height: 0;
+  flex: 1 1 0;
+  min-height: 56px;
+  object-fit: cover;
+  border-radius: 12px;
+  background: #e3d8c4;
+}
+.cardPh {
+  background: repeating-linear-gradient(135deg, #e6dbc7 0 8px, #ede3d1 8px 16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: ui-monospace, Menlo, monospace;
+  font-size: 11px;
+  color: var(--muted);
+}
+.cardName {
+  flex: none;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 6px 0;
+}
+.cardName span {
+  font-family: var(--bebas);
+  font-size: clamp(22px, 2vw, 26px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+.check {
+  position: absolute;
+  flex: none;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 2px solid rgba(16, 48, 77, 0.35);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+}
+.card[aria-pressed="true"] .check {
+  background: var(--navy);
+  border-color: var(--navy);
+}
+
+/* Size picker (protein step) */
+.sizeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sizeHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+.sizeLabel {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.sizeNote {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--muted);
+}
+.sizes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(10px, 1.6vw, 18px);
+}
+.size {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2px 12px;
+  padding: clamp(8px, 1.4vh, 16px) 12px;
+  border-radius: 16px;
+  border: 2.5px solid transparent;
+  background: var(--card);
+}
+.size[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: #fff;
+}
+.sizeName {
+  font-family: var(--bebas);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.04em;
+}
+.sizePrice {
+  font-weight: 700;
+  font-size: 17px;
+  margin-top: 4px;
+}
+
+/* Bottom bar (steps + drinks) */
+.bar {
+  position: static;
+  bottom: 0;
+  z-index: 20;
+  margin: 8px -16px 0;
+  padding: 8px 16px 4px;
+  background: rgba(242, 234, 219, 0.96);
+  border-top: 1px solid rgba(16, 48, 77, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.backBtn {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  background: none;
+  border: 0;
+  padding: 8px 8px 6px;
+  font-family: var(--bebas);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+.nextBtn {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  white-space: nowrap;
+  padding: 12px 26px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--cream);
+  font-family: var(--bebas);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+.nextBtn:hover {
+  background: var(--navy-2);
+}
+.nextBtn[data-disabled="true"],
+.nextBtn[data-disabled="true"]:hover {
+  background: #8c9ba9;
+  cursor: not-allowed;
+}
+
+/* "Tu bowl" panel */
+.aside {
+  display: none;
+  flex: 0 0 300px;
+  max-height: 100%;
+  overflow: auto;
+  background: var(--navy);
+  color: var(--cream);
+  border-radius: 22px;
+  padding: 26px;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 1080px) {
+  .aside {
+    display: flex;
+  }
+}
+.asideTitle {
+  font-family: var(--bebas);
+  font-size: 34px;
+  letter-spacing: 0.04em;
+}
+.asideRows {
+  display: flex;
+  flex-direction: column;
+}
+.asideRows button {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  margin: 0 -12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--cream);
+}
+.asideRows button[data-current="true"] {
+  background: rgba(242, 234, 219, 0.1);
+}
+.rowLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #afc0ce;
+}
+.asideValue {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+/* ================================================================ Summary */
+.summary {
+  max-width: 1200px;
+  height: var(--screen);
+  margin: 0 auto;
+  padding: clamp(20px, 4vh, 48px) clamp(16px, 4vw, 40px);
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  gap: clamp(10px, 1.8vh, 20px);
+}
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: clamp(20px, 3vw, 40px);
+  align-items: start;
+}
+.summaryRows {
+  display: flex;
+  flex-direction: column;
+  border-top: 2px solid var(--navy);
+}
+.summaryRows button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: clamp(6px, 1.2vh, 14px) 0;
+  border: 0;
+  border-bottom: 1px solid rgba(16, 48, 77, 0.12);
+  background: none;
+  text-align: left;
+}
+.summaryRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rowLabelBlue {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.summaryValue {
+  font-size: 17px;
+  font-weight: 500;
+}
+.edit {
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.summarySide {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.extrasTitle {
+  font-family: var(--bebas);
+  font-size: 32px;
+  letter-spacing: 0.04em;
+}
+.extras {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.extras button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 60px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2.5px solid transparent;
+  background: var(--card);
+  text-align: left;
+}
+.extras button[aria-pressed="true"] {
+  border-color: var(--navy);
+  background: #fff;
+}
+.extraName {
+  font-family: var(--bebas);
+  font-size: 21px;
+  line-height: 1;
+}
+.extraPrice {
+  font-weight: 700;
+}
+.summaryCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.addDrink,
+.confirmBtn,
+.outlineBack {
+  min-height: 58px;
+  white-space: nowrap;
+  border-radius: 999px;
+  font-family: var(--bebas);
+  letter-spacing: 0.08em;
+}
+.addDrink {
+  flex: 1 1 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 26px 12px;
+  border: 2px dashed var(--navy);
+  background: none;
+  font-size: 23px;
+}
+.addDrink:hover {
+  background: var(--card);
+}
+.confirmBtn {
+  flex: 1 1 200px;
+  padding: 14px 22px 12px;
+  border: 0;
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 24px;
+}
+.confirmBtn:hover {
+  background: var(--navy-2);
+}
+.outlineBack {
+  flex: 0 1 auto;
+  padding: 14px 22px 12px;
+  border: 2px solid var(--navy);
+  background: none;
+  font-size: 22px;
+}
+
+/* ================================================================ Drinks */
+.drinks {
+  max-width: 1200px;
+  height: var(--screen);
+  margin: 0 auto;
+  padding: clamp(16px, 3vh, 32px) clamp(16px, 4vw, 40px) clamp(12px, 2vh, 20px);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(10px, 1.8vh, 20px);
+}
+.drinksHead {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.drinkTabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.drinkTabs button {
+  flex: none;
+  min-height: 44px;
+  padding: 10px 18px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--navy);
+  background: transparent;
+  color: var(--navy);
+  font-family: var(--bebas);
+  font-size: 20px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.drinkTabs button[aria-pressed="true"] {
+  background: var(--navy);
+  color: var(--cream);
+}
+.drinkList {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  column-gap: 48px;
+  border-top: 2px solid var(--navy);
+}
+.drink {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  padding: clamp(6px, 1.2vh, 12px) 0;
+  border-bottom: 1px solid rgba(16, 48, 77, 0.14);
+}
+.drinkInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.drinkName {
+  font-family: var(--bebas);
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.drinkMeta {
+  font-size: 13px;
+  color: var(--muted);
+}
+.drinkOpts {
+  grid-column: 2 / 4;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.drinkOpt {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.drinkSize {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.drinkPrice {
+  min-width: 44px;
+  text-align: right;
+  font-family: var(--bebas);
+  font-size: 24px;
+}
+.counter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.counter > span {
+  width: 28px;
+  text-align: center;
+  font-family: var(--bebas);
+  font-size: 26px;
+}
+.dec,
+.inc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.dec {
+  border: 2px solid var(--navy);
+  background: none;
+  color: var(--navy);
+}
+.dec[data-zero="true"] {
+  border-color: rgba(16, 48, 77, 0.25);
+  color: rgba(16, 48, 77, 0.35);
+}
+.inc {
+  border: 0;
+  background: var(--navy);
+  color: var(--cream);
+}
+.drinkBar {
+  margin: 0 -16px;
+}
+.desktopOnly {
+  white-space: nowrap;
+}
+
+/* ================================================================ Done / QR */
+.done {
+  position: relative;
+  min-height: calc(100dvh - var(--header-h));
+  height: var(--screen);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--navy);
+  color: var(--cream-light);
+}
+.doneImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.doneShade {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 30, 48, 0.82);
+}
+.doneInner {
+  position: relative;
+  width: 100%;
+  max-width: 1080px;
+  padding: clamp(24px, 4vh, 48px) clamp(16px, 4vw, 40px);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: clamp(24px, 4vw, 64px);
+  align-items: center;
+}
+.doneLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(10px, 2vh, 18px);
+  text-align: center;
+}
+.thanks {
+  font-family: var(--script);
+  font-size: clamp(26px, 3.4vw, 38px);
+  line-height: 1.15;
+  color: var(--sand);
+}
+.qrCard {
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+}
+.qr {
+  --qr: min(260px, calc(100dvh - 400px));
+  width: var(--qr);
+  height: var(--qr);
+  image-rendering: pixelated;
+}
+.orderCode {
+  font-family: var(--bebas);
+  font-size: 26px;
+  letter-spacing: 0.1em;
+  color: var(--navy);
+  line-height: 1;
+}
+.showWaiter {
+  font-family: var(--bebas);
+  font-size: clamp(26px, 3vw, 34px);
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.brightness {
+  font-size: 15px;
+  color: #d6dee5;
+  max-width: 32ch;
+}
+.doneRight {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ticket {
+  background: var(--cream);
+  color: var(--navy);
+  border-radius: 18px;
+  padding: clamp(16px, 2.4vh, 24px) clamp(18px, 2vw, 26px);
+  display: flex;
+  flex-direction: column;
+}
+.ticketHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--navy);
+}
+.ticketHead span:first-child {
+  font-family: var(--bebas);
+  font-size: 28px;
+  letter-spacing: 0.04em;
+}
+.ticketHead span:last-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--blue);
+}
+.ticketRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: clamp(5px, 0.9vh, 9px) 0;
+  border-bottom: 1px solid rgba(16, 48, 77, 0.12);
+}
+.ticketRow span:first-child {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--blue);
+  padding-top: 2px;
+}
+.ticketRow span:last-child {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+.doneCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.again,
+.toMenu {
+  flex: 1 1 160px;
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 22px 10px;
+  border-radius: 999px;
+  font-family: var(--bebas);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-decoration: none;
+}
+.again {
+  border: 0;
+  background: var(--cream);
+  color: var(--navy);
+}
+.toMenu,
+.toMenu:hover {
+  border: 2px solid var(--cream);
+  background: none;
+  color: var(--cream-light);
+}
+
+/* ================================================================ Mobile */
+@media (max-width: 759px) {
+  .main {
+    height: auto;
+    overflow: visible;
+  }
+  .mobileOnly {
+    display: inline;
+  }
+  .mobileOnlyBlock {
+    display: block;
+  }
+  .desktopOnly {
+    display: none;
+  }
+
+  /* Intro: one screen, bowl photo up top (matches the reference picture). */
+  .introDesk {
+    display: none;
+  }
+  .introMob {
+    height: calc(100dvh - var(--header-h));
+    min-height: 560px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--cream);
+  }
+  .introMobHead {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: clamp(10px, 2.4vh, 22px) 20px clamp(8px, 1.6vh, 14px);
+    text-align: center;
+  }
+  .introMobHead h1 {
+    margin: 0;
+    font-family: var(--bebas);
+    font-size: clamp(52px, 8.4vh, 76px);
+    line-height: 0.85;
+    transform: rotate(-2deg);
+  }
+  .introMobRule {
+    width: 78%;
+    height: 5px;
+    border-radius: 4px;
+    background: var(--navy);
+    transform: rotate(-1.5deg);
+  }
+  .introMobHead > span {
+    margin-top: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .introMobPhoto {
+    position: relative;
+    flex: 1 1 0;
+    min-height: 140px;
+  }
+  .introMobPhoto img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 55%;
+  }
+  .introMobFade {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(242, 234, 219, 0) 0%, var(--cream) 100%);
+  }
+  .introMobPhoto > span {
+    position: absolute;
+    right: 16px;
+    bottom: 4px;
+    font-family: var(--script);
+    font-size: clamp(22px, 3.4vh, 28px);
+    line-height: 1.05;
+    transform: rotate(-8deg);
+    text-align: right;
+  }
+  .introMobList {
+    flex: none;
+    list-style: none;
+    margin: 0;
+    padding: clamp(4px, 1.2vh, 12px) 28px 0;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2px, 0.8vh, 8px);
+  }
+  .introMobList li {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .introMobList .listNum {
+    width: clamp(30px, 4.4vh, 36px);
+    height: clamp(30px, 4.4vh, 36px);
+    font-size: 19px;
+  }
+  .introMobList .listTitle {
+    font-size: clamp(20px, 2.8vh, 24px);
+  }
+  .introMobFoot {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: clamp(10px, 2vh, 18px) 20px clamp(10px, 1.6vh, 14px);
+  }
+  .introMobFoot .startBtn {
+    flex: none;
+    min-height: 54px;
+    padding: 12px 26px 10px;
+  }
+  .place {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+  .place span {
+    width: 48px;
+    height: 2px;
+    background: var(--navy);
+    border-radius: 2px;
+  }
+
+  /* Steps 1–6: everything on one screen, photo cards share the leftover height. */
+  .stepBox {
+    height: max(calc(100dvh - var(--header-h)), 560px);
+    padding: 12px 16px 0;
+  }
+  .step {
+    gap: 12px;
+  }
+  .stepTitle {
+    font-size: clamp(40px, 6.2vh, 56px);
+  }
+  .grid,
+  .cols3,
+  .cols4,
+  .cols10 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .step[data-photo="true"] .grid {
+    grid-auto-rows: minmax(0, 1fr);
+  }
+  .step[data-photo="true"] .card {
+    padding: 6px 6px 10px;
+  }
+  .step[data-photo="true"] .cardImg {
+    min-height: 48px;
+  }
+  .card .cardName span {
+    font-size: 20px;
+  }
+  /* Name-only steps become row cards with a round thumbnail and inline check. */
+  .step[data-photo="false"] .grid {
+    grid-auto-rows: auto;
+    align-content: start;
+  }
+  .step[data-photo="false"] .card {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    min-height: 68px;
+    padding: 8px 10px 8px 8px;
+    text-align: left;
+  }
+  .step[data-photo="false"] .cardImg {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+    aspect-ratio: 1 / 1;
+    flex: none;
+    border-radius: 50%;
+  }
+  .step[data-photo="false"] .cardName {
+    flex: 1 1 auto;
+    padding: 0;
+  }
+  /* Room for the longest single words ("Germinado") beside the check. */
+  .step[data-photo="false"] .cardName span {
+    font-size: 18px;
+  }
+  .step[data-photo="false"] .check {
+    position: static;
+    width: 24px;
+    height: 24px;
+  }
+  .size {
+    padding: 10px 16px;
+  }
+  .bar {
+    position: sticky;
+    padding: 10px 16px 12px;
+  }
+
+  /* Summary & drinks scroll normally. */
+  .summary {
+    height: auto;
+    padding: clamp(32px, 6vw, 80px) clamp(16px, 4vw, 40px);
+    gap: 22px;
+  }
+  .screenTitle {
+    font-size: clamp(52px, 7vw, 96px);
+  }
+  .summaryRows button {
+    padding: 14px 0;
+  }
+  .drinks {
+    height: auto;
+    padding: 20px 16px 0;
+    gap: 22px;
+  }
+  .drinkList {
+    flex: none;
+    overflow-y: visible;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drink {
+    padding: 12px 0;
+  }
+  .drinkBar {
+    padding: 14px 16px 18px;
+  }
+
+  .done {
+    height: auto;
+  }
+  .qr {
+    --qr: 240px;
+  }
+}
+
+/* Small Android phones (360px): keep the thumbnail, tighten so names fit. */
+@media (max-width: 379px) {
+  .step[data-photo="false"] .card {
+    gap: 5px;
+    padding: 8px 8px 8px 6px;
+  }
+  .step[data-photo="false"] .cardImg {
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+  .step[data-photo="false"] .cardName span {
+    font-size: 16px;
+  }
+  .step[data-photo="false"] .check {
+    width: 22px;
+    height: 22px;
+  }
+}

@@ -1,0 +1,371 @@
+.screen {
+  position: fixed;
+  inset: 0;
+  background: var(--navy-deep);
+  overflow: hidden;
+}
+.stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center;
+  display: flex;
+  font-family: var(--barlow);
+  color: var(--navy);
+}
+.blue {
+  color: var(--blue);
+}
+
+/* ---------------- Poke half */
+.poke {
+  flex: 0 0 960px;
+  height: 1080px;
+  background: var(--cream);
+  padding: 40px 56px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.pokeHead {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 32px;
+}
+.pokeHeadText {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.blufin {
+  font-family: var(--script);
+  font-size: 44px;
+  line-height: 1;
+}
+.brandRule {
+  width: 2px;
+  height: 36px;
+  background: rgba(16, 48, 77, 0.25);
+}
+.pokeco {
+  font-family: var(--bebas);
+  font-size: 26px;
+  letter-spacing: 0.3em;
+}
+.pokeHeadText h1 {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: 96px;
+  line-height: 0.85;
+}
+.prices {
+  display: flex;
+  gap: 36px;
+  align-items: baseline;
+}
+.prices > span {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-family: var(--bebas);
+  font-size: 36px;
+  letter-spacing: 0.04em;
+}
+.bowl {
+  flex: none;
+  width: 170px;
+  height: 170px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 8px solid var(--card);
+  box-shadow: 0 16px 40px rgba(16, 48, 77, 0.18);
+}
+.steps {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 20px 36px;
+}
+.stepCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 3px solid var(--navy);
+  padding-top: 12px;
+}
+.stepHead {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.stepNum {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bebas);
+  font-size: 26px;
+  padding-top: 3px;
+}
+.stepTitle {
+  font-family: var(--bebas);
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.rule {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--blue);
+}
+.opts {
+  display: flex;
+  flex-direction: column;
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.16;
+}
+.foot {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid rgba(16, 48, 77, 0.2);
+  padding-top: 12px;
+}
+.extras {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 28px;
+}
+.extrasTitle {
+  font-family: var(--bebas);
+  font-size: 30px;
+  letter-spacing: 0.04em;
+}
+.extra {
+  font-size: 24px;
+  font-weight: 600;
+}
+.note {
+  font-size: 24px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* ---------------- Rotating drinks half */
+.drinks {
+  position: relative;
+  flex: 0 0 960px;
+  height: 1080px;
+  background: var(--navy);
+  color: var(--cream);
+  overflow: hidden;
+}
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.9s ease, transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.band {
+  position: relative;
+  flex: none;
+  overflow: hidden;
+}
+.band img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.bandShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 48, 77, 0.1) 30%, var(--navy) 100%);
+}
+.bandText {
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.script {
+  font-family: var(--script);
+  font-size: 36px;
+  color: var(--sand);
+  line-height: 1.1;
+}
+.slideTitle {
+  font-family: var(--bebas);
+  line-height: 0.85;
+}
+.list {
+  flex: 1;
+  min-height: 0;
+  padding: 16px 56px 120px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ozHead {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px 110px;
+  gap: 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(242, 234, 219, 0.5);
+}
+.ozHead span {
+  font-size: 24px;
+  font-weight: 700;
+  text-align: right;
+  color: #c9d4dd;
+}
+.items {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: 48px;
+}
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0 16px;
+  align-items: center;
+  border-bottom: 1px solid rgba(242, 234, 219, 0.16);
+}
+.itemText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.itemName {
+  font-family: var(--bebas);
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+.itemMeta {
+  font-size: 24px;
+  color: #c9d4dd;
+}
+.itemPrice {
+  font-family: var(--bebas);
+  font-size: 40px;
+  text-align: right;
+  line-height: 1;
+}
+
+/* Per-screen sizing, tuned so every list clears the progress bars. */
+.beer .band {
+  height: 250px;
+}
+.beer .slideTitle {
+  font-size: 88px;
+}
+.beer .item {
+  grid-template-columns: minmax(0, 1fr) 110px 110px;
+  padding: 7px 0;
+}
+.beer .itemName {
+  font-size: 32px;
+}
+.aguas .band {
+  height: 320px;
+}
+.aguas .slideTitle {
+  font-size: 100px;
+}
+.aguas .items {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.aguas .item {
+  padding: 16px 0;
+}
+.aguas .itemName {
+  font-size: 34px;
+}
+.nac .band {
+  height: 340px;
+}
+.nac .slideTitle {
+  font-size: 104px;
+}
+.nac .item {
+  padding: 28px 0;
+}
+.nac .itemName {
+  font-size: 56px;
+}
+
+/* Progress bars */
+.dots {
+  position: absolute;
+  left: 56px;
+  right: 56px;
+  bottom: 36px;
+  display: flex;
+  gap: 16px;
+}
+.dot {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.track {
+  display: block;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(242, 234, 219, 0.2);
+  overflow: hidden;
+}
+.fill {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--cream);
+}
+.dot[data-on="true"] .fill {
+  animation: fill linear forwards;
+}
+@keyframes fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+.dotLabel {
+  font-family: var(--bebas);
+  font-size: 26px;
+  letter-spacing: 0.06em;
+  color: rgba(242, 234, 219, 0.5);
+  transition: color 0.6s ease;
+}
+.dot[data-on="true"] .dotLabel {
+  color: var(--cream);
+}

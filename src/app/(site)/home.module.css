@@ -1,0 +1,414 @@
+/* ---------- Hero */
+.hero {
+  position: relative;
+  min-height: min(88vh, 860px);
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  background: var(--navy);
+}
+.heroImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 60%;
+}
+.heroShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(16, 48, 77, 0.35) 0%, rgba(16, 48, 77, 0.55) 35%, rgba(10, 30, 48, 0.92) 100%),
+    linear-gradient(90deg, rgba(10, 30, 48, 0.55) 0%, rgba(10, 30, 48, 0) 70%);
+}
+.heroInner {
+  position: relative;
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: clamp(120px, 18vh, 200px) clamp(20px, 4vw, 40px) clamp(32px, 6vh, 64px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: var(--cream-light);
+}
+.heroScript {
+  font-family: var(--script);
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.1;
+  text-shadow: 0 2px 12px rgba(10, 30, 48, 0.6);
+}
+.heroTitle {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: clamp(60px, 10vw, 148px);
+  line-height: 0.88;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 20px rgba(10, 30, 48, 0.45);
+}
+.heroTitle span {
+  display: block;
+  white-space: nowrap;
+}
+.heroLead {
+  margin: 0;
+  font-size: clamp(18px, 1.6vw, 22px);
+  font-weight: 500;
+  max-width: 36ch;
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+.heroCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+.heroCta {
+  flex: 1 1 220px;
+  max-width: 300px;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px 12px;
+  border-radius: 999px;
+  font-family: var(--bebas);
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+.heroCtaSolid {
+  border: 0;
+  background: var(--cream);
+  color: var(--navy);
+}
+.heroCtaSolid:hover {
+  background: #fff;
+  color: var(--navy);
+}
+.heroCtaGhost {
+  border: 2px solid var(--cream);
+  background: rgba(16, 48, 77, 0.35);
+  color: var(--cream-light);
+}
+.heroCtaGhost:hover {
+  background: rgba(16, 48, 77, 0.7);
+  color: var(--cream-light);
+}
+.arrow {
+  font-family: var(--barlow);
+  font-size: 20px;
+}
+.heroInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(246, 239, 226, 0.3);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ---------- Arma tu poke */
+.build {
+  background: var(--navy);
+  color: var(--cream);
+  padding: clamp(56px, 9vw, 120px) clamp(16px, 4vw, 40px);
+}
+.buildGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: clamp(32px, 5vw, 80px);
+  align-items: center;
+}
+.buildPhoto {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
+  overflow: hidden;
+  max-width: 560px;
+  width: 100%;
+  justify-self: center;
+  border: 10px solid var(--navy-2);
+}
+.buildPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.buildCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.buildTitle {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: clamp(64px, 9vw, 128px);
+  line-height: 0.85;
+}
+.buildLead {
+  margin: 0;
+  font-size: clamp(18px, 1.6vw, 21px);
+  line-height: 1.45;
+  max-width: 34ch;
+  color: #d6dee5;
+}
+.buildSteps {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: 4px 28px;
+}
+.buildSteps li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(242, 234, 219, 0.18);
+}
+.stepNum {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cream);
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bebas);
+  font-size: 21px;
+  padding-top: 2px;
+}
+.stepTitle {
+  font-family: var(--bebas);
+  font-size: 23px;
+  letter-spacing: 0.04em;
+}
+.buildCta {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 12px;
+  min-height: 58px;
+  padding: 14px 30px 12px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--navy);
+  font-family: var(--bebas);
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+.buildCta:hover {
+  background: #fff;
+  color: var(--navy);
+}
+
+/* ---------- ¿Qué se te antoja? */
+.antojo {
+  padding: clamp(56px, 9vw, 112px) clamp(16px, 4vw, 40px);
+}
+.antojoInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vw, 48px);
+}
+.antojoTitle {
+  margin: 0;
+  text-align: center;
+  font-family: var(--bebas);
+  font-size: clamp(48px, 7vw, 96px);
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+  gap: clamp(12px, 2vw, 24px);
+}
+.tile {
+  position: relative;
+  aspect-ratio: 1 / 1.1;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--navy-2);
+  box-shadow: 0 1px 0 rgba(16, 48, 77, 0.2);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tile:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(16, 48, 77, 0.25);
+}
+.tile img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.tileShade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 30, 48, 0) 50%, rgba(10, 30, 48, 0.85) 100%);
+}
+.tileLabel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: clamp(14px, 2vw, 22px);
+  color: var(--cream-light);
+  font-family: var(--bebas);
+  font-size: clamp(26px, 2.6vw, 36px);
+  line-height: 1;
+  letter-spacing: 0.03em;
+}
+
+/* ---------- Esencia + Ubicación */
+.esencia,
+.ubicacion {
+  padding: clamp(56px, 9vw, 112px) clamp(16px, 4vw, 40px);
+  scroll-margin-top: 70px;
+}
+.esencia {
+  background: var(--cream-2);
+}
+.twoCol {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: clamp(32px, 5vw, 72px);
+  align-items: center;
+}
+.twoCol.stretch {
+  gap: clamp(28px, 4vw, 56px);
+  align-items: stretch;
+}
+.esenciaPhotos {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 14px;
+  align-items: start;
+}
+.esenciaPhotos img {
+  width: 100%;
+  object-fit: cover;
+  border-radius: 18px;
+}
+.esenciaA {
+  aspect-ratio: 4 / 5;
+}
+.esenciaB {
+  aspect-ratio: 3 / 4;
+  margin-top: clamp(40px, 8vw, 96px);
+}
+.esenciaCopy {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 52ch;
+}
+.esenciaCopy p {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.sectionTitle {
+  margin: 0;
+  font-family: var(--bebas);
+  font-size: clamp(48px, 6vw, 84px);
+  line-height: 0.9;
+}
+.navyPill,
+.navyPillSm,
+.outlinePillSm {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-family: var(--bebas);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+.navyPill {
+  margin-top: 6px;
+  min-height: 56px;
+  padding: 14px 28px 12px;
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 23px;
+}
+.navyPill:hover,
+.navyPillSm:hover {
+  background: var(--navy-2);
+  color: var(--cream);
+}
+.navyPillSm {
+  min-height: 52px;
+  padding: 12px 26px 10px;
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 22px;
+}
+.outlinePillSm {
+  min-height: 52px;
+  padding: 12px 26px 10px;
+  border: 2px solid var(--navy);
+  font-size: 22px;
+}
+.map {
+  border-radius: 20px;
+  overflow: hidden;
+  min-height: 340px;
+  background: #dcd0ba;
+  border: 1px solid rgba(16, 48, 77, 0.15);
+}
+.map iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 340px;
+  border: 0;
+  display: block;
+  filter: grayscale(0.35) sepia(0.12);
+}
+.visit {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  justify-content: center;
+}
+.fact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.factLabel {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blue);
+}
+.factValue {
+  font-size: 19px;
+  line-height: 1.5;
+}
+.visitCtas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}

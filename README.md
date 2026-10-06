@@ -1,25 +1,54 @@
-# CODING AGENTS: READ THIS FIRST
+# Blufin Poke Co
 
-This is a **handoff bundle** from Claude Design (claude.ai/design).
+Website for Blufin Poke Co, a poke and Baja craft beer spot in La Paz, BCS. It's built with
+Next.js (App Router) and TypeScript, and is exported as a fully static site.
 
-A user mocked up designs in HTML/CSS/JS using an AI design tool, then exported this bundle so a coding agent can implement the designs for real.
+## Routes
 
-## What you should do — IMPORTANT
+| Route | What it is |
+| --- | --- |
+| `/` | Landing: hero with "Arma tu poke" and "Ver menú", the build-your-bowl section, "¿Qué se te antoja?" tiles, "Nuestra esencia es Baja", and location and hours |
+| `/arma-tu-poke` | Bowl builder: intro, 6 steps (base, protein and size, mix-ins, salsa, toppings, crunchies), summary with extras, optional drinks step, then a QR code for the waiter |
+| `/menu` | Full menu with filter tabs. Deep-link with `?tab=poke\|beer\|aguas\|nac\|extras` |
+| `/orden` | Waiter ticket opened by scanning the customer's QR. With no order in the link, it shows a sample |
+| `/menu-tv` | Restaurant TV screen at 1920×1080, scaled to any display. Poke menu on one half, rotating drink lists on the other. Options: `?s=10` (seconds per drink screen, 4–30) and `?lado=der` (poke half on the right) |
 
-**Read the chat transcripts first.** There are 1 chat transcript(s) in `chats/`. The transcripts show the full back-and-forth between the user and the design assistant — they tell you **what the user actually wants** and **where they landed** after iterating. Don't skip them. The final HTML files are the output, but the chat is where the intent lives.
+## How ordering works
 
-**Read `project/Blufin Poke.dc.html` in full.** The user had this file open when they triggered the handoff, so it's almost certainly the primary design they want built. Read it top to bottom — don't skim. Then **follow its imports**: open every file it pulls in (shared components, CSS, scripts) so you understand how the pieces fit together before you start implementing.
+There is no checkout and no backend. "Generar mi código" packs the order into the QR link itself
+(`/orden#<base64url JSON>`, see `src/lib/order.ts`). The waiter scans it with their phone camera,
+and the ticket page decodes it. The order is also printed under the QR, so it can be read off the
+customer's screen if scanning fails. A customer could edit the link, so the ticket reminds the
+waiter to confirm the order.
 
-**If anything is ambiguous, ask the user to confirm before you start implementing.** It's much cheaper to clarify scope up front than to build the wrong thing.
+## Editing the menu
 
-## About the design files
+All menu items, prices, photos, address, hours and social links live in **`src/data/menu.ts`**.
+The website, the builder, the TV screen and the waiter ticket all read from it.
 
-The design medium is **HTML/CSS/JS** — these are prototypes, not production code. Your job is to **recreate them pixel-perfectly** in whatever technology makes sense for the target codebase (React, Vue, native, whatever fits). Match the visual output; don't copy the prototype's internal structure unless it happens to fit.
+Values marked `PLACEHOLDER` there were guessed during design and still need to be confirmed:
 
-**Don't render these files in a browser or take screenshots unless the user asks you to.** Everything you need — dimensions, colors, layout rules — is spelled out in the source. Read the HTML and CSS directly; a screenshot won't tell you anything they don't.
+- Bowl prices (Small $165 / Regular $235)
+- 12 oz tap prices (set to $20 below the 16 oz price)
+- Bottle vs. can for national beers, waters and sodas
+- Instagram / Facebook / TikTok profile links
+- Photos (Unsplash stock). Name-only options without a photo show a striped "foto" placeholder
 
-## Bundle contents
+## Development
 
-- `README.md` — this file
-- `chats/` — conversation transcripts (read these!)
-- `project/` — the `Blufin Poke landing page` project files (HTML prototypes, assets, components)
+```bash
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # static export to out/
+npm start        # serve out/ locally
+npm run lint     # type-check
+```
+
+Deploy `out/` to any static host (Vercel, Netlify, Cloudflare Pages, S3…). The QR links use the
+site's own origin, so they work once the site is on its public domain.
+
+## Design reference
+
+`design/` holds the Claude Design handoff: the HTML prototypes, the design chat transcript
+(`design/chats/chat1.md`) and the reference images. It is for reference only and not part of the
+build.
