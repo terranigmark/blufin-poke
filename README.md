@@ -44,8 +44,10 @@ npm start        # serve out/ locally
 npm run lint     # type-check
 ```
 
-Deploy `out/` to any static host (Vercel, Netlify, Cloudflare Pages, S3…). The QR links use the
-site's own origin, so they work once the site is on its public domain.
+Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`. `out/` can also
+go on any static host (Vercel, Netlify, Cloudflare Pages, S3…). When the site lives under a sub-path,
+build with `NEXT_PUBLIC_BASE_PATH=/sub-path`; the Pages workflow sets this automatically. The QR links
+use the site's own address, so they work once the site is on its public URL.
 
 ## Design reference
 

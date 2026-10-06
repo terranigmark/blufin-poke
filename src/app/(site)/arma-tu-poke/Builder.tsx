@@ -159,7 +159,7 @@ export function Builder() {
     const now = new Date();
     const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
     const data: OrderData = { c: `#BF-${1000 + Math.floor(Math.random() * 9000)}`, t, r: rows };
-    const url = `${new URL("/orden", location.href).href}#${encodeOrder(data)}`;
+    const url = `${location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/orden/#${encodeOrder(data)}`;
     setOrder({ data, url });
     setStep(DONE);
   };
