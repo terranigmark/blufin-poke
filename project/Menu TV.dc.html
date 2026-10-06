@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Kaushan+Script&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#0A1E30;overflow:hidden;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#F2EADB}a:hover{color:#FFFFFF}
+</style>
+</helmet>
+<div data-screen-label="Menú TV" style="position:fixed;inset:0;background:#0A1E30;overflow:hidden">
+  <div style="position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform:translate(-50%,-50%) scale({{ scale }});transform-origin:center;display:flex;flex-direction:{{ dir }};font-family:'Barlow',sans-serif;color:#10304D">
+
+    <section style="flex:0 0 960px;height:1080px;background:#F2EADB;padding:40px 56px 36px;display:flex;flex-direction:column;gap:20px">
+      <div style="flex:none;display:flex;justify-content:space-between;align-items:center;gap:32px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:18px">
+            <span style="font-family:'Kaushan Script',cursive;font-size:44px;line-height:1">Blufin</span>
+            <span style="width:2px;height:36px;background:rgba(16,48,77,.25)"></span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.3em">Poke Co</span>
+          </div>
+          <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:96px;line-height:.85">Arma tu poke</h1>
+          <div style="display:flex;gap:36px;align-items:baseline">
+            <sc-for list="{{ sizes }}" as="z" hint-placeholder-count="2">
+              <span style="display:flex;align-items:baseline;gap:12px">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:.04em">{{ z.name }}</span>
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:36px;color:#2F5E82">{{ z.price }}</span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+        <img src="https://images.unsplash.com/photo-1604259597308-5321e8e4789c?w=600&auto=format&fit=crop&q=70" alt="Poke bowl" style="flex:none;width:170px;height:170px;border-radius:50%;object-fit:cover;border:8px solid #FBF7EF;box-shadow:0 16px 40px rgba(16,48,77,.18)">
+      </div>
+
+      <div style="flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:auto auto;align-content:start;gap:20px 36px">
+        <sc-for list="{{ steps }}" as="s" hint-placeholder-count="6">
+          <div style="display:flex;flex-direction:column;gap:6px;border-top:3px solid #10304D;padding-top:12px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <span style="flex:none;width:44px;height:44px;border-radius:50%;background:#10304D;color:#F2EADB;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:26px;padding-top:3px">{{ s.n }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:36px;line-height:1;letter-spacing:.02em">{{ s.title }}</span>
+            </div>
+            <span style="font-size:24px;font-weight:700;color:#2F5E82">{{ s.rule }}</span>
+            <div style="display:flex;flex-direction:column">
+              <sc-for list="{{ s.opts }}" as="o" hint-placeholder-count="5">
+                <span style="font-size:24px;font-weight:500;line-height:1.16">{{ o }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="flex:none;display:flex;flex-direction:column;gap:4px;border-top:1px solid rgba(16,48,77,.2);padding-top:12px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 28px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:.04em">Extras</span>
+          <sc-for list="{{ extras }}" as="e" hint-placeholder-count="4">
+            <span style="font-size:24px;font-weight:600">{{ e.name }} <span style="color:#2F5E82">{{ e.price }}</span></span>
+          </sc-for>
+        </div>
+        <span style="font-size:24px;font-style:italic;color:#4F5F6E">* Proteínas sujetas a cambio y/o hasta agotar existencias</span>
+      </div>
+    </section>
+
+    <section style="position:relative;flex:0 0 960px;height:1080px;background:#10304D;color:#F2EADB;overflow:hidden">
+      <sc-for list="{{ slides }}" as="d" hint-placeholder-count="1">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;opacity:{{ d.op }};transform:translateX({{ d.tx }});transition:opacity .9s ease, transform .9s cubic-bezier(.2,.8,.2,1)">
+          <div style="position:relative;height:{{ d.bandH }};flex:none;overflow:hidden">
+            <img src="{{ d.img }}" alt="{{ d.title }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,48,77,.1) 30%,#10304D 100%)"></div>
+            <div style="position:absolute;left:56px;right:56px;bottom:10px;display:flex;flex-direction:column;gap:4px">
+              <span style="font-family:'Kaushan Script',cursive;font-size:36px;color:#F2B56B;line-height:1.1">{{ d.script }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:{{ d.titleSize }};line-height:.85">{{ d.title }}</span>
+            </div>
+          </div>
+          <div style="flex:1;min-height:0;padding:16px 56px 120px;display:flex;flex-direction:column;overflow:hidden">
+            <sc-if value="{{ d.isBeer }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:minmax(0,1fr) 110px 110px;gap:0 16px;padding-bottom:8px;border-bottom:2px solid rgba(242,234,219,.5)">
+                <span></span>
+                <span style="font-size:24px;font-weight:700;text-align:right;color:#C9D4DD">12 oz</span>
+                <span style="font-size:24px;font-weight:700;text-align:right;color:#C9D4DD">16 oz</span>
+              </div>
+            </sc-if>
+            <div style="display:grid;grid-template-columns:{{ d.cols }};column-gap:48px">
+              <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="8">
+                <div style="display:grid;grid-template-columns:{{ d.rowCols }};gap:0 16px;align-items:center;padding:{{ d.rowPad }} 0;border-bottom:1px solid rgba(242,234,219,.16)">
+                  <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                    <span style="font-family:'Bebas Neue',sans-serif;font-size:{{ d.nameSize }};line-height:1;letter-spacing:.02em">{{ i.name }}</span>
+                    <span style="font-size:24px;color:#C9D4DD">{{ i.meta }}</span>
+                  </span>
+                  <sc-for list="{{ i.prices }}" as="p" hint-placeholder-count="1">
+                    <span style="font-family:'Bebas Neue',sans-serif;font-size:40px;text-align:right;line-height:1">{{ p }}</span>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="position:absolute;left:56px;right:56px;bottom:36px;display:flex;gap:16px">
+        <sc-for list="{{ dots }}" as="t" hint-placeholder-count="3">
+          <div style="flex:1;display:flex;flex-direction:column;gap:10px">
+            <span style="height:5px;border-radius:3px;background:rgba(242,234,219,.2);overflow:hidden;display:block">
+              <span style="display:block;height:100%;width:{{ t.w }};background:#F2EADB;transition:width {{ t.dur }} linear"></span>
+            </span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.06em;color:{{ t.color }};transition:color .6s ease">{{ t.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;seconds&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:10,&quot;min&quot;:4,&quot;max&quot;:30,&quot;step&quot;:1,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Rotación&quot;},&quot;pokeSide&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;left&quot;,&quot;options&quot;:[&quot;left&quot;,&quot;right&quot;],&quot;tsType&quot;:&quot;'left'|'right'&quot;,&quot;section&quot;:&quot;Layout&quot;}}">
+const U=(id,w)=>'https://images.unsplash.com/photo-'+id+'?w='+(w||1200)+'&auto=format&fit=crop&q=70';
+const STEPS=[
+ {title:'Base',rule:'Elige 1',opts:['Arroz sushi','Ensalada','Totopos','50/50']},
+ {title:'Proteína',rule:'Hasta 2 · la 2ª +$25',opts:['Pesca del día','Atún','Atún Spicy','Camarón','Tofu']},
+ {title:'Mix-ins',rule:'Los que quieras',opts:['Cilantro','Cebolla morada','Cebolla blanca','Cebollín','Chile jalapeño','Ajonjolí']},
+ {title:'Salsa',rule:'Recomendamos 2',opts:['Spicy Mayo','Shoyu','Citrus Ponzu','Ginger Ponzu','Teriyaki','Jalapeño Shoyu','Ginger Garlic Evoo','Aceite de Ajonjolí','Jalapeño Monster']},
+ {title:'Toppings',rule:'Los que quieras',opts:['Aguacate','Ensalada de cangrejo','Edamames','Tomate cherry','Zanahoria','Alga wakame','Col morada','Germinado','Pepino','Fruta de temporada']},
+ {title:'Crunchies',rule:'Los que quieras',opts:['Cebolla crispy','Hot Cheetos','Nueces de macadamia','Totopos','Jengibre']}
+];
+const SIZES=[['Small','$165'],['Regular','$235']];
+const EXTRAS=[['Proteína','$25'],['Aguacate','$20'],['Wakame','$20'],['Cangrejo','$20']];
+const BEERS=[['American Stout','Stout · 5.2%',120],['Pastry Porter','Porter · 6.2%',90],['Hazy Baby IPA','Hazy IPA · 7.12%',90],['Coastal Dream IPA','IPA · 6.9%',90],['Baby IPA','Session IPA · 5.4%',90],['Angry Belga','Belgian Ale · 4.9%',90],['American Lager','Lager · 3.4%',90],['West Coast Mexican Lager','Lager · 5.4%',90]];
+const AGUAS=[['Agua mineral','Botella · 355 ml',40],['Agua de coco','Lata · 330 ml',40],['Agua natural','Botella · 500 ml',15],['Té gasificado','Lata · 355 ml',60],['Refresco','Lata · 355 ml',40],['Agua de sabor','Botella · 500 ml',40],['Té frío','Botella · 500 ml',40],['Cold brew','Lata · 355 ml',75],['Kombucha','Botella · 355 ml',80],['Soda Orita','Lata · 355 ml',65]];
+const NAC=[['Pacífico','Botella · 210 ml',35],['Coronita','Botella · 210 ml',35],['Modelo','Lata · 355 ml',50]];
+const SLIDES=[
+ {key:'beer',label:'Cerveza artesanal',title:'Cerveza artesanal',script:'Black Marlin Brewing',img:U('1535958636474-b021ee887b13'),isBeer:true,bandH:'250px',titleSize:'88px',cols:'minmax(0,1fr)',rowCols:'minmax(0,1fr) 110px 110px',rowPad:'7px',nameSize:'32px',items:BEERS.map(b=>({name:b[0],meta:'De barril · '+b[1],prices:['$'+(b[2]-20),'$'+b[2]]}))},
+ {key:'aguas',label:'Aguas y refrescos',title:'Aguas y refrescos',script:'Bien frías',img:U('1436076863939-06870fe779c2'),isBeer:false,bandH:'320px',titleSize:'100px',cols:'repeat(2,minmax(0,1fr))',rowCols:'minmax(0,1fr) auto',rowPad:'16px',nameSize:'34px',items:AGUAS.map(a=>({name:a[0],meta:a[1],prices:['$'+a[2]]}))},
+ {key:'nac',label:'Cerveza nacional',title:'Cerveza nacional',script:'Las de siempre',img:U('1514933651103-005eec06c04b'),isBeer:false,bandH:'340px',titleSize:'104px',cols:'minmax(0,1fr)',rowCols:'minmax(0,1fr) auto',rowPad:'28px',nameSize:'56px',items:NAC.map(a=>({name:a[0],meta:a[1],prices:['$'+a[2]]}))}
+];
+class Component extends DCLogic {
+  state={i:0,vw:typeof window!=='undefined'?window.innerWidth:1920,vh:typeof window!=='undefined'?window.innerHeight:1080};
+  componentDidMount(){
+    this.onR=()=>this.setState({vw:window.innerWidth,vh:window.innerHeight});window.addEventListener('resize',this.onR);this.onR();
+    if(window.ResizeObserver){this.ro=new ResizeObserver(this.onR);this.ro.observe(document.documentElement);if(document.body)this.ro.observe(document.body);}
+    [0,50,200,500,1000,2000].forEach(ms=>setTimeout(this.onR,ms));
+    this.start();
+  }
+  componentDidUpdate(pp){if(pp.seconds!==this.props.seconds)this.start();}
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);clearInterval(this.t);if(this.ro)this.ro.disconnect();}
+  start(){clearInterval(this.t);const sec=Math.max(3,this.props.seconds??10);this.t=setInterval(()=>this.setState(s=>({i:(s.i+1)%SLIDES.length})),sec*1000);}
+  renderVals(){
+    const s=this.state,sec=Math.max(3,this.props.seconds??10);
+    const vw=(typeof window!=='undefined'&&window.innerWidth)||s.vw,vh=(typeof window!=='undefined'&&window.innerHeight)||s.vh;
+    const scale=(vw&&vh)?Math.min(vw/1920,vh/1080):1;
+    return {
+      scale,dir:(this.props.pokeSide??'left')==='right'?'row-reverse':'row',
+      sizes:SIZES.map(([name,price])=>({name,price})),
+      steps:STEPS.map((x,i)=>Object.assign({},x,{n:i+1})),
+      extras:EXTRAS.map(([name,price])=>({name,price})),
+      slides:SLIDES.map((d,k)=>Object.assign({},d,{op:k===s.i?1:0,tx:k===s.i?'0px':(k===(s.i+SLIDES.length-1)%SLIDES.length?'-60px':'60px')})),
+      dots:SLIDES.map((d,k)=>({label:d.label,w:k===s.i?'100%':'0%',dur:k===s.i?sec+'s':'0s',color:k===s.i?'#F2EADB':'rgba(242,234,219,.5)'}))
+    };
+  }
+}
+</script>
+</body>
+</html>

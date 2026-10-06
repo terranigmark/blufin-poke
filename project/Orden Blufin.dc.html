@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Kaushan+Script&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#F2EADB;color:#10304D;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+a{color:#10304D}a:hover{color:#2F5E82}
+</style>
+</helmet>
+<div data-screen-label="Ticket mesero" style="min-height:100vh;background:#F2EADB;font-family:'Barlow',system-ui,sans-serif;color:#10304D;display:flex;justify-content:center;padding:20px 16px 40px">
+  <div style="width:100%;max-width:480px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-bottom:14px;border-bottom:1px solid rgba(16,48,77,.15)">
+      <div style="display:flex;flex-direction:column;align-items:flex-start">
+        <span style="font-family:'Kaushan Script',cursive;font-size:32px;line-height:1">Blufin</span>
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:12px;letter-spacing:.3em;margin-top:2px">Poke Co</span>
+      </div>
+      <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.1em;padding:6px 12px 4px;border-radius:999px;background:#10304D;color:#F2EADB">Ticket de mesa</span>
+    </div>
+
+    <sc-if value="{{ ok }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:.85;letter-spacing:.02em">{{ code }}</span>
+          <span style="font-size:15px;font-weight:600;color:#2F5E82;padding-bottom:4px">{{ time }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;background:#FBF7EF;border-radius:18px;padding:6px 18px">
+          <sc-for list="{{ rows }}" as="r" hint-placeholder-count="9">
+            <div style="display:flex;flex-direction:column;gap:3px;padding:12px 0;border-bottom:1px solid rgba(16,48,77,.12)">
+              <span style="font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#2F5E82">{{ r.label }}</span>
+              <span style="font-size:19px;font-weight:600;line-height:1.35">{{ r.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0;font-size:15px;line-height:1.45;color:#33475A">Confirma el pedido con el cliente antes de mandarlo a cocina.</p>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ bad }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:10px;padding:40px 0">
+        <span style="font-family:'Bebas Neue',sans-serif;font-size:44px;line-height:.9">No pudimos leer este pedido</span>
+        <p style="margin:0;font-size:17px;line-height:1.45;color:#33475A">Pide al cliente que te muestre su pantalla y toma el pedido de ahí.</p>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const SAMPLE={c:'#BF-4821',t:'14:32',r:[['Base','Arroz sushi'],['Proteína','Atún, Pesca del día'],['Tamaño','Regular'],['Mix-ins','Cilantro, Cebolla morada, Ajonjolí'],['Salsa','Citrus Ponzu, Spicy Mayo'],['Toppings','Aguacate, Edamames, Pepino'],['Crunchies','Cebolla crispy'],['Extras','Aguacate'],['Bebidas','2× Baby IPA 16 oz, 1× Agua de coco']]};
+function decode(hash){
+  try{let s=hash.replace(/^#/,'').replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return JSON.parse(decodeURIComponent(escape(atob(s))));}catch(e){return null;}
+}
+class Component extends DCLogic {
+  state={hash:typeof location!=='undefined'?location.hash:''};
+  componentDidMount(){this.onH=()=>this.setState({hash:location.hash});window.addEventListener('hashchange',this.onH);}
+  componentWillUnmount(){window.removeEventListener('hashchange',this.onH);}
+  renderVals(){
+    const h=this.state.hash;
+    const d=h&&h.length>1?decode(h):SAMPLE;
+    const ok=!!(d&&d.c&&Array.isArray(d.r));
+    return {ok,bad:!ok,code:ok?d.c:'',time:ok?d.t:'',rows:ok?d.r.map(([label,value])=>({label,value})):[]};
+  }
+}
+</script>
+</body>
+</html>

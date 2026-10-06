@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Kaushan+Script&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;padding:0;background:#F2EADB;color:#10304D;-webkit-font-smoothing:antialiased}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:#10304D;text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:#2F5E82}
+img{display:block}
+</style>
+</helmet>
+<div style="min-height:100vh;background:#F2EADB;font-family:'Barlow',system-ui,sans-serif;color:#10304D">
+
+<header style="position:sticky;top:0;z-index:50;background:rgba(242,234,219,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid rgba(16,48,77,.12)">
+  <div style="max-width:1320px;margin:0 auto;padding:10px clamp(16px,4vw,40px);display:flex;align-items:center;justify-content:space-between;gap:16px">
+    <button onClick="{{ goHome }}" style="display:flex;align-items:center;gap:14px;background:none;border:0;padding:0">
+      <div style="width:46px;height:46px;border-radius:50%;border:2px solid #10304D;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:10px;line-height:.95;letter-spacing:.04em;text-align:center">
+        <span>BLACK</span><span>MARLIN</span><span style="font-size:7px;letter-spacing:.12em">BREWING</span>
+      </div>
+      <div style="width:1px;height:34px;background:rgba(16,48,77,.25)"></div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <span style="font-family:'Kaushan Script',cursive;font-size:30px;line-height:1">Blufin</span>
+        <span style="display:flex;align-items:center;gap:5px;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:.3em;line-height:1;margin-top:2px"><span style="width:10px;height:1px;background:#10304D"></span>POKE CO<span style="width:10px;height:1px;background:#10304D"></span></span>
+      </div>
+    </button>
+    <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+      <nav style="display:flex;align-items:center;gap:30px;font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.06em">
+        <button onClick="{{ goMenuAll }}" style="background:none;border:0;padding:4px 0" style-hover="color:#2F5E82">Menú</button>
+        <button onClick="{{ goNosotros }}" style="background:none;border:0;padding:4px 0" style-hover="color:#2F5E82">Nosotros</button>
+        <button onClick="{{ goUbicacion }}" style="background:none;border:0;padding:4px 0" style-hover="color:#2F5E82">Ubicación</button>
+        <button onClick="{{ goBuild }}" style="background:#10304D;color:#F2EADB;border:0;border-radius:999px;padding:10px 22px 8px;letter-spacing:.08em" style-hover="background:#1C4466">Arma tu poke →</button>
+      </nav>
+    </sc-if>
+    <sc-if value="{{ mobile }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ toggleMenu }}" aria-label="Menú" style="width:48px;height:48px;background:none;border:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:0">
+        <span style="width:28px;height:2px;background:#10304D;border-radius:2px"></span>
+        <span style="width:28px;height:2px;background:#10304D;border-radius:2px"></span>
+        <span style="width:28px;height:2px;background:#10304D;border-radius:2px"></span>
+      </button>
+    </sc-if>
+  </div>
+  <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+    <nav style="display:flex;flex-direction:column;padding:8px 20px 24px;gap:4px;font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em;border-top:1px solid rgba(16,48,77,.12)">
+      <button onClick="{{ goBuild }}" style="background:none;border:0;text-align:left;padding:8px 0;border-bottom:1px solid rgba(16,48,77,.12)">Arma tu poke</button>
+      <button onClick="{{ goMenuAll }}" style="background:none;border:0;text-align:left;padding:8px 0;border-bottom:1px solid rgba(16,48,77,.12)">Menú</button>
+      <button onClick="{{ goNosotros }}" style="background:none;border:0;text-align:left;padding:8px 0;border-bottom:1px solid rgba(16,48,77,.12)">Nosotros</button>
+      <button onClick="{{ goUbicacion }}" style="background:none;border:0;text-align:left;padding:8px 0">Ubicación</button>
+    </nav>
+  </sc-if>
+</header>
+
+<sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+<main>
+  <section data-screen-label="Home · Hero" style="position:relative;min-height:min(88vh,860px);display:flex;align-items:flex-end;overflow:hidden;background:#10304D">
+    <img src="https://images.unsplash.com/photo-1414609245224-afa02bfb3fda?w=2000&auto=format&fit=crop&q=70" alt="Atardecer sobre el mar de Cortés" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,48,77,.35) 0%,rgba(16,48,77,.55) 35%,rgba(10,30,48,.92) 100%),linear-gradient(90deg,rgba(10,30,48,.55) 0%,rgba(10,30,48,0) 70%)"></div>
+    <div style="position:relative;width:100%;max-width:1320px;margin:0 auto;padding:clamp(120px,18vh,200px) clamp(20px,4vw,40px) clamp(32px,6vh,64px);display:flex;flex-direction:column;gap:18px;color:#F6EFE2">
+      <span style="font-family:'Kaushan Script',cursive;font-size:clamp(24px,3vw,34px);color:#F6EFE2;line-height:1.1;text-shadow:0 2px 12px rgba(10,30,48,.6)">Good food, cold beer, salty people</span>
+      <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(60px,10vw,148px);line-height:.88;letter-spacing:.01em;text-shadow:0 2px 20px rgba(10,30,48,.45)"><span style="display:block;white-space:nowrap">Poke • Baja</span><span style="display:block;white-space:nowrap">Craft Beer</span></h1>
+      <p style="margin:0;font-size:clamp(18px,1.6vw,22px);font-weight:500;max-width:36ch;line-height:1.4;text-wrap:pretty">Pesca del día, cerveza de la casa y nada de prisa.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
+        <button onClick="{{ goBuild }}" style="flex:1 1 220px;max-width:300px;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px 12px;border:0;border-radius:999px;background:#F2EADB;color:#10304D;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em" style-hover="background:#FFFFFF">Arma tu poke<span style="font-family:'Barlow',sans-serif;font-size:20px">→</span></button>
+        <button onClick="{{ goMenuAll }}" style="flex:1 1 220px;max-width:300px;min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 24px 12px;border:2px solid #F2EADB;border-radius:999px;background:rgba(16,48,77,.35);color:#F6EFE2;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em" style-hover="background:rgba(16,48,77,.7)">Ver menú<span style="font-family:'Barlow',sans-serif;font-size:20px">→</span></button>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px 24px;margin-top:22px;padding-top:18px;border-top:1px solid rgba(246,239,226,.3);font-size:14px;font-weight:600;letter-spacing:.12em;text-transform:uppercase">
+        <span>Mar – Dom · 13:30 – 21:30</span>
+        <span>Belisario Domínguez 1251, La Paz</span>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Home · Arma tu poke" style="background:#10304D;color:#F2EADB;padding:clamp(56px,9vw,120px) clamp(16px,4vw,40px)">
+    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:clamp(32px,5vw,80px);align-items:center">
+      <div style="position:relative;aspect-ratio:1/1;border-radius:50%;overflow:hidden;max-width:560px;width:100%;justify-self:center;border:10px solid #1C4466">
+        <img src="https://images.unsplash.com/photo-1604259597308-5321e8e4789c?w=1200&auto=format&fit=crop&q=70" alt="Poke bowl de salmón" style="width:100%;height:100%;object-fit:cover">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(64px,9vw,128px);line-height:.85">Arma tu poke</h2>
+        <p style="margin:0;font-size:clamp(18px,1.6vw,21px);line-height:1.45;max-width:34ch;color:#D6DEE5">Seis pasos y tú decides todo. Lo armamos al momento.</p>
+        <ol style="list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:4px 28px">
+          <sc-for list="{{ stepList }}" as="x" hint-placeholder-count="6">
+            <li style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid rgba(242,234,219,.18)">
+              <span style="flex:none;width:36px;height:36px;border-radius:50%;background:#F2EADB;color:#10304D;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:21px;padding-top:2px">{{ x.n }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:.04em">{{ x.title }}</span>
+            </li>
+          </sc-for>
+        </ol>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px">
+          <button onClick="{{ goBuild }}" style="min-height:58px;padding:14px 30px 12px;border:0;border-radius:999px;background:#F2EADB;color:#10304D;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.06em" style-hover="background:#FFFFFF">Empezar mi bowl →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="Home · Antojo" style="padding:clamp(56px,9vw,112px) clamp(16px,4vw,40px)">
+    <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:clamp(28px,4vw,48px)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center">
+        <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(48px,7vw,96px);line-height:.9;letter-spacing:.02em">¿Qué se te antoja?</h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:clamp(12px,2vw,24px)">
+        <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.onClick }}" style="position:relative;aspect-ratio:1/1.1;border:0;padding:0;border-radius:20px;overflow:hidden;background:#1C4466;text-align:left;box-shadow:0 1px 0 rgba(16,48,77,.2)" style-hover="transform:translateY(-3px);box-shadow:0 14px 30px rgba(16,48,77,.25)">
+            <img src="{{ t.img }}" alt="{{ t.label }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+            <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,30,48,0) 50%,rgba(10,30,48,.85) 100%)"></div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:clamp(14px,2vw,22px);display:flex;flex-direction:column;gap:2px;color:#F6EFE2">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,2.6vw,36px);line-height:1;letter-spacing:.03em">{{ t.label }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="nosotros" data-screen-label="Home · Esencia" style="padding:clamp(56px,9vw,112px) clamp(16px,4vw,40px);background:#EBE1CF">
+    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(32px,5vw,72px);align-items:center">
+      <div style="display:grid;grid-template-columns:3fr 2fr;gap:14px;align-items:start">
+        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=900&auto=format&fit=crop&q=70" alt="Bowl fresco" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:18px">
+        <img src="https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=700&auto=format&fit=crop&q=70" alt="Cerveza artesanal servida del grifo" style="width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:18px;margin-top:clamp(40px,8vw,96px)">
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;max-width:52ch">
+        <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(48px,6vw,84px);line-height:.9">Nuestra esencia es Baja</h2>
+        <p style="margin:0;font-size:19px;line-height:1.6;color:#33475A;text-wrap:pretty">Pesca local, poke hecho al momento y cerveza de Black Marlin, nuestra cervecería. Así de simple.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:6px">
+          <button onClick="{{ goMenuBeer }}" style="min-height:56px;padding:14px 28px 12px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:.06em" style-hover="background:#1C4466">Conoce nuestras cervezas →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="ubicacion" data-screen-label="Home · Ubicación" style="padding:clamp(56px,9vw,112px) clamp(16px,4vw,40px)">
+    <div style="max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(28px,4vw,56px);align-items:stretch">
+      <div style="border-radius:20px;overflow:hidden;min-height:340px;background:#DCD0BA;border:1px solid rgba(16,48,77,.15)">
+        <iframe title="Mapa Blufin Poke Co" src="https://maps.google.com/maps?q=Belisario%20Dominguez%201251%2C%20La%20Paz%2C%20Baja%20California%20Sur&z=15&output=embed" style="width:100%;height:100%;min-height:340px;border:0;display:block;filter:grayscale(.35) sepia(.12)" loading="lazy"></iframe>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:28px;justify-content:center">
+        <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(48px,6vw,84px);line-height:.9">Ven a vernos</h2>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#2F5E82">Ubicación</span>
+          <span style="font-size:19px;line-height:1.5">Belisario Domínguez 1251, CP 23000<br>La Paz, Baja California Sur</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#2F5E82">Horarios</span>
+          <span style="font-size:19px;line-height:1.5">Martes a domingo · 13:30 – 21:30<br>Lunes cerrado</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:12px">
+          <a href="https://maps.google.com/?q=Belisario+Dominguez+1251+La+Paz+BCS" target="_blank" style="min-height:52px;display:flex;align-items:center;padding:12px 26px 10px;border-radius:999px;background:#10304D;color:#F2EADB;text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em">Cómo llegar →</a>
+          <a href="mailto:hola@blufinpokeco.com" style="min-height:52px;display:flex;align-items:center;padding:12px 26px 10px;border-radius:999px;border:2px solid #10304D;text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.06em">hola@blufinpokeco.com</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</sc-if>
+
+<sc-if value="{{ isBuild }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="Arma tu poke" style="min-height:calc(100dvh - 69px);height:{{ buildH }};overflow:{{ buildOverflow }}">
+  <sc-if value="{{ introMob }}" hint-placeholder-val="{{ false }}">
+    <section style="height:calc(100dvh - 69px);min-height:560px;overflow:hidden;display:flex;flex-direction:column;background:#F2EADB">
+      <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:6px;padding:clamp(10px,2.4vh,22px) 20px clamp(8px,1.6vh,14px);text-align:center">
+        <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(52px,8.4vh,76px);line-height:.85;transform:rotate(-2deg)">Arma tu poke</h1>
+        <div style="width:78%;height:5px;border-radius:4px;background:#10304D;transform:rotate(-1.5deg)"></div>
+        <span style="margin-top:4px;font-size:14px;font-weight:700;letter-spacing:.18em;text-transform:uppercase">Tu bowl. A tu manera.</span>
+      </div>
+      <div style="position:relative;flex:1 1 0;min-height:140px">
+        <img src="https://images.unsplash.com/photo-1604259597308-5321e8e4789c?w=900&auto=format&fit=crop&q=70" alt="Poke bowl frente al mar" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 55%">
+        <div style="position:absolute;inset:auto 0 0 0;height:40%;background:linear-gradient(180deg,rgba(242,234,219,0) 0%,#F2EADB 100%)"></div>
+        <span style="position:absolute;right:16px;bottom:4px;font-family:'Kaushan Script',cursive;font-size:clamp(22px,3.4vh,28px);line-height:1.05;transform:rotate(-8deg);text-align:right;color:#10304D">Fresh poke,<br>happier people</span>
+      </div>
+      <ol style="flex:none;list-style:none;margin:0;padding:clamp(4px,1.2vh,12px) 28px 0;display:flex;flex-direction:column;gap:clamp(2px,.8vh,8px)">
+        <sc-for list="{{ stepList }}" as="x" hint-placeholder-count="6">
+          <li style="display:flex;align-items:center;gap:14px">
+            <span style="flex:none;width:clamp(30px,4.4vh,36px);height:clamp(30px,4.4vh,36px);border-radius:50%;background:#10304D;color:#F2EADB;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:19px;padding-top:2px">{{ x.n }}</span>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(20px,2.8vh,24px);letter-spacing:.04em;border-bottom:2px solid rgba(16,48,77,.2)">{{ x.title }}</span>
+          </li>
+        </sc-for>
+      </ol>
+      <div style="flex:none;display:flex;flex-direction:column;gap:8px;padding:clamp(10px,2vh,18px) 20px clamp(10px,1.6vh,14px)">
+        <button onClick="{{ startBuild }}" style="min-height:54px;display:flex;align-items:center;justify-content:space-between;padding:12px 26px 10px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.08em">Empezar<span style="font-family:'Barlow',sans-serif">→</span></button>
+        <div style="display:flex;align-items:center;justify-content:center;gap:12px;font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#33475A">
+          <span style="width:48px;height:2px;background:#10304D;border-radius:2px"></span>La Paz, BCS<span style="width:48px;height:2px;background:#10304D;border-radius:2px"></span>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+  <sc-if value="{{ introDesk }}" hint-placeholder-val="{{ true }}">
+    <section style="max-width:1200px;height:{{ buildH }};margin:0 auto;padding:{{ introPad }} clamp(16px,4vw,40px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,380px),1fr));gap:clamp(28px,5vw,64px);align-items:center">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(64px,min(10vw,14vh),144px);line-height:.85">Arma tu poke</h1>
+        <div style="width:180px;height:7px;border-radius:4px;background:#10304D;transform:rotate(-1.5deg)"></div>
+        <p style="margin:6px 0 0;font-size:16px;font-weight:600;letter-spacing:.18em;text-transform:uppercase">Tu bowl. A tu manera.</p>
+        <ol style="list-style:none;margin:clamp(8px,2vh,18px) 0 0;padding:0;display:flex;flex-direction:column;gap:clamp(0px,.5vh,4px)">
+          <sc-for list="{{ stepList }}" as="x" hint-placeholder-count="6">
+            <li style="display:flex;align-items:center;gap:16px;padding:clamp(4px,.9vh,8px) 0">
+              <span style="flex:none;width:38px;height:38px;border-radius:50%;background:#10304D;color:#F2EADB;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;padding-top:2px">{{ x.n }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:25px;letter-spacing:.04em;border-bottom:2px solid rgba(16,48,77,.2)">{{ x.title }}</span>
+            </li>
+          </sc-for>
+        </ol>
+        <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:18px">
+          <button onClick="{{ startBuild }}" style="flex:0 1 320px;min-height:58px;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 12px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.08em" style-hover="background:#1C4466">Empezar<span style="font-family:'Barlow',sans-serif">→</span></button>
+        </div>
+      </div>
+      <div style="position:relative;width:100%;max-width:{{ introImgMax }};justify-self:center">
+        <img src="https://images.unsplash.com/photo-1604259597308-5321e8e4789c?w=1100&auto=format&fit=crop&q=70" alt="Poke bowl" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:50%;border:10px solid #FBF7EF;box-shadow:0 30px 60px rgba(16,48,77,.18)">
+        <span style="position:absolute;right:4%;bottom:2%;font-family:'Kaushan Script',cursive;font-size:clamp(26px,3vw,36px);line-height:1.05;transform:rotate(-8deg);background:#F2EADB;padding:6px 14px;border-radius:12px">Fresh poke,<br>happier people</span>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ showStep }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1320px;height:{{ stepBoxH }};margin:0 auto;padding:{{ stepPad }};display:flex;gap:clamp(24px,3vw,48px);align-items:flex-start">
+      <section style="flex:1 1 auto;min-width:0;height:{{ fill }};display:flex;flex-direction:column;gap:{{ stepGap }}">
+        <div style="display:flex;gap:6px">
+          <sc-for list="{{ segs }}" as="g" hint-placeholder-count="6">
+            <span style="flex:1;height:5px;border-radius:3px;background:{{ g.bg }};transition:background .45s ease"></span>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:{{ stepH1 }};line-height:.88">{{ cur.title }}</h1>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;min-height:30px">
+            <span style="font-size:15px;font-weight:600;color:#2F5E82">{{ countLabel }}</span>
+            <sc-if value="{{ secondProt }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:8px;padding:5px 14px 5px 6px;border-radius:999px;background:#10304D;color:#F2EADB;font-size:14px;font-weight:600">
+                <span style="width:20px;height:20px;border-radius:50%;background:#F2EADB;color:#10304D;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">+</span>
+                La segunda proteína tiene costo extra: +$25
+              </span>
+            </sc-if>
+            <sc-if value="{{ manySalsa }}" hint-placeholder-val="{{ false }}">
+              <span style="display:flex;align-items:center;gap:8px;padding:5px 14px 5px 6px;border-radius:999px;background:#10304D;color:#F2EADB;font-size:14px;font-weight:600">
+                <span style="width:20px;height:20px;border-radius:50%;background:#F2EADB;color:#10304D;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">!</span>
+                Te recomendamos hasta 2 salsas
+              </span>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:{{ gridCols }};grid-auto-rows:{{ gridRows }};align-content:{{ gridAlign }};flex:{{ gridFlex }};min-height:auto;gap:clamp(10px,1.6vw,18px)">
+          <sc-for list="{{ opts }}" as="o" hint-placeholder-count="4">
+            <button onClick="{{ o.onClick }}" style="position:relative;display:flex;flex-direction:{{ o.dir }};align-items:{{ o.alignItems }};justify-content:{{ o.justify }};min-height:{{ o.minH }};gap:8px;padding:{{ o.pad }};border-radius:18px;border:2.5px solid {{ o.border }};background:{{ o.bg }};text-align:{{ o.textAlign }};box-shadow:0 1px 2px rgba(16,48,77,.08)" style-hover="box-shadow:0 10px 24px rgba(16,48,77,.14)">
+              <sc-if value="{{ o.hasImg }}" hint-placeholder-val="{{ isPhoto }}">
+                <img src="{{ o.img }}" alt="{{ o.name }}" style="width:{{ o.iw }};height:{{ o.ih }};aspect-ratio:{{ o.iar }};flex:{{ o.iflex }};min-height:{{ o.imin }};object-fit:cover;border-radius:{{ o.irad }};background:#E3D8C4">
+              </sc-if>
+              <sc-if value="{{ o.noImg }}" hint-placeholder-val="{{ false }}">
+                <div style="width:{{ o.iw }};height:{{ o.ih }};aspect-ratio:{{ o.iar }};flex:{{ o.iflex }};min-height:{{ o.imin }};border-radius:{{ o.irad }};background:repeating-linear-gradient(135deg,#E6DBC7 0 8px,#EDE3D1 8px 16px);display:flex;align-items:center;justify-content:center;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#4F5F6E">{{ o.ph }}</div>
+              </sc-if>
+              <div style="flex:{{ o.nflex }};min-width:0;display:flex;flex-direction:column;gap:2px;padding:{{ o.npad }}">
+                <span style="font-family:'Bebas Neue',sans-serif;font-size:{{ o.nameSize }};line-height:1;letter-spacing:.03em">{{ o.name }}</span>
+                <span style="font-size:13px;color:#4F5F6E;line-height:1.3">{{ o.note }}</span>
+              </div>
+              <span style="position:{{ o.checkPos }};flex:none;top:{{ checkTop }};right:{{ checkTop }};width:{{ o.checkSize }};height:{{ o.checkSize }};border-radius:50%;background:{{ o.checkBg }};border:2px solid {{ o.checkBorder }};color:#F2EADB;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700">{{ o.check }}</span>
+            </button>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ isProtein }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 16px">
+              <span style="font-size:14px;font-weight:600;letter-spacing:.16em;text-transform:uppercase">Elige tu tamaño</span>
+              <span style="font-size:13px;font-style:italic;color:#4F5F6E">* Proteínas sujetas a cambio y/o hasta agotar existencias</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.6vw,18px)">
+              <sc-for list="{{ sizes }}" as="z" hint-placeholder-count="2">
+                <button onClick="{{ z.onClick }}" style="display:flex;flex-direction:{{ sizeDir }};justify-content:{{ sizeJust }};align-items:center;gap:2px 12px;padding:{{ sizePad }};border-radius:16px;border:2.5px solid {{ z.border }};background:{{ z.bg }}">
+                  <span style="font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1;letter-spacing:.04em">{{ z.name }}</span>
+                  <span style="font-weight:700;font-size:17px;margin-top:4px">{{ z.priceLabel }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="position:{{ barPos }};bottom:0;z-index:20;margin:8px -16px 0;padding:{{ barPad }};background:rgba(242,234,219,.96);border-top:1px solid rgba(16,48,77,.14);display:flex;align-items:center;justify-content:space-between;gap:12px">
+          <button onClick="{{ back }}" style="min-height:52px;display:flex;align-items:center;gap:10px;background:none;border:0;padding:8px 8px 6px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em">← Atrás</button>
+          <button onClick="{{ next }}" style="min-height:52px;display:flex;align-items:center;gap:14px;padding:12px 26px 10px;border:0;border-radius:999px;background:{{ nextBg }};color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em">{{ nextLabel }} →</button>
+        </div>
+      </section>
+
+      <sc-if value="{{ showAside }}" hint-placeholder-val="{{ true }}">
+        <aside style="flex:0 0 300px;max-height:100%;overflow:auto;background:#10304D;color:#F2EADB;border-radius:22px;padding:26px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline">
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:.04em">Tu bowl</span>
+          </div>
+          <div style="display:flex;flex-direction:column">
+            <sc-for list="{{ summaryRows }}" as="r" hint-placeholder-count="7">
+              <button onClick="{{ r.onClick }}" style="display:flex;flex-direction:column;gap:2px;text-align:left;padding:10px 12px;margin:0 -12px;border:0;border-radius:10px;background:{{ r.bg }};color:#F2EADB">
+                <span style="font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#AFC0CE">{{ r.label }}</span>
+                <span style="font-size:15px;font-weight:500;line-height:1.35">{{ r.value }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </aside>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ showSummary }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px;height:{{ buildH }};margin:0 auto;padding:{{ introPad }} clamp(16px,4vw,40px);display:flex;flex-direction:column;justify-content:safe center;gap:{{ stepGap }}">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:{{ stepH1 }};line-height:.88">Así queda tu bowl</h1>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));gap:clamp(20px,3vw,40px);align-items:start">
+        <div style="display:flex;flex-direction:column;border-top:2px solid #10304D">
+          <sc-for list="{{ summaryRows }}" as="r" hint-placeholder-count="7">
+            <button onClick="{{ r.edit }}" style="display:flex;justify-content:space-between;align-items:center;gap:16px;padding:{{ rowPad }};border:0;border-bottom:1px solid rgba(16,48,77,.12);background:none;text-align:left">
+              <span style="display:flex;flex-direction:column;gap:2px">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#2F5E82">{{ r.label }}</span>
+                <span style="font-size:17px;font-weight:500">{{ r.value }}</span>
+              </span>
+              <span style="font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px">Editar</span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:.04em">Extras</span>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+            <sc-for list="{{ extras }}" as="e" hint-placeholder-count="4">
+              <button onClick="{{ e.onClick }}" style="display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:60px;padding:12px 14px;border-radius:14px;border:2.5px solid {{ e.border }};background:{{ e.bg }};text-align:left">
+                <span style="display:flex;flex-direction:column">
+                  <span style="font-family:'Bebas Neue',sans-serif;font-size:21px;line-height:1">{{ e.name }}</span>
+                </span>
+                <span style="font-weight:700">{{ e.priceLabel }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            <button onClick="{{ goDrinks }}" style="flex:1 1 100%;min-height:58px;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap;padding:14px 26px 12px;border:2px dashed #10304D;border-radius:999px;background:none;font-family:'Bebas Neue',sans-serif;font-size:23px;letter-spacing:.08em" style-hover="background:#FBF7EF">+ Agregar bebida</button>
+            <button onClick="{{ confirm }}" style="flex:1 1 200px;min-height:58px;white-space:nowrap;padding:14px 22px 12px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:.08em" style-hover="background:#1C4466">Generar mi código →</button>
+            <button onClick="{{ back }}" style="flex:0 1 auto;min-height:58px;white-space:nowrap;padding:14px 22px 12px;border:2px solid #10304D;border-radius:999px;background:none;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em">← Atrás</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ showDrinks }}" hint-placeholder-val="{{ false }}">
+    <section style="max-width:1200px;height:{{ buildH }};margin:0 auto;padding:{{ stepPad }};display:flex;flex-direction:column;gap:{{ stepGap }}">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:{{ stepH1 }};line-height:.88">Agrega una bebida</h1>
+        <sc-if value="{{ mobileDrinkCount }}" hint-placeholder-val="{{ false }}">
+          <span style="font-size:15px;font-weight:600;color:#2F5E82">{{ drinkCount }}</span>
+        </sc-if>
+        <div style="display:flex;gap:8px;overflow-x:auto;scrollbar-width:none">
+          <sc-for list="{{ drinkTabs }}" as="t" hint-placeholder-count="3">
+            <button onClick="{{ t.onClick }}" style="flex:none;min-height:44px;padding:10px 18px 8px;border-radius:999px;border:2px solid #10304D;background:{{ t.bg }};color:{{ t.color }};font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;white-space:nowrap">{{ t.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:{{ gridFlex }};min-height:0;overflow-y:{{ listOverflow }};display:grid;grid-template-columns:{{ drinkCols }};align-content:start;column-gap:48px;border-top:2px solid #10304D">
+        <sc-for list="{{ drinkList }}" as="d" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:14px;align-items:center;padding:{{ drinkPad }} 0;border-bottom:1px solid rgba(16,48,77,.14)">
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px;line-height:1;letter-spacing:.02em">{{ d.name }}</span>
+              <span style="font-size:13px;color:#4F5F6E">{{ d.meta }}</span>
+            </span>
+            <div style="grid-column:2 / 4;display:flex;flex-direction:column;gap:6px">
+              <sc-for list="{{ d.opts }}" as="o" hint-placeholder-count="1">
+                <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px">
+                  <span style="font-size:14px;font-weight:600;color:#33475A;white-space:nowrap">{{ o.label }}</span>
+                  <span style="min-width:44px;text-align:right;font-family:'Bebas Neue',sans-serif;font-size:24px">{{ o.priceLabel }}</span>
+                  <div style="display:flex;align-items:center;gap:4px">
+                    <button onClick="{{ o.dec }}" aria-label="Quitar" style="width:44px;height:44px;border-radius:50%;border:2px solid {{ o.decBorder }};background:none;color:{{ o.decColor }};font-size:22px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center">−</button>
+                    <span style="width:28px;text-align:center;font-family:'Bebas Neue',sans-serif;font-size:26px">{{ o.qty }}</span>
+                    <button onClick="{{ o.inc }}" aria-label="Agregar" style="width:44px;height:44px;border-radius:50%;border:0;background:#10304D;color:#F2EADB;font-size:22px;font-weight:600;line-height:1;display:flex;align-items:center;justify-content:center">+</button>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:{{ barPos }};bottom:0;z-index:20;margin:0 -16px;padding:{{ barPad }};background:rgba(242,234,219,.96);border-top:1px solid rgba(16,48,77,.14);display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <button onClick="{{ back }}" style="min-height:52px;display:flex;align-items:center;gap:10px;white-space:nowrap;background:none;border:0;padding:8px 8px 6px;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em">← Atrás</button>
+        <sc-if value="{{ desktop }}" hint-placeholder-val="{{ true }}">
+          <span style="font-size:15px;font-weight:600;color:#2F5E82;white-space:nowrap">{{ drinkCount }}</span>
+        </sc-if>
+        <button onClick="{{ confirm }}" style="min-height:52px;display:flex;align-items:center;gap:14px;white-space:nowrap;padding:12px 26px 10px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em" style-hover="background:#1C4466">Generar código →</button>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ showDone }}" hint-placeholder-val="{{ false }}">
+    <section style="position:relative;min-height:calc(100dvh - 69px);height:{{ buildH }};display:flex;align-items:center;justify-content:center;overflow:hidden;background:#10304D;color:#F6EFE2">
+      <img src="https://images.unsplash.com/photo-1473116763249-2faaef81ccda?w=2000&auto=format&fit=crop&q=70" alt="Playa al atardecer" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">
+      <div style="position:absolute;inset:0;background:rgba(10,30,48,.82)"></div>
+      <div style="position:relative;width:100%;max-width:1080px;padding:clamp(24px,4vh,48px) clamp(16px,4vw,40px);display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:clamp(24px,4vw,64px);align-items:center">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:clamp(10px,2vh,18px);text-align:center">
+          <span style="font-family:'Kaushan Script',cursive;font-size:clamp(26px,3.4vw,38px);line-height:1.15;color:#F2B56B">Gracias por ser parte de la Baja Vibe</span>
+          <div style="background:#FFFFFF;border-radius:20px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.35)">
+            <sc-if value="{{ qrReady }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ qrSrc }}" alt="Código QR de tu pedido" style="width:{{ qrSize }};height:{{ qrSize }};image-rendering:pixelated">
+            </sc-if>
+            <sc-if value="{{ qrLoading }}" hint-placeholder-val="{{ true }}">
+              <div style="width:{{ qrSize }};height:{{ qrSize }};background:#EEE9DF;border-radius:8px"></div>
+            </sc-if>
+            <span style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:.1em;color:#10304D;line-height:1">{{ order }}</span>
+          </div>
+          <span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,3vw,34px);letter-spacing:.04em;line-height:1">Muestra este código a tu mesero</span>
+          <span style="font-size:15px;color:#D6DEE5;max-width:32ch">Sube el brillo de tu pantalla para que lo escanee más rápido.</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="background:#F2EADB;color:#10304D;border-radius:18px;padding:clamp(16px,2.4vh,24px) clamp(18px,2vw,26px);display:flex;flex-direction:column">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:2px solid #10304D">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:.04em">Tu pedido</span>
+              <span style="font-size:14px;font-weight:600;color:#2F5E82">{{ orderTime }}</span>
+            </div>
+            <sc-for list="{{ orderRows }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;padding:clamp(5px,.9vh,9px) 0;border-bottom:1px solid rgba(16,48,77,.12)">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#2F5E82;padding-top:2px">{{ r.label }}</span>
+                <span style="font-size:15px;font-weight:500;line-height:1.35">{{ r.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px">
+            <button onClick="{{ reset }}" style="flex:1 1 160px;min-height:54px;padding:12px 22px 10px;border:0;border-radius:999px;background:#F2EADB;color:#10304D;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;white-space:nowrap">Armar otro</button>
+            <button onClick="{{ goMenuAll }}" style="flex:1 1 160px;min-height:54px;padding:12px 22px 10px;border:2px solid #F2EADB;border-radius:999px;background:none;color:#F6EFE2;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em;white-space:nowrap">Ver menú</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </sc-if>
+</main>
+</sc-if>
+
+<sc-if value="{{ isMenu }}" hint-placeholder-val="{{ false }}">
+<main data-screen-label="Menú">
+  <section style="position:relative;overflow:hidden;background:#10304D;color:#F6EFE2">
+    <img src="https://images.unsplash.com/photo-1514933651103-005eec06c04b?w=2000&auto=format&fit=crop&q=70" alt="Barra de cervezas" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.35">
+    <div style="position:absolute;inset:0;background:linear-gradient(90deg,rgba(16,48,77,.95),rgba(16,48,77,.6))"></div>
+    <div style="position:relative;max-width:1200px;margin:0 auto;padding:clamp(40px,7vw,88px) clamp(16px,4vw,40px);display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:20px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font-family:'Kaushan Script',cursive;font-size:26px;color:#F2B56B">Baja beer for ocean people</span>
+        <h1 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(72px,11vw,150px);line-height:.85">Menú</h1>
+      </div>
+    </div>
+  </section>
+
+  <div style="position:sticky;top:67px;z-index:30;background:rgba(242,234,219,.96);border-bottom:1px solid rgba(16,48,77,.12)">
+    <div style="max-width:1200px;margin:0 auto;padding:12px clamp(16px,4vw,40px);display:flex;gap:8px;overflow-x:auto;scrollbar-width:none">
+      <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="6">
+        <button onClick="{{ t.onClick }}" style="flex:none;min-height:44px;padding:10px 18px 8px;border-radius:999px;border:2px solid #10304D;background:{{ t.bg }};color:{{ t.color }};font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.06em;white-space:nowrap">{{ t.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="max-width:1200px;margin:0 auto;padding:clamp(28px,5vw,56px) clamp(16px,4vw,40px) clamp(56px,8vw,96px);display:flex;flex-direction:column;gap:clamp(48px,7vw,80px)">
+
+    <sc-if value="{{ showPoke }}" hint-placeholder-val="{{ true }}">
+      <section style="display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;border-bottom:3px solid #10304D;padding-bottom:10px">
+          <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(40px,5vw,60px);line-height:.9">Poke bowls</h2>
+        </div>
+        <div style="display:flex;flex-direction:column;margin-top:-18px">
+          <sc-for list="{{ pokeSizes }}" as="z" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid rgba(16,48,77,.14)">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:30px;line-height:1">{{ z.name }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:34px">{{ z.priceLabel }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <button onClick="{{ goBuild }}" style="align-self:flex-start;min-height:52px;padding:12px 24px 10px;border:0;border-radius:999px;background:#10304D;color:#F2EADB;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.08em" style-hover="background:#1C4466">Arma tu poke →</button>
+      </section>
+    </sc-if>
+
+    <sc-if value="{{ showBeer }}" hint-placeholder-val="{{ true }}">
+      <section style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;border-bottom:3px solid #10304D;padding-bottom:10px;margin-bottom:6px">
+          <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(40px,5vw,60px);line-height:.9">Black Marlin Brewing Co.</h2>
+        </div>
+        <sc-for list="{{ beers }}" as="b" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:clamp(12px,2vw,24px);align-items:center;padding:16px 0;border-bottom:1px solid rgba(16,48,77,.14)">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:6px;width:52px">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:.14em;color:#2F5E82">Tap {{ b.n }}</span>
+              <span style="width:34px;height:34px;border-radius:50%;background:{{ b.color }};box-shadow:inset 0 -6px 0 rgba(0,0,0,.18),0 0 0 3px #FBF7EF,0 0 0 4px rgba(16,48,77,.2)"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,2.6vw,34px);line-height:1;letter-spacing:.02em">{{ b.name }}</span>
+              <span style="font-size:15px;color:#4F5F6E;line-height:1.35">{{ b.desc }}</span>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:#10304D;color:#F2EADB">{{ b.style }}</span>
+                <span style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1.5px solid #10304D">ABV {{ b.abv }}</span>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+              <span style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:600;color:#4F5F6E">12 oz</span><span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,2.6vw,34px);line-height:1">{{ b.price12 }}</span></span>
+              <span style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px;font-weight:600;color:#4F5F6E">16 oz</span><span style="font-family:'Bebas Neue',sans-serif;font-size:clamp(26px,2.6vw,34px);line-height:1">{{ b.price16 }}</span></span>
+            </div>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:clamp(48px,6vw,72px)">
+      <sc-if value="{{ showAguas }}" hint-placeholder-val="{{ true }}">
+        <section style="display:flex;flex-direction:column">
+          <div style="border-bottom:3px solid #10304D;padding-bottom:10px;margin-bottom:6px">
+            <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(36px,4vw,50px);line-height:.9">Aguas y refrescos</h2>
+          </div>
+          <sc-for list="{{ aguas }}" as="i" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto 64px;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid rgba(16,48,77,.12)">
+              <span style="font-size:18px;font-weight:600">{{ i.name }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px">{{ i.priceLabel }}</span>
+              <span style="font-size:13px;color:#4F5F6E;text-align:right">{{ i.size }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+      <sc-if value="{{ showNac }}" hint-placeholder-val="{{ true }}">
+        <section style="display:flex;flex-direction:column">
+          <div style="border-bottom:3px solid #10304D;padding-bottom:10px;margin-bottom:6px">
+            <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(36px,4vw,50px);line-height:.9">Cerveza nacional</h2>
+          </div>
+          <sc-for list="{{ nac }}" as="i" hint-placeholder-count="3">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto 64px;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid rgba(16,48,77,.12)">
+              <span style="font-size:18px;font-weight:600">{{ i.name }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px">{{ i.priceLabel }}</span>
+              <span style="font-size:13px;color:#4F5F6E;text-align:right">{{ i.size }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+      <sc-if value="{{ showExtras }}" hint-placeholder-val="{{ true }}">
+        <section style="display:flex;flex-direction:column">
+          <div style="border-bottom:3px solid #10304D;padding-bottom:10px;margin-bottom:6px">
+            <h2 style="margin:0;font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:clamp(36px,4vw,50px);line-height:.9">Extras</h2>
+          </div>
+          <sc-for list="{{ xtra }}" as="i" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) auto 64px;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid rgba(16,48,77,.12)">
+              <span style="font-size:18px;font-weight:600">{{ i.name }}</span>
+              <span style="font-family:'Bebas Neue',sans-serif;font-size:24px">{{ i.priceLabel }}</span>
+              <span style="font-size:13px;color:#4F5F6E;text-align:right">{{ i.size }}</span>
+            </div>
+          </sc-for>
+        </section>
+      </sc-if>
+    </div>
+  </div>
+</main>
+</sc-if>
+
+<sc-if value="{{ showFooter }}" hint-placeholder-val="{{ true }}">
+<footer style="background:#10304D;color:#F2EADB;padding:clamp(48px,7vw,80px) clamp(16px,4vw,40px) 32px">
+  <div style="max-width:1200px;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center">
+    <span style="font-family:'Kaushan Script',cursive;font-size:clamp(56px,8vw,88px);line-height:1.2">Blufin</span>
+    <span style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.3em">Poke Co · Black Marlin Brewing</span>
+    <span style="font-size:15px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#C9D4DD">La Paz, Baja California Sur</span>
+    <div style="display:flex;justify-content:center;gap:14px;margin-top:10px">
+      <a href="https://instagram.com/" target="_blank" aria-label="Instagram" style="width:52px;height:52px;border-radius:50%;border:2px solid #F2EADB;color:#F2EADB;display:flex;align-items:center;justify-content:center" style-hover="background:#F2EADB;color:#10304D">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg>
+      </a>
+      <a href="https://facebook.com/" target="_blank" aria-label="Facebook" style="width:52px;height:52px;border-radius:50%;border:2px solid #F2EADB;color:#F2EADB;display:flex;align-items:center;justify-content:center" style-hover="background:#F2EADB;color:#10304D">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.5-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4V10.5H7.8v3h2.6V21h3.1z"></path></svg>
+      </a>
+      <a href="https://tiktok.com/" target="_blank" aria-label="TikTok" style="width:52px;height:52px;border-radius:50%;border:2px solid #F2EADB;color:#F2EADB;display:flex;align-items:center;justify-content:center" style-hover="background:#F2EADB;color:#10304D">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 3c.4 2.2 1.8 3.6 4 3.8v3.1c-1.5.1-2.9-.4-4-1.2v6.1c0 3.4-2.7 5.9-5.9 5.9S4.8 18.2 4.8 15c0-3.5 3.1-6.2 6.7-5.8v3.2c-1.7-.4-3.5.8-3.5 2.6 0 1.5 1.2 2.7 2.7 2.7s2.7-1.2 2.7-2.9V3h3.2z"></path></svg>
+      </a>
+    </div>
+    <a href="mailto:hola@blufinpokeco.com" style="color:#F2EADB;text-decoration:none;font-family:'Bebas Neue',sans-serif;font-size:21px;letter-spacing:.08em">hola@blufinpokeco.com</a>
+    <span style="font-size:13px;color:#AFC0CE;margin-top:18px;padding-top:18px;border-top:1px solid rgba(242,234,219,.18);width:100%">© 2026 Blufin Poke Co. Todos los derechos reservados.</span>
+  </div>
+</footer>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const U=(id,w)=>'https://images.unsplash.com/photo-'+id+'?w='+(w||600)+'&auto=format&fit=crop&q=70';
+const NAVY='#10304D',LINE='rgba(16,48,77,.16)',CARD='#FBF7EF';
+const STEPS=[
+ {key:'base',short:'Base',title:'Elige tu base',sub:'La base de todo un gran bowl.',min:1,max:1,photo:true,opts:[
+  {id:'arroz',name:'Arroz sushi',note:'Sazonado con vinagre de arroz',img:U('1516684732162-798a0062be99',500)},
+  {id:'ensalada',name:'Ensalada',note:'Mix de hojas verdes',img:U('1540420773420-3366772f4999',500)},
+  {id:'totopos',name:'Totopos',note:'Crujientes, hechos aquí',img:U('1582169296194-e4d644c48063',500)},
+  {id:'mitad',name:'50/50',note:'Arroz + ensalada',img:U('1512621776951-a57141f2eefd',500)}]},
+ {key:'protein',short:'Proteína',title:'Elige tu proteína',sub:'La estrella de tu bowl.',min:1,max:2,photo:true,opts:[
+  {id:'pesca',name:'Pesca del día',note:'Lo más fresco de hoy',img:U('1534604973900-c43ab4c2e0ab',500)},
+  {id:'atun',name:'Atún',note:'Aleta amarilla local',img:U('1579584425555-c3ce17fd4351',500)},
+  {id:'atunspicy',name:'Atún Spicy',note:'Marinado picante',img:U('1617196034183-421b4917c92d',500)},
+  {id:'camaron',name:'Camarón',note:'Cocido, del Pacífico',img:U('1565680018434-b513d5e5fd47',500)},
+  {id:'tofu',name:'Tofu',note:'Marinado, opción veggie',img:U('1604908176997-125f25cc6f3d',500)}]},
+ {key:'mix',short:'Mix-ins',title:'Elige tus mix-ins',sub:'',min:0,max:99,opts:[
+  {id:'cilantro',name:'Cilantro'},{id:'cebmorada',name:'Cebolla morada'},{id:'cebblanca',name:'Cebolla blanca'},
+  {id:'cebollin',name:'Cebollín'},{id:'jalapeno',name:'Chile jalapeño'},{id:'ajonjoli',name:'Ajonjolí'}]},
+ {key:'salsa',short:'Salsa',title:'Elige tu salsa',sub:'',min:1,max:99,opts:[
+  {id:'spicymayo',name:'Spicy Mayo'},{id:'shoyu',name:'Shoyu'},{id:'citrusponzu',name:'Citrus Ponzu'},
+  {id:'gingerponzu',name:'Ginger Ponzu'},{id:'teriyaki',name:'Teriyaki'},{id:'jalshoyu',name:'Jalapeño Shoyu'},
+  {id:'gingergarlic',name:'Ginger Garlic Evoo'},{id:'aceiteajonjoli',name:'Aceite de Ajonjolí'},{id:'jalmonster',name:'Jalapeño Monster'}]},
+ {key:'top',short:'Toppings',title:'Elige tus toppings',sub:'',min:0,max:99,opts:[
+  {id:'aguacate',name:'Aguacate'},{id:'enscangrejo',name:'Ensalada de cangrejo'},{id:'edamame',name:'Edamames'},
+  {id:'cherry',name:'Tomate cherry'},{id:'zanahoria',name:'Zanahoria'},{id:'wakame',name:'Alga wakame'},
+  {id:'col',name:'Col morada'},{id:'germinado',name:'Germinado'},{id:'pepino',name:'Pepino'},{id:'fruta',name:'Fruta de temporada'}]},
+ {key:'crunch',short:'Crunchies',title:'Crunchies',sub:'',min:0,max:99,opts:[
+  {id:'cebcrispy',name:'Cebolla crispy'},{id:'hotcheetos',name:'Hot Cheetos'},{id:'macadamia',name:'Nueces de macadamia'},
+  {id:'totopos',name:'Totopos'},{id:'jengibre',name:'Jengibre'}]}
+];
+const SIZES=[{id:'small',tag:'S',name:'Small',note:'2 scoops de proteína',price:165},{id:'regular',tag:'R',name:'Regular',note:'4 scoops de proteína',price:235}];
+const EXTRAS=[{id:'xprot',name:'Proteína',note:'30 g',price:25},{id:'xagu',name:'Aguacate',note:'30 g',price:20},{id:'xwak',name:'Wakame',note:'porción',price:20},{id:'xcan',name:'Cangrejo',note:'30 g',price:20}];
+const BEERS=[
+ {n:'01',name:'American Stout',style:'Stout',abv:'5.2%',price:120,color:'#2A1810',desc:'Café tostado, cacao amargo y cuerpo sedoso.'},
+ {n:'02',name:'Pastry Porter',style:'Porter',abv:'6.2%',price:90,color:'#3B2216',desc:'Vainilla, chocolate y un final dulce de postre.'},
+ {n:'03',name:'Hazy Baby IPA',style:'Hazy IPA',abv:'7.12%',price:90,color:'#E8B84A',desc:'Jugosa y turbia, con notas de mango y durazno.'},
+ {n:'04',name:'Coastal Dream IPA',style:'IPA',abv:'6.9%',price:90,color:'#D99A2B',desc:'Cítrica y resinosa, como brisa de costa.'},
+ {n:'05',name:'Baby IPA',style:'Session IPA',abv:'5.4%',price:90,color:'#E0A93A',desc:'Ligera y aromática, para toda la tarde.'},
+ {n:'06',name:'Angry Belga',style:'Belgian Ale',abv:'4.9%',price:90,color:'#C8822B',desc:'Levadura belga, especiada y frutal.'},
+ {n:'07',name:'American Lager',style:'Lager',abv:'3.4%',price:90,color:'#F0CF6A',desc:'Limpia y refrescante, hecha para el calor.'},
+ {n:'08',name:'West Coast Mexican Lager',style:'Lager',abv:'5.4%',price:90,color:'#EBC150',desc:'Crujiente, con lúpulo estilo costa oeste.'}];
+const AGUAS=[['Agua mineral',40,'355 ml'],['Agua de coco',40,'330 ml'],['Agua natural',15,'500 ml'],['Té gasificado',60,'355 ml'],['Refresco',40,'355 ml'],['Agua de sabor',40,'500 ml'],['Té frío',40,'500 ml'],['Cold brew',75,'355 ml'],['Kombucha',80,'355 ml'],['Soda Orita',65,'355 ml']];
+const NAC=[['Pacífico',35,'210 ml'],['Coronita',35,'210 ml'],['Modelo',50,'355 ml']];
+const XTRA=[['Proteína',25,''],['Aguacate',20,''],['Wakame',20,''],['Toppings',15,''],['Crunchies',10,''],['Cangrejo',20,''],['Salsa',10,''],['Arroz / ensalada / totopos',50,'']];
+const PACK={'Pacífico':'Botella','Coronita':'Botella','Modelo':'Lata','Agua mineral':'Botella','Agua de coco':'Lata','Agua natural':'Botella','Té gasificado':'Lata','Refresco':'Lata','Agua de sabor':'Botella','Té frío':'Botella','Cold brew':'Lata','Kombucha':'Botella','Soda Orita':'Lata'};
+const DRINKS=[...BEERS.map(b=>({id:'b'+b.n,cat:'beer',name:b.name,meta:'De barril · '+b.style+' · '+b.abv,sizes:[{k:'12',label:'12 oz',price:b.price-20},{k:'16',label:'16 oz',price:b.price}]})),...NAC.map((a,i)=>({id:'n'+i,cat:'nac',name:a[0],meta:(PACK[a[0]]||'Botella')+' · '+a[2],sizes:[{k:'u',label:'',price:a[1]}]})),...AGUAS.map((a,i)=>({id:'a'+i,cat:'aguas',name:a[0],meta:(PACK[a[0]]||'Botella')+' · '+a[2],sizes:[{k:'u',label:'',price:a[1]}]}))];
+const DTABS=[['beer','Cerveza artesanal'],['nac','Cerveza nacional'],['aguas','Aguas y refrescos']];
+const TABS=[['all','Todo'],['poke','Poke'],['beer','Black Marlin'],['aguas','Aguas y refrescos'],['nac','Cerveza nacional'],['extras','Extras']];
+const row=a=>({name:a[0],priceLabel:'$'+a[1],size:a[2]});
+const PH={cebmorada:'1618512496248-a07fe83aa8cb',cebblanca:'1580201092675-a0a6a6cafbb1',aguacate:'1519162808019-7de1683fa2ad',cherry:'1546094096-0df4bcaaa337',zanahoria:'1598170845058-32b9d6a5da37',pepino:'1449300079323-02e209d9d3a6',fruta:'1619566636858-adf3ef46400b',cebcrispy:'1639024471283-03518883512d',totopos:'1513456852971-30c0b8199d4d',aceiteajonjoli:'1474979266404-7eaacbcd87c5',gingergarlic:'1540148426945-6cf22a6b2383',citrusponzu:'1590502593747-42a996133562'};
+STEPS.forEach(st=>{if(st.photo)return;st.opts.forEach(o=>{o.img=PH[o.id]?U(PH[o.id],300):null;o.ph='foto';});});
+const empty=()=>({base:[],protein:[],mix:[],salsa:[],top:[],crunch:[]});
+
+class Component extends DCLogic {
+  state={drinks:{},drinkTab:'beer',view:'home',step:0,sel:empty(),size:null,extras:[],tab:'all',menuOpen:false,w:typeof window!=='undefined'?window.innerWidth:1200,order:''};
+  componentDidMount(){this.onR=()=>this.setState({w:window.innerWidth});window.addEventListener('resize',this.onR);
+    if(!window.qrcode){this.qrPoll=setInterval(()=>{if(window.qrcode){clearInterval(this.qrPoll);this.forceUpdate();}},200);}}
+  buildOrder(s,code){
+    const rows=[];const add=(l,v)=>{if(v)rows.push([l,v]);};
+    STEPS.forEach(x=>{const ids=s.sel[x.key];add(x.short,ids.length?this.names(x,ids):'');if(x.key==='protein'){const z=SIZES.find(q=>q.id===s.size);add('Tamaño',z?z.name:'');}});
+    add('Extras',s.extras.map(id=>EXTRAS.find(e=>e.id===id).name).join(', '));
+    const d=[];DRINKS.forEach(dr=>dr.sizes.forEach(z=>{const q=s.drinks[dr.id+'_'+z.k];if(q>0)d.push(q+'× '+dr.name+(z.label?' '+z.label:''));}));
+    add('Bebidas',d.join(', '));
+    const now=new Date(),t=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    const data={c:code,t,r:rows};
+    const b64=btoa(unescape(encodeURIComponent(JSON.stringify(data)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+    return {data,url:new URL('Orden Blufin.dc.html',location.href).href+'#'+b64};
+  }
+  qrFor(url){
+    if(!window.qrcode||!url)return '';
+    if(this._qrUrl===url)return this._qrSrc;
+    const q=window.qrcode(0,'L');q.addData(url);q.make();
+    this._qrUrl=url;this._qrSrc='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(q.createSvgTag({cellSize:4,margin:2,scalable:true}));
+    return this._qrSrc;
+  }
+  animateStep(pv,pstep){
+    const s=this.state;
+    if(s.view!=='build'||(pv===s.view&&pstep===s.step))return;
+    if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+    const main=document.querySelector('main[data-screen-label="Arma tu poke"]');if(!main)return;
+    const sec=main.querySelector('section');if(!sec)return;
+    const dir=(pv!=='build'||s.step>pstep)?1:-1,E='cubic-bezier(.2,.8,.2,1)';
+    const A=(el,kf,o)=>el&&el.animate&&el.animate(kf,Object.assign({duration:420,easing:E,fill:'backwards'},o));
+    if(s.step>=1&&s.step<=6){
+      const k=[...sec.children];
+      A(k[1],[{opacity:0,transform:'translateX('+(dir*56)+'px)'},{opacity:1,transform:'none'}],{duration:460});
+      const grid=k[2];if(grid)[...grid.children].forEach((c,i)=>A(c,[{opacity:0,transform:'translateY(18px) scale(.96)'},{opacity:1,transform:'none'}],{delay:90+i*45,duration:380}));
+      if(k.length>4)A(k[3],[{opacity:0,transform:'translateY(14px)'},{opacity:1,transform:'none'}],{delay:220});
+    }else if(s.step===8){
+      const k=[...sec.children];
+      A(k[0],[{transform:'scale(1.12)'},{transform:'scale(1)'}],{duration:1400});
+      A(k[2],[{opacity:0,transform:'translateY(30px)'},{opacity:1,transform:'none'}],{delay:150,duration:600});
+    }else{
+      [...sec.children].forEach((c,i)=>A(c,[{opacity:0,transform:'translateY(24px)'},{opacity:1,transform:'none'}],{delay:i*70,duration:480}));
+    }
+  }
+  componentWillUnmount(){window.removeEventListener('resize',this.onR);clearInterval(this.qrPoll);}
+  toTop(){window.scrollTo(0,0);}
+  go(view,extra){this.setState(Object.assign({view,menuOpen:false},extra||{}),()=>this.toTop());}
+  goAnchor(id){this.setState({view:'home',menuOpen:false},()=>requestAnimationFrame(()=>{const el=document.getElementById(id);if(el)window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-70,behavior:'smooth'});}));}
+  toggle(key,id,max){this.setState(s=>{let a=s.sel[key];if(max===1)a=[id];else if(a.includes(id))a=a.filter(x=>x!==id);else if(a.length<max)a=[...a,id];else a=[...a.slice(1),id];return{sel:Object.assign({},s.sel,{[key]:a})};});}
+  canNext(s){if(s.step<1||s.step>6)return true;const st=STEPS[s.step-1];if(s.sel[st.key].length<st.min)return false;if(st.key==='protein'&&!s.size)return false;return true;}
+  total(s){const z=SIZES.find(x=>x.id===s.size);return (z?z.price:0)+s.extras.reduce((t,id)=>t+EXTRAS.find(e=>e.id===id).price,0);}
+  names(st,ids){return ids.map(id=>st.opts.find(o=>o.id===id).name).join(', ');}
+  setStep(n){this.setState({step:n},()=>this.toTop());}
+  renderVals(){
+    const s=this.state;
+    if(this._pv!==s.view||this._ps!==s.step){const pv=this._pv,ps=this._ps;this._pv=s.view;this._ps=s.step;if(pv!==undefined)requestAnimationFrame(()=>requestAnimationFrame(()=>this.animateStep(pv,ps)));}
+    const mobile=s.w<760,st=STEPS[s.step-1]||null,fit=mobile&&s.step>=1&&s.step<=6;
+    const imgARv=(mobile&&!fit)?'4/3':'auto',imgFlexv=(mobile&&!fit)?'none':'1 1 0',imgHv=(mobile&&!fit)?'auto':'0',imgMinv=fit?'48px':mobile?'0':'56px';
+    const pick=on=>({border:on?NAVY:'transparent',bg:on?'#FFFFFF':CARD});
+    const rowCard=fit&&st&&!st.photo;
+    const opts=st?st.opts.map(o=>{const on=s.sel[st.key].includes(o.id);return Object.assign({},o,pick(on),{hasImg:!!o.img,noImg:!o.img,
+      iw:rowCard?'52px':'100%',ih:rowCard?'52px':imgHv,iar:rowCard?'1/1':imgARv,iflex:rowCard?'none':imgFlexv,imin:rowCard?'52px':imgMinv,irad:rowCard?'50%':'12px',nflex:rowCard?'1 1 auto':'none',npad:rowCard?'0':'4px 6px 0',note:(st.key==='base'||st.key==='protein')?'':(o.note||''),pad:rowCard?'8px 10px 8px 8px':fit?'6px 6px 10px':'8px 8px 14px',dir:rowCard?'row':'column',alignItems:rowCard?'center':'stretch',justify:'flex-start',textAlign:rowCard?'left':'center',minH:rowCard?'68px':'0',checkPos:rowCard?'static':'absolute',checkSize:rowCard?'24px':'28px',nameSize:fit?'20px':'clamp(22px,2vw,26px)',checkBg:on?NAVY:'rgba(255,255,255,.85)',checkBorder:on?NAVY:'rgba(16,48,77,.35)',check:on?'✓':'',onClick:()=>this.toggle(st.key,o.id,st.max)});}):[];
+    const n=st?st.opts.length:4;
+    const size=SIZES.find(x=>x.id===s.size);
+    const summaryRows=[];
+    STEPS.forEach((x,i)=>{const ids=s.sel[x.key];summaryRows.push({label:x.short,value:ids.length?this.names(x,ids):'—',bg:s.step===i+1?'rgba(242,234,219,.1)':'transparent',onClick:()=>{if(i+1<s.step)this.setStep(i+1);},edit:()=>this.setStep(i+1)});
+      if(x.key==='protein')summaryRows.push({label:'Tamaño',value:size?size.name:'—',bg:'transparent',onClick:()=>{if(2<s.step)this.setStep(2);},edit:()=>this.setStep(2)});});
+    const dsel=[];DRINKS.forEach(d=>d.sizes.forEach(z=>{const q=s.drinks[d.id+'_'+z.k];if(q>0)dsel.push(q+'× '+d.name+(z.label?' '+z.label:''));}));
+    if(dsel.length)summaryRows.push({label:'Bebidas',value:dsel.join(', '),bg:'transparent',onClick:()=>{},edit:()=>this.setStep(9)});
+    if(s.extras.length)summaryRows.push({label:'Extras',value:s.extras.map(id=>EXTRAS.find(e=>e.id===id).name).join(', '),bg:'transparent',onClick:()=>{},edit:()=>{}});
+    const can=this.canNext(s),t=this.total(s);
+    const has=k=>s.tab==='all'||s.tab===k;
+    return {
+      mobile,desktop:!mobile,showAside:s.w>=1080,checkTop:'14px',menuOpen:mobile&&s.menuOpen,
+      isHome:s.view==='home',isBuild:s.view==='build',isMenu:s.view==='menu',
+      showFooter:s.view!=='build'||(mobile&&s.step>=7),introMob:mobile&&s.step===0,introDesk:!mobile&&s.step===0,
+      buildH:mobile?'auto':'max(calc(100dvh - 69px), 600px)',buildOverflow:mobile?'visible':'clip',fill:mobile?(fit?'100%':'auto'):'100%',stepBoxH:mobile?(fit?'max(calc(100dvh - 69px), 560px)':'auto'):'max(calc(100dvh - 69px), 600px)',gridAlign:(fit&&st&&!st.photo)?'start':'stretch',
+      introPad:mobile?'clamp(32px,6vw,80px)':'clamp(20px,4vh,48px)',introImgMax:mobile?'100%':'min(100%, calc(100vh - 160px))',
+      stepPad:fit?'12px 16px 0':mobile?'20px 16px 0':'clamp(16px,3vh,32px) clamp(16px,4vw,40px) clamp(12px,2vh,20px)',stepGap:fit?'12px':mobile?'22px':'clamp(10px,1.8vh,20px)',
+      stepH1:fit?'clamp(40px,6.2vh,56px)':mobile?'clamp(52px,7vw,96px)':'clamp(44px,min(5vw,8vh),80px)',
+      gridRows:fit?(st&&st.photo?'minmax(0,1fr)':'auto'):mobile?'auto':'minmax(auto,1fr)',gridFlex:(mobile&&!fit)?'none':'1 1 0',imgAR:(mobile&&!fit)?'4/3':'auto',imgFlex:(mobile&&!fit)?'none':'1 1 0',imgH:(mobile&&!fit)?'auto':'0',imgMin:fit?'48px':mobile?'0':'56px',sizeDir:'row',sizeJust:'space-between',barPad:fit?'10px 16px 12px':mobile?'14px 16px 18px':'8px 16px 4px',
+      sizePad:fit?'10px 16px':mobile?'16px 12px':'clamp(8px,1.4vh,16px) 12px',rowPad:mobile?'14px 0':'clamp(6px,1.2vh,14px) 0',
+      toggleMenu:()=>this.setState({menuOpen:!s.menuOpen}),
+      goHome:()=>this.go('home'),goBuild:()=>this.go('build',{step:0}),goMenuAll:()=>this.go('menu',{tab:'all'}),goMenuBeer:()=>this.go('menu',{tab:'beer'}),
+      goNosotros:()=>this.goAnchor('nosotros'),goUbicacion:()=>this.goAnchor('ubicacion'),
+      tiles:[
+        {label:'Extras',kicker:'Para tu bowl',img:U('1623428187969-5da2dcea5ebf',700),onClick:()=>this.go('menu',{tab:'extras'})},
+        {label:'Bebidas',kicker:'Aguas y refrescos',img:U('1436076863939-06870fe779c2',700),onClick:()=>this.go('menu',{tab:'aguas'})},
+        {label:'Cerveza craft',kicker:'Black Marlin',img:U('1535958636474-b021ee887b13',700),onClick:()=>this.go('menu',{tab:'beer'})}],
+      stepList:STEPS.map((x,i)=>({n:i+1,title:x.title})),
+      showIntro:s.step===0,showStep:s.step>=1&&s.step<=6,showSummary:s.step===7,showDone:s.step===8,
+      step:s.step,cur:st||{title:'',sub:''},isPhoto:!!(st&&st.photo),isProtein:!!(st&&st.key==='protein'),
+      segs:STEPS.map((x,i)=>({bg:i<s.step?NAVY:LINE})),
+      opts,gridCols:(()=>{if(mobile)return 'repeat(2,minmax(0,1fr))';const mw=s.w>=1080?Math.min(s.w,1320)-440:s.w-80;const c=n>9?(mw>=900?5:mw>=620?4:2):n%4===0?(mw>=820?4:2):(mw>=620?3:2);return 'repeat('+c+',minmax(0,1fr))';})(),
+      countLabel:st?(st.max===1?'Elige 1':st.max>=st.opts.length?(st.min?'Mínimo '+st.min+', los que quieras':'Elige los que quieras')+' · '+s.sel[st.key].length+(s.sel[st.key].length===1?' seleccionado':' seleccionados'):(st.min?'Elige '+st.min+' a '+st.max:'Hasta '+st.max)+' · '+s.sel[st.key].length+'/'+st.max):'',
+      secondProt:!!(st&&st.key==='protein'&&s.sel.protein.length>1),manySalsa:!!(st&&st.key==='salsa'&&s.sel.salsa.length>2),
+      sizes:SIZES.map(z=>Object.assign({},z,pick(s.size===z.id),{priceLabel:'$'+z.price,onClick:()=>this.setState({size:z.id})})),
+      summaryRows,totalLabel:'$'+t,
+      barPos:mobile?'sticky':'static',
+      nextBg:can?NAVY:'#8C9BA9',nextLabel:s.step===6?'Ver mi bowl':'Siguiente',
+      startBuild:()=>this.setStep(1),
+      next:()=>{if(this.canNext(this.state))this.setStep(s.step+1);},
+      back:()=>{if(s.step===9)this.setStep(7);else if(s.step>0)this.setStep(s.step-1);else this.go('home');},
+      showDrinks:s.step===9,goDrinks:()=>this.setStep(9),
+      drinkTabs:DTABS.map(([id,label])=>({label,bg:s.drinkTab===id?NAVY:'transparent',color:s.drinkTab===id?'#F2EADB':NAVY,onClick:()=>this.setState({drinkTab:id})})),
+      drinkList:DRINKS.filter(d=>d.cat===s.drinkTab).map(d=>Object.assign({},d,{opts:d.sizes.map(z=>{const key=d.id+'_'+z.k,q=s.drinks[key]||0;const set=v=>this.setState(p=>({drinks:Object.assign({},p.drinks,{[key]:Math.max(0,v)})}));return {label:z.label,priceLabel:'$'+z.price,qty:q,decBorder:q?NAVY:'rgba(16,48,77,.25)',decColor:q?NAVY:'rgba(16,48,77,.35)',dec:()=>set(q-1),inc:()=>set(q+1)};})})),
+      drinkCount:(()=>{const n=Object.values(s.drinks).reduce((a,b)=>a+b,0);return n?n+(n===1?' bebida':' bebidas'):'';})(),
+      mobileDrinkCount:mobile&&Object.values(s.drinks).some(v=>v>0),drinkCols:mobile?'minmax(0,1fr)':'repeat(2,minmax(0,1fr))',listOverflow:mobile?'visible':'auto',drinkPad:mobile?'12px':'clamp(6px,1.2vh,12px)',
+      extras:EXTRAS.map(e=>{const on=s.extras.includes(e.id);return Object.assign({},e,pick(on),{priceLabel:'+$'+e.price,onClick:()=>this.setState({extras:on?s.extras.filter(x=>x!==e.id):[...s.extras,e.id]})});}),
+      confirm:()=>{const code='#BF-'+(1000+Math.floor(Math.random()*9000));const o=this.buildOrder(this.state,code);this.setState({step:8,order:code,orderData:o.data,orderUrl:o.url},()=>this.toTop());},
+      order:s.order,qrSrc:this.qrFor(s.orderUrl),qrReady:!!this.qrFor(s.orderUrl),qrLoading:!this.qrFor(s.orderUrl),
+      qrSize:mobile?'240px':'min(260px, calc(100dvh - 400px))',
+      orderTime:s.orderData?s.orderData.t:'',orderRows:s.orderData?s.orderData.r.map(([label,value])=>({label,value})):[],
+      reset:()=>this.setState({sel:empty(),size:null,extras:[],drinks:{},step:1},()=>this.toTop()),
+      tabs:TABS.map(([id,label])=>({label,bg:s.tab===id?NAVY:'transparent',color:s.tab===id?'#F2EADB':NAVY,onClick:()=>this.setState({tab:id})})),
+      showPoke:has('poke'),showBeer:has('beer'),showAguas:has('aguas'),showNac:has('nac'),showExtras:has('extras'),
+      pokeSizes:SIZES.map(z=>Object.assign({},z,{priceLabel:'$'+z.price})),
+      beers:BEERS.map(b=>Object.assign({},b,{price12:'$'+(b.price-20),price16:'$'+b.price})),
+      aguas:AGUAS.map(row),nac:NAC.map(row),xtra:XTRA.map(row)
+    };
+  }
+}
+</script>
+</body>
+</html>
