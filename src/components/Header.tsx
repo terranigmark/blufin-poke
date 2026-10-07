@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import s from "./Header.module.css";
 
 /** Clicking "Arma tu poke" while already in the builder sends it back to the intro. */
@@ -10,6 +10,18 @@ export const BUILD_RESET_EVENT = "blufin:build-reset";
 export function Header() {
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+
+  // The open menu covers the screen: lock page scroll and let Escape close it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.documentElement.classList.add("nav-open");
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.documentElement.classList.remove("nav-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   const goBuild = () => {
     close();
     window.dispatchEvent(new Event(BUILD_RESET_EVENT));
@@ -44,7 +56,7 @@ export function Header() {
           </Link>
         </nav>
 
-        <button className={s.burger} aria-label="Menú" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button className={s.burger} aria-label={open ? "Cerrar menú" : "Menú"} aria-expanded={open} onClick={() => setOpen(!open)}>
           <span />
           <span />
           <span />
