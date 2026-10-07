@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
+import { Reveal } from "@/components/Reveal";
 import { BUSINESS, PHOTOS, STEPS } from "@/data/menu";
 import s from "./home.module.css";
 
@@ -14,7 +15,7 @@ export default function Home() {
     <>
       <main>
         <section className={s.hero}>
-          <img src={PHOTOS.heroSunset} alt="Atardecer sobre el mar de Cortés" className={s.heroImg} />
+          <img src={PHOTOS.heroSunset} alt="Atardecer sobre el mar de Cortés" className={s.heroImg} fetchPriority="high" />
           <div className={s.heroShade} />
           <div className={s.heroInner}>
             <span className={s.heroScript}>Good food, cold beer, salty people</span>
@@ -40,10 +41,10 @@ export default function Home() {
 
         <section className={s.build}>
           <div className={s.buildGrid}>
-            <div className={s.buildPhoto}>
-              <img src={PHOTOS.bowl(1200)} alt="Poke bowl de salmón" />
+            <div className={s.buildPhoto} data-reveal>
+              <img src={PHOTOS.bowl(1200)} alt="Poke bowl de salmón" loading="lazy" />
             </div>
-            <div className={s.buildCopy}>
+            <div className={s.buildCopy} data-reveal>
               <h2 className={s.buildTitle}>Arma tu poke</h2>
               <p className={s.buildLead}>Seis pasos y tú decides todo. Lo armamos al momento.</p>
               <ol className={s.buildSteps}>
@@ -65,11 +66,11 @@ export default function Home() {
 
         <section className={s.antojo}>
           <div className={s.antojoInner}>
-            <h2 className={s.antojoTitle}>¿Qué se te antoja?</h2>
-            <div className={s.tiles}>
+            <h2 className={s.antojoTitle} data-reveal>¿Qué se te antoja?</h2>
+            <div className={s.tiles} data-reveal>
               {TILES.map((t) => (
                 <Link key={t.label} href={t.href} className={s.tile}>
-                  <img src={t.img} alt={t.label} />
+                  <img src={t.img} alt={t.label} loading="lazy" />
                   <span className={s.tileShade} />
                   <span className={s.tileLabel}>{t.label}</span>
                 </Link>
@@ -80,11 +81,11 @@ export default function Home() {
 
         <section id="nosotros" className={s.esencia}>
           <div className={s.twoCol}>
-            <div className={s.esenciaPhotos}>
-              <img src={PHOTOS.esenciaBowl} alt="Bowl fresco" className={s.esenciaA} />
-              <img src={PHOTOS.esenciaBeer} alt="Cerveza artesanal servida del grifo" className={s.esenciaB} />
+            <div className={s.esenciaPhotos} data-reveal>
+              <img src={PHOTOS.esenciaBowl} alt="Bowl fresco" className={s.esenciaA} loading="lazy" />
+              <img src={PHOTOS.esenciaBeer} alt="Cerveza artesanal servida del grifo" className={s.esenciaB} loading="lazy" />
             </div>
-            <div className={s.esenciaCopy}>
+            <div className={s.esenciaCopy} data-reveal>
               <h2 className={s.sectionTitle}>Nuestra esencia es Baja</h2>
               <p>Pesca local, poke hecho al momento y cerveza de Black Marlin, nuestra cervecería. Así de simple.</p>
               <div>
@@ -98,10 +99,10 @@ export default function Home() {
 
         <section id="ubicacion" className={s.ubicacion}>
           <div className={`${s.twoCol} ${s.stretch}`}>
-            <div className={s.map}>
+            <div className={s.map} data-reveal>
               <iframe title="Mapa Blufin Poke Co" src={BUSINESS.mapsEmbed} loading="lazy" />
             </div>
-            <div className={s.visit}>
+            <div className={s.visit} data-reveal>
               <h2 className={s.sectionTitle}>Ven a vernos</h2>
               <div className={s.fact}>
                 <span className={s.factLabel}>Ubicación</span>
@@ -132,6 +133,7 @@ export default function Home() {
         </section>
       </main>
       <Footer />
+      <Reveal />
     </>
   );
 }
