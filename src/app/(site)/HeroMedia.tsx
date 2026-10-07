@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { PHOTOS } from "@/data/menu";
 import s from "./home.module.css";
 
-// Muted background clip, 25:00–26:00 of the video, looped by seeking back on "ended".
+// Muted background clip, 25:00–26:00 of the video. Looped by seeking back just before
+// END ourselves: letting YouTube reach the end pauses the player and flashes its icon.
 const VIDEO = "hw32XIVdHCU";
 const START = 1500;
 const END = 1560;
@@ -33,33 +34,44 @@ export function HeroMedia() {
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    // YouTube iframe API over postMessage: fade in on "playing" (1), loop on "ended" (0).
+    // YouTube iframe API over postMessage. YouTube's own play/pause icon can't be turned
+    // off, so the video is only shown once it has been playing for a second (past the
+    // icon's flash) and is hidden again, back to the photo, whenever it isn't playing.
+    // A self-hosted <video> is the only way to drop the icon entirely.
     const send = (msg: object) => frame.current?.contentWindow?.postMessage(JSON.stringify(msg), "*");
+    let showTimer = 0;
     const onMessage = (e: MessageEvent) => {
       if (e.source !== frame.current?.contentWindow || typeof e.data !== "string") return;
-      let state: unknown;
+      let info: { playerState?: number; currentTime?: number } | undefined;
       try {
-        state = JSON.parse(e.data)?.info?.playerState;
+        info = JSON.parse(e.data)?.info;
       } catch {
         return;
       }
-      if (state === 1) setPlaying(true);
-      if (state === 0) {
+      if (!info) return;
+      if (info.playerState === 1) {
+        clearTimeout(showTimer);
+        showTimer = window.setTimeout(() => setPlaying(true), 1000);
+      } else if (info.playerState !== undefined) {
+        clearTimeout(showTimer);
+        setPlaying(false);
+      }
+      if (info.currentTime !== undefined && info.currentTime >= END - 0.4) {
         send({ event: "command", func: "seekTo", args: [START, true] });
-        send({ event: "command", func: "playVideo", args: [] });
       }
     };
     window.addEventListener("message", onMessage);
 
     return () => {
       cancelAnimationFrame(raf);
+      clearTimeout(showTimer);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("message", onMessage);
     };
   }, []);
 
   const src =
-    `https://www.youtube-nocookie.com/embed/${VIDEO}?start=${START}&end=${END}` +
+    `https://www.youtube-nocookie.com/embed/${VIDEO}?start=${START}` +
     "&autoplay=1&mute=1&controls=0&playsinline=1&rel=0&disablekb=1&iv_load_policy=3&enablejsapi=1";
 
   return (
