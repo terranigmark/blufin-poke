@@ -25,6 +25,13 @@
   }
 }
 
+/* Set by the header while the full-screen mobile menu is open. */
+@media (max-width: 759px) {
+  html.nav-open {
+    overflow: hidden;
+  }
+}
+
 html,
 body {
   margin: 0;

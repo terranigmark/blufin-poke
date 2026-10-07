@@ -121,26 +121,69 @@
   height: 2px;
   background: var(--navy);
   border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.2s ease;
+}
+/* Bars morph into an X while the menu is open. */
+.burger[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(8px) rotate(45deg);
+}
+.burger[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+.burger[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-8px) rotate(-45deg);
 }
 
+/* Full-screen overlay under the sticky bar. Absolute (not fixed) because the
+   header's backdrop-filter makes it the containing block for fixed children. */
 .mobileNav {
   display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  /* Overshoots the viewport by the bar height; bottom padding keeps links reachable. */
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--cream);
   flex-direction: column;
-  padding: 8px 20px 24px;
+  padding: 8px 20px calc(24px + var(--header-h));
   gap: 4px;
   font-family: var(--bebas);
   font-size: 34px;
   letter-spacing: 0.04em;
   border-top: 1px solid rgba(16, 48, 77, 0.12);
+  animation: navIn 0.3s ease-out both;
 }
 .mobileNav a {
   padding: 8px 0;
   text-decoration: none;
   color: var(--navy);
   border-bottom: 1px solid rgba(16, 48, 77, 0.12);
+  animation: navIn 0.35s ease-out both;
 }
+.mobileNav a:nth-child(1) { animation-delay: 0.06s; }
+.mobileNav a:nth-child(2) { animation-delay: 0.12s; }
+.mobileNav a:nth-child(3) { animation-delay: 0.18s; }
+.mobileNav a:nth-child(4) { animation-delay: 0.24s; }
 .mobileNav a:last-child {
   border-bottom: 0;
+}
+@keyframes navIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobileNav,
+  .mobileNav a,
+  .burger span {
+    animation: none;
+    transition: none;
+  }
 }
 
 @media (max-width: 759px) {
