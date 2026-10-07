@@ -30,7 +30,6 @@ export const BUSINESS = {
 // ---------------------------------------------------------------- Photos
 
 export const PHOTOS = {
-  heroSunset: unsplash("1414609245224-afa02bfb3fda", 2000),
   bowl: (w = 1200) => unsplash("1604259597308-5321e8e4789c", w),
   esenciaBowl: unsplash("1546069901-ba9599a7e63c", 900),
   esenciaBeer: unsplash("1535958636474-b021ee887b13", 700),
