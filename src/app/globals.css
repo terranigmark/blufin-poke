@@ -65,6 +65,24 @@ h2 {
   font-weight: 400;
 }
 
+/* Smooth in-page jumps (e.g. /#nosotros) and a soft fade-in for each new page
+   (app/(site)/template.tsx). data-scroll-behavior on <html> tells Next to skip
+   the smooth scroll on route changes, so new pages still start at the top. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+  .page-enter {
+    animation: pageEnter 0.45s ease-out both;
+  }
+}
+/* Opacity only: a transform here would shift hash-scroll targets under the header. */
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+  }
+}
+
 /* Scroll reveal, driven by components/Reveal.tsx. */
 @media (prefers-reduced-motion: no-preference) {
   [data-reveal] {
