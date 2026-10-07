@@ -177,11 +177,24 @@
   }
 }
 
+.mobileNav.closing {
+  animation: navOut 0.25s ease-in both;
+}
+@keyframes navOut {
+  to {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+/* Near-zero rather than none so animationend still fires and the menu unmounts. */
 @media (prefers-reduced-motion: reduce) {
   .mobileNav,
-  .mobileNav a,
+  .mobileNav a {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+  }
   .burger span {
-    animation: none;
     transition: none;
   }
 }

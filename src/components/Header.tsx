@@ -9,12 +9,20 @@ export const BUILD_RESET_EVENT = "blufin:build-reset";
 
 export function Header() {
   const [open, setOpen] = useState(false);
-  const close = () => setOpen(false);
+  // While closing, the menu stays mounted until its exit animation ends.
+  const [closing, setClosing] = useState(false);
+  const shown = open && !closing;
+  const close = () => open && setClosing(true);
+  const toggle = () => {
+    if (shown) return close();
+    setOpen(true);
+    setClosing(false);
+  };
 
   // The open menu covers the screen: lock page scroll and let Escape close it.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setClosing(true);
     document.documentElement.classList.add("nav-open");
     window.addEventListener("keydown", onKey);
     return () => {
@@ -56,7 +64,7 @@ export function Header() {
           </Link>
         </nav>
 
-        <button className={s.burger} aria-label={open ? "Cerrar menú" : "Menú"} aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button className={s.burger} aria-label={shown ? "Cerrar menú" : "Menú"} aria-expanded={shown} onClick={toggle}>
           <span />
           <span />
           <span />
@@ -64,7 +72,15 @@ export function Header() {
       </div>
 
       {open && (
-        <nav className={s.mobileNav}>
+        <nav
+          className={`${s.mobileNav} ${closing ? s.closing : ""}`}
+          onAnimationEnd={(e) => {
+            if (closing && e.target === e.currentTarget) {
+              setOpen(false);
+              setClosing(false);
+            }
+          }}
+        >
           <Link href="/arma-tu-poke" onClick={goBuild}>
             Arma tu poke
           </Link>
