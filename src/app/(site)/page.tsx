@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { BUSINESS, PHOTOS, STEPS } from "@/data/menu";
+import { HeroMedia } from "./HeroMedia";
 import s from "./home.module.css";
 
 const TILES = [
@@ -15,7 +16,7 @@ export default function Home() {
     <>
       <main>
         <section className={s.hero}>
-          <img src={PHOTOS.heroSunset} alt="Atardecer sobre el mar de Cortés" className={s.heroImg} fetchPriority="high" />
+          <HeroMedia />
           <div className={s.heroShade} />
           <div className={s.heroInner}>
             <span className={s.heroScript}>Good food, cold beer, salty people</span>

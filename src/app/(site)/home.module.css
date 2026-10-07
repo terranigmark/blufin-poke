@@ -7,6 +7,28 @@
   overflow: hidden;
   background: var(--navy);
 }
+.heroMedia {
+  position: absolute;
+  inset: 0;
+  container-type: size;
+  will-change: transform;
+}
+/* 16:9 iframe sized to cover the hero, scaled a bit so YouTube's edge chrome is cropped off */
+.heroVideo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, 177.78cqh);
+  height: max(100cqh, 56.25cqw);
+  border: 0;
+  transform: translate(-50%, -50%) scale(1.15);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.heroVideoOn {
+  opacity: 1;
+}
 .heroImg {
   position: absolute;
   inset: 0;
