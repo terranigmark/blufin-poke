@@ -23,8 +23,10 @@
   text-decoration: none;
   color: var(--navy);
 }
-.logo:hover {
-  color: var(--navy);
+@media (hover: hover) and (pointer: fine) {
+  .logo:hover {
+    color: var(--navy);
+  }
 }
 .marlin {
   width: 46px;
@@ -89,8 +91,10 @@
   text-decoration: none;
   color: var(--navy);
 }
-.desktopNav a:hover {
-  color: var(--blue);
+@media (hover: hover) and (pointer: fine) {
+  .desktopNav a:hover {
+    color: var(--blue);
+  }
 }
 .desktopNav a.cta {
   background: var(--navy);
@@ -99,9 +103,11 @@
   padding: 10px 22px 8px;
   letter-spacing: 0.08em;
 }
-.desktopNav a.cta:hover {
-  background: var(--navy-2);
-  color: var(--cream);
+@media (hover: hover) and (pointer: fine) {
+  .desktopNav a.cta:hover {
+    background: var(--navy-2);
+    color: var(--cream);
+  }
 }
 
 .burger {
@@ -121,7 +127,7 @@
   height: 2px;
   background: var(--navy);
   border-radius: 2px;
-  transition: transform 0.3s ease, opacity 0.2s ease;
+  transition: transform 0.3s var(--ease-in-out), opacity 0.2s ease;
 }
 /* Bars morph into an X while the menu is open. */
 .burger[aria-expanded="true"] span:nth-child(1) {
@@ -178,7 +184,7 @@
 }
 
 .mobileNav.closing {
-  animation: navOut 0.25s ease-in both;
+  animation: navOut 0.18s var(--ease-out) both;
 }
 @keyframes navOut {
   to {
