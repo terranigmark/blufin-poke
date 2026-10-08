@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import s from "./home.module.css";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const VIDEO = `${BASE}/video/hero.mp4`;
-const POSTER = `${BASE}/video/hero-poster.jpg`;
+const VIDEO = `${BASE}/video/hero-waves.mp4`;
+const POSTER = `${BASE}/video/hero-waves-poster.jpg`;
 
 // Muted, looping background clip with a parallax drift. The poster (the clip's first
 // frame) shows while it loads, and is all that shows under prefers-reduced-motion.
