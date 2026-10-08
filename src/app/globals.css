@@ -16,6 +16,11 @@
   --barlow: var(--font-barlow), "Barlow", system-ui, sans-serif;
   --script: var(--font-kaushan), "Kaushan Script", cursive;
 
+  /* Shared motion curves: strong ease-out for entrances and press feedback,
+     ease-in-out for things that move or morph on screen. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
   /* Sticky header height (mobile has a taller 48px hamburger target). */
   --header-h: 67px;
 }
@@ -29,6 +34,28 @@
 @media (max-width: 759px) {
   html.nav-open {
     overflow: hidden;
+  }
+}
+
+/* Phones: no grey tap flash (buttons have their own :active press instead),
+   no 300ms double-tap wait, and no text selection when a control is long-pressed. */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  touch-action: manipulation;
+}
+button {
+  user-select: none;
+  -webkit-user-select: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button {
+    transition: transform 120ms var(--ease-out);
+  }
+  button:not([data-disabled="true"]):active {
+    transform: scale(0.97);
   }
 }
 
@@ -54,8 +81,10 @@ a {
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
-a:hover {
-  color: var(--blue);
+@media (hover: hover) and (pointer: fine) {
+  a:hover {
+    color: var(--blue);
+  }
 }
 img {
   display: block;
@@ -73,7 +102,7 @@ h2 {
     scroll-behavior: smooth;
   }
   .page-enter {
-    animation: pageEnter 0.45s ease-out both;
+    animation: pageEnter 0.25s var(--ease-out) both;
   }
 }
 /* Opacity only: a transform here would shift hash-scroll targets under the header. */
@@ -86,7 +115,7 @@ h2 {
 /* Scroll reveal, driven by components/Reveal.tsx. */
 @media (prefers-reduced-motion: no-preference) {
   [data-reveal] {
-    transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
   }
   .reveal-hidden {
     opacity: 0;

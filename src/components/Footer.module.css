@@ -45,9 +45,11 @@
   align-items: center;
   justify-content: center;
 }
-.social a:hover {
-  background: var(--cream);
-  color: var(--navy);
+@media (hover: hover) and (pointer: fine) {
+  .social a:hover {
+    background: var(--cream);
+    color: var(--navy);
+  }
 }
 .email {
   color: var(--cream);
@@ -56,8 +58,10 @@
   font-size: 21px;
   letter-spacing: 0.08em;
 }
-.email:hover {
-  color: var(--cream);
+@media (hover: hover) and (pointer: fine) {
+  .email:hover {
+    color: var(--cream);
+  }
 }
 .copy {
   font-size: 13px;

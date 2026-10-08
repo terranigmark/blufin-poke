@@ -111,8 +111,10 @@
   font-size: 24px;
   letter-spacing: 0.08em;
 }
-.startBtn:hover {
-  background: var(--navy-2);
+@media (hover: hover) and (pointer: fine) {
+  .startBtn:hover {
+    background: var(--navy-2);
+  }
 }
 .arrow {
   font-family: var(--barlow);
@@ -267,10 +269,12 @@
   background: var(--card);
   text-align: center;
   box-shadow: 0 1px 2px rgba(16, 48, 77, 0.08);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 120ms var(--ease-out);
 }
-.card:hover {
-  box-shadow: 0 10px 24px rgba(16, 48, 77, 0.14);
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    box-shadow: 0 10px 24px rgba(16, 48, 77, 0.14);
+  }
 }
 .card[aria-pressed="true"] {
   border-color: var(--navy);
@@ -428,8 +432,10 @@
   font-size: 22px;
   letter-spacing: 0.08em;
 }
-.nextBtn:hover {
-  background: var(--navy-2);
+@media (hover: hover) and (pointer: fine) {
+  .nextBtn:hover {
+    background: var(--navy-2);
+  }
 }
 .nextBtn[data-disabled="true"],
 .nextBtn[data-disabled="true"]:hover {
@@ -611,8 +617,10 @@
   background: none;
   font-size: 23px;
 }
-.addDrink:hover {
-  background: var(--card);
+@media (hover: hover) and (pointer: fine) {
+  .addDrink:hover {
+    background: var(--card);
+  }
 }
 .confirmBtn {
   flex: 1 1 200px;
@@ -622,8 +630,10 @@
   color: var(--cream);
   font-size: 24px;
 }
-.confirmBtn:hover {
-  background: var(--navy-2);
+@media (hover: hover) and (pointer: fine) {
+  .confirmBtn:hover {
+    background: var(--navy-2);
+  }
 }
 .outlineBack {
   flex: 0 1 auto;

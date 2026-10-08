@@ -1,7 +1,7 @@
 /* ---------- Hero */
 .hero {
   position: relative;
-  min-height: min(88vh, 860px);
+  min-height: min(88svh, 860px);
   display: flex;
   align-items: flex-end;
   overflow: hidden;
@@ -93,18 +93,22 @@
   background: var(--cream);
   color: var(--navy);
 }
-.heroCtaSolid:hover {
-  background: #fff;
-  color: var(--navy);
+@media (hover: hover) and (pointer: fine) {
+  .heroCtaSolid:hover {
+    background: #fff;
+    color: var(--navy);
+  }
 }
 .heroCtaGhost {
   border: 2px solid var(--cream);
   background: rgba(16, 48, 77, 0.35);
   color: var(--cream-light);
 }
-.heroCtaGhost:hover {
-  background: rgba(16, 48, 77, 0.7);
-  color: var(--cream-light);
+@media (hover: hover) and (pointer: fine) {
+  .heroCtaGhost:hover {
+    background: rgba(16, 48, 77, 0.7);
+    color: var(--cream-light);
+  }
 }
 .arrow {
   font-family: var(--barlow);
@@ -218,9 +222,11 @@
   letter-spacing: 0.06em;
   text-decoration: none;
 }
-.buildCta:hover {
-  background: #fff;
-  color: var(--navy);
+@media (hover: hover) and (pointer: fine) {
+  .buildCta:hover {
+    background: #fff;
+    color: var(--navy);
+  }
 }
 
 /* ---------- ¿Qué se te antoja? */
@@ -256,9 +262,11 @@
   box-shadow: 0 1px 0 rgba(16, 48, 77, 0.2);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.tile:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 14px 30px rgba(16, 48, 77, 0.25);
+@media (hover: hover) and (pointer: fine) {
+  .tile:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px rgba(16, 48, 77, 0.25);
+  }
 }
 .tile img {
   position: absolute;
@@ -361,10 +369,12 @@
   color: var(--cream);
   font-size: 23px;
 }
-.navyPill:hover,
-.navyPillSm:hover {
-  background: var(--navy-2);
-  color: var(--cream);
+@media (hover: hover) and (pointer: fine) {
+  .navyPill:hover,
+  .navyPillSm:hover {
+    background: var(--navy-2);
+    color: var(--cream);
+  }
 }
 .navyPillSm {
   min-height: 52px;
@@ -420,4 +430,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
+}
+
+/* Press feedback on the link-styled buttons (real <button>s get it from globals.css). */
+@media (prefers-reduced-motion: no-preference) {
+  .heroCta,
+  .buildCta,
+  .navyPill,
+  .navyPillSm {
+    transition: transform 120ms var(--ease-out);
+  }
+  .heroCta:active,
+  .buildCta:active,
+  .navyPill:active,
+  .navyPillSm:active {
+    transform: scale(0.97);
+  }
 }

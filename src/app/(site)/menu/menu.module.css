@@ -138,9 +138,11 @@
   letter-spacing: 0.08em;
   text-decoration: none;
 }
-.pokeCta:hover {
-  background: var(--navy-2);
-  color: var(--cream);
+@media (hover: hover) and (pointer: fine) {
+  .pokeCta:hover {
+    background: var(--navy-2);
+    color: var(--cream);
+  }
 }
 
 /* Beers */
@@ -281,4 +283,13 @@
   font-size: 13px;
   color: var(--muted);
   text-align: right;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pokeCta {
+    transition: transform 120ms var(--ease-out);
+  }
+  .pokeCta:active {
+    transform: scale(0.97);
+  }
 }

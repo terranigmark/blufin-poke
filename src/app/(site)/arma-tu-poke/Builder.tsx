@@ -93,17 +93,19 @@ export function Builder() {
     const sec = [...(mainRef.current?.querySelectorAll("[data-screen]") ?? [])].find((el) => el.getClientRects().length);
     if (!sec || !sec.animate || prefersReducedMotion()) return;
     const dir = pv === null || step > pv ? 1 : -1;
-    const E = "cubic-bezier(.2,.8,.2,1)";
+    const E = "cubic-bezier(0.23, 1, 0.32, 1)"; // --ease-out in globals.css
     const A = (el: Element | undefined, kf: Keyframe[], o: KeyframeAnimationOptions = {}) =>
       el?.animate(kf, { duration: 420, easing: E, fill: "backwards", ...o });
     const k = [...sec.children];
     if (step >= 1 && step <= 6) {
       // k: progress · title · grid · [sizes] · bar
-      A(k[1], [{ opacity: 0, transform: `translateX(${dir * 56}px)` }, { opacity: 1, transform: "none" }], { duration: 460 });
+      // The most repeated screen change on the site, so it stays quick: the stagger
+      // caps at 8 cards, so even the 15-card steps are settled in about 0.5s.
+      A(k[1], [{ opacity: 0, transform: `translateX(${dir * 40}px)` }, { opacity: 1, transform: "none" }], { duration: 260 });
       [...(k[2]?.children ?? [])].forEach((c, i) =>
-        A(c, [{ opacity: 0, transform: "translateY(18px) scale(.96)" }, { opacity: 1, transform: "none" }], { delay: 90 + i * 45, duration: 380 }),
+        A(c, [{ opacity: 0, transform: "translateY(12px) scale(.97)" }, { opacity: 1, transform: "none" }], { delay: 40 + Math.min(i, 8) * 25, duration: 220 }),
       );
-      if (k.length > 4) A(k[3], [{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], { delay: 220 });
+      if (k.length > 4) A(k[3], [{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { delay: 120, duration: 220 });
     } else if (step === DONE) {
       A(k[0], [{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: 1400 });
       A(k[2], [{ opacity: 0, transform: "translateY(30px)" }, { opacity: 1, transform: "none" }], { delay: 150, duration: 600 });
