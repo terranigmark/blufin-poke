@@ -20,16 +20,17 @@ jobs:
         image: postgres:17
         env:
           POSTGRES_USER: blufin
-          POSTGRES_PASSWORD: blufin
           POSTGRES_DB: blufin
+          # Throwaway CI database: no password, so no credential lives in the repo.
+          POSTGRES_HOST_AUTH_METHOD: trust
         ports: ["5432:5432"]
         options: >-
           --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: postgresql://blufin:blufin@localhost:5432/blufin
-      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+      DATABASE_URL: postgresql://blufin@localhost:5432/blufin
     steps:
       - uses: actions/checkout@v4
+      - run: echo "DJANGO_SECRET_KEY=$(openssl rand -base64 48)" >> "$GITHUB_ENV"
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --frozen
       - run: uv run python manage.py makemigrations --check --dry-run
