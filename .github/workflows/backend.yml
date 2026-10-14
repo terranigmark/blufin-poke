@@ -1,0 +1,43 @@
+name: Backend
+
+on:
+  pull_request:
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+  push:
+    branches: [main]
+    paths: ["backend/**", ".github/workflows/backend.yml"]
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      # Same engine as Neon in production, so migrations are checked against Postgres.
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: blufin
+          POSTGRES_PASSWORD: blufin
+          POSTGRES_DB: blufin
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://blufin:blufin@localhost:5432/blufin
+      DJANGO_SECRET_KEY: ci-only-not-a-real-secret
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run python manage.py makemigrations --check --dry-run
+      - run: uv run python manage.py check --deploy --fail-level ERROR
+      - run: uv run python manage.py test
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t blufin-backend .
