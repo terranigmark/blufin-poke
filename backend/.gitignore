@@ -8,3 +8,5 @@ htmlcov/
 .venv/
 venv/
 staticfiles/
+db.sqlite3
+.env
