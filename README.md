@@ -21,6 +21,11 @@ and the ticket page decodes it. The order is also printed under the QR, so it ca
 customer's screen if scanning fails. A customer could edit the link, so the ticket reminds the
 waiter to confirm the order.
 
+## Backend
+
+The Django backend lives in [`backend/`](backend/README.md): the Django Admin at `/admin/` and
+the protected menu editor at `/menu/` on the backend's host.
+
 ## Editing the menu
 
 All menu items, prices, photos, address, hours and social links live in **`src/data/menu.ts`**.
