@@ -51,9 +51,13 @@ One-time setup; after that every push to `main` redeploys on its own.
 
    - Leave **Autodeploy** on, so pushes to `main` redeploy.
 3. On start the container applies migrations (set `RUN_MIGRATIONS=false` to skip),
-   which also loads the starting menu. Then, once, from the service's **Console** tab:
-   `python manage.py createsuperuser` to create the first owner.
-4. Sign in at `https://<koyeb host>/admin/` and `https://<koyeb host>/menu/`.
+   which also loads the starting menu.
+4. First owner account, no shell needed: add `DJANGO_SUPERUSER_EMAIL` and
+   `DJANGO_SUPERUSER_PASSWORD` (as a secret) to the service and redeploy. The account is
+   created on start; later starts just note that it exists. Then delete
+   `DJANGO_SUPERUSER_PASSWORD` from Koyeb. (With a shell, `python manage.py createsuperuser`
+   does the same.)
+5. Sign in at `https://<koyeb host>/admin/` and `https://<koyeb host>/menu/`.
 
 A custom domain (e.g. `api.blufinpokeco.com`) goes in both `DJANGO_ALLOWED_HOSTS` and
 `DJANGO_CSRF_TRUSTED_ORIGINS`, comma-separated next to the Koyeb host.
