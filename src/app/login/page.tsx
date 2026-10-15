@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Editor } from "./Editor";
+import { LoginPage } from "./Editor";
 
-export const metadata: Metadata = { title: "Editor del menú · Blufin Poke Co", robots: { index: false } };
+export const metadata: Metadata = { title: "Entrar · Blufin Poke Co", robots: { index: false } };
 
-export default function LoginPage() {
-  return <Editor />;
+export default function Page() {
+  return <LoginPage />;
 }

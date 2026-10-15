@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { STEPS, money } from "@/data/menu";
 import {
@@ -110,18 +111,32 @@ const rowsOf = (data: MenuRows, sec: Section) =>
 
 // ---------------------------------------------------------------- Page
 
-export function Editor() {
-  // undefined until we've read the stored session on the client.
-  const [signedIn, setSignedIn] = useState<boolean>();
-  useEffect(() => setSignedIn(isSignedIn()), []);
+/** Renders only once the stored session matches `signedIn`; otherwise sends the visitor to the other page. */
+function useGate(signedIn: boolean, elsewhere: string) {
+  const router = useRouter();
+  const [ok, setOk] = useState(false);
+  useEffect(() => {
+    if (isSignedIn() === signedIn) setOk(true);
+    else router.replace(elsewhere);
+  }, [router, signedIn, elsewhere]);
+  return { ok, router };
+}
 
-  if (signedIn === undefined) return <div className={s.center} />;
-  if (!signedIn) return <LoginForm onDone={() => setSignedIn(true)} />;
+/** /login: the sign-in form, or straight on to /admin when already signed in. */
+export function LoginPage() {
+  const { ok, router } = useGate(false, "/admin/");
+  return ok ? <LoginForm onDone={() => router.replace("/admin/")} /> : <div className={s.center} />;
+}
+
+/** /admin: the editor, or back to /login when signed out. */
+export function AdminPage() {
+  const { ok, router } = useGate(true, "/login/");
+  if (!ok) return <div className={s.center} />;
   return (
     <Panel
       onSignOut={() => {
         signOut();
-        setSignedIn(false);
+        router.replace("/login/");
       }}
     />
   );
