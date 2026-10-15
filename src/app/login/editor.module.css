@@ -163,7 +163,7 @@
 
 .page {
   min-height: 100svh;
-  padding-bottom: 48px;
+  padding-bottom: 96px; /* room for the Deshacer bar */
 }
 .header {
   position: sticky;
@@ -438,6 +438,45 @@
   gap: 10px;
   margin-top: 4px;
 }
-.sheetActions .primary {
+.sheetEnd {
   margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+.sheetEnd .ghost {
+  padding: 11px 18px;
+  font-size: 15px;
+}
+
+/* "Deshacer" bar for the last change; changes save instantly, so this is the way back. */
+.undo {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  max-width: calc(100% - 32px);
+  padding: 10px 10px 10px 16px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--cream);
+  font-size: 14px;
+  box-shadow: 0 8px 24px rgba(10, 30, 48, 0.3);
+}
+.undo span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.undo button {
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 14px;
+  background: var(--sand);
+  color: var(--navy);
+  font-weight: 700;
 }

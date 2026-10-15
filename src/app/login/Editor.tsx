@@ -203,6 +203,8 @@ function LoginForm({ onDone }: { onDone: () => void }) {
 
 type Save = "idle" | "saving" | "saved" | { error: string };
 type Sheet = { sec: Section; row: Partial<AnyRow> } | null;
+/** The last change, and how to put things back as they were. */
+type Undo = { label: string; run: () => Promise<unknown> } | null;
 
 function Panel({ onSignOut }: { onSignOut: () => void }) {
   const [data, setData] = useState<MenuRows | null>(null);
@@ -214,6 +216,16 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const setSheet = (next: Sheet) => {
     if (typeof save === "object") setSave("idle"); // don't greet a new sheet with an old error
     setSheetState(next);
+  };
+  const [undo, setUndo] = useState<Undo>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), 10_000);
+    return () => clearTimeout(t);
+  }, [undo]);
+  const runUndo = () => {
+    undo?.run();
+    setUndo(null);
   };
 
   const fail = (err: unknown) => {
@@ -244,11 +256,11 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       });
       put(saved);
       setSave("saved");
-      return true;
+      return saved;
     } catch (err) {
       if (optimistic && before) setData((d) => d && { ...d, [kind]: before });
       fail(err);
-      return false;
+      return null;
     }
   };
 
@@ -269,7 +281,41 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const move = (sec: Section, rows: AnyRow[], i: number, dir: -1 | 1) => {
     const next = [...rows];
     [next[i], next[i + dir]] = [next[i + dir], next[i]];
-    next.forEach((r, order) => r.order !== order && persist(sec.kind, { id: r.id, order }, true));
+    const moved = next.filter((r, order) => r.order !== order);
+    moved.forEach((r) => persist(sec.kind, { id: r.id, order: next.indexOf(r) }, true));
+    setUndo({
+      label: `Moviste “${rows[i].name}”`,
+      run: () => Promise.all(moved.map((r) => persist(sec.kind, { id: r.id, order: r.order }, true))),
+    });
+  };
+
+  const toggle = async (sec: Section, r: AnyRow, available: boolean) => {
+    if (await persist(sec.kind, { id: r.id, available }, true))
+      setUndo({
+        label: `“${r.name}” ${available ? "visible" : "oculto"}`,
+        run: () => persist(sec.kind, { id: r.id, available: !available }, true),
+      });
+  };
+
+  /** Sheet "Guardar"/"Agregar": undo restores the previous version, or removes the new item. */
+  const saveSheet = async (sec: Section, row: Partial<AnyRow>) => {
+    const old = row.id ? (data![sec.kind] as AnyRow[]).find((x) => x.id === row.id) : undefined;
+    const saved = await persist(sec.kind, row);
+    if (!saved) return;
+    setSheet(null);
+    setUndo(
+      old
+        ? { label: `Guardaste “${saved.name}”`, run: () => persist(sec.kind, old) }
+        : { label: `Agregaste “${saved.name}”`, run: () => remove(sec.kind, saved.id) },
+    );
+  };
+
+  /** Undo puts a deleted item back as a new row with the same content. */
+  const deleteSheet = async (sec: Section, id: number) => {
+    const old = (data![sec.kind] as AnyRow[]).find((x) => x.id === id)!;
+    if (!(await remove(sec.kind, id))) return;
+    setSheet(null);
+    setUndo({ label: `Borraste “${old.name}”`, run: () => persist(sec.kind, { ...old, id: undefined }) });
   };
 
   const term = search.trim().toLowerCase();
@@ -382,7 +428,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                         <input
                           type="checkbox"
                           checked={r.available}
-                          onChange={(e) => persist(sec.kind, { id: r.id, available: e.target.checked }, true)}
+                          onChange={(e) => toggle(sec, r, e.target.checked)}
                           aria-label={`${r.name} disponible`}
                         />
                         <span aria-hidden />
@@ -402,10 +448,17 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           key={sheet.row.id ?? "new"}
           sheet={sheet}
           onClose={() => setSheet(null)}
-          onSave={async (row) => (await persist(sheet.sec.kind, row)) && setSheet(null)}
-          onDelete={async () => (await remove(sheet.sec.kind, sheet.row.id!)) && setSheet(null)}
+          onSave={(row) => saveSheet(sheet.sec, row)}
+          onDelete={() => deleteSheet(sheet.sec, sheet.row.id!)}
           error={typeof save === "object" ? save.error : ""}
         />
+      )}
+
+      {undo && (
+        <div className={s.undo} role="status">
+          <span>{undo.label}</span>
+          <button onClick={runUndo}>Deshacer</button>
+        </div>
       )}
     </div>
   );
@@ -433,15 +486,21 @@ function ItemSheet({
 }: {
   sheet: NonNullable<Sheet>;
   onClose: () => void;
-  onSave: (row: Partial<AnyRow>) => void;
-  onDelete: () => void;
+  onSave: (row: Partial<AnyRow>) => Promise<void>;
+  onDelete: () => Promise<void>;
   error: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [img, setImg] = useState((row as IngredientRow).image_url ?? "");
+  // Set by any edit in the form, so closing without saving asks before throwing the edits away.
+  const [dirty, setDirty] = useState(false);
   useEffect(() => ref.current?.showModal(), []);
   const isNew = !row.id;
+
+  const cancel = () => {
+    if (!dirty || confirm("¿Descartar los cambios? Se quedará como estaba.")) ref.current?.close();
+  };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -458,7 +517,7 @@ function ItemSheet({
   };
 
   const del = async () => {
-    if (!confirm(`¿Borrar “${row.name}” del menú? Esto no se puede deshacer. Si solo se acabó, mejor ocúltalo con el interruptor.`)) return;
+    if (!confirm(`¿Borrar “${row.name}” del menú? Si solo se acabó, mejor ocúltalo con el interruptor.`)) return;
     setBusy(true);
     await onDelete();
     setBusy(false);
@@ -467,11 +526,20 @@ function ItemSheet({
   const value = (name: string) => (row as Record<string, unknown>)[name];
 
   return (
-    <dialog ref={ref} className={s.sheet} onClose={onClose} onClick={(e) => e.target === ref.current && ref.current.close()}>
-      <form onSubmit={submit} className={s.sheetBody}>
+    <dialog
+      ref={ref}
+      className={s.sheet}
+      onClose={onClose}
+      onCancel={(e) => {
+        e.preventDefault(); // Esc goes through the same "discard?" check
+        cancel();
+      }}
+      onClick={(e) => e.target === ref.current && cancel()}
+    >
+      <form onSubmit={submit} onInput={() => setDirty(true)} className={s.sheetBody}>
         <div className={s.sheetHead}>
           <h2>{isNew ? `Agregar · ${sec.title}` : row.name}</h2>
-          <button type="button" className={s.close} onClick={() => ref.current?.close()} aria-label="Cerrar">
+          <button type="button" className={s.close} onClick={cancel} aria-label="Cerrar sin guardar">
             ×
           </button>
         </div>
@@ -527,9 +595,14 @@ function ItemSheet({
               Borrar
             </button>
           )}
-          <button className={s.primary} disabled={busy}>
-            {busy ? "Guardando…" : isNew ? "Agregar" : "Guardar"}
-          </button>
+          <span className={s.sheetEnd}>
+            <button type="button" className={s.ghost} onClick={cancel} disabled={busy}>
+              Cancelar
+            </button>
+            <button className={s.primary} disabled={busy}>
+              {busy ? "Guardando…" : isNew ? "Agregar" : "Guardar"}
+            </button>
+          </span>
         </div>
       </form>
     </dialog>
