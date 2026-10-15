@@ -55,8 +55,6 @@ npm run lint     # type-check
 npm test         # front-end tests
 ```
 
-Every change ships with its tests; see [CONTRIBUTING.md](CONTRIBUTING.md).
-
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`. `out/` can also
 go on any static host (Vercel, Netlify, Cloudflare Pages, S3…). When the site lives under a sub-path,
 build with `NEXT_PUBLIC_BASE_PATH=/sub-path`; the Pages workflow sets this automatically. The QR links
@@ -67,3 +65,12 @@ use the site's own address, so they work once the site is on its public URL.
 `design/` holds the Claude Design handoff: the HTML prototypes, the design chat transcript
 (`design/chats/chat1.md`) and the reference images. It is for reference only and not part of the
 build.
+
+## Tests
+
+- Backend: `cd backend && uv run python manage.py test` (CI: `.github/workflows/backend.yml`).
+- Website: `npm test` runs the Vitest unit and component tests next to the code (`src/**/*.test.ts(x)`;
+  CI: `.github/workflows/frontend.yml`). `npm run test:e2e` runs the Playwright browser tests in `e2e/` against a throwaway
+  backend on SQLite (CI: `.github/workflows/e2e.yml`). Run `npx playwright install chromium` once first.
+
+Every new or changed feature adds or updates its tests in the same PR; see [CONTRIBUTING.md](CONTRIBUTING.md).
