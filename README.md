@@ -52,7 +52,10 @@ npm run dev      # http://localhost:3000
 npm run build    # static export to out/
 npm start        # serve out/ locally
 npm run lint     # type-check
+npm test         # front-end tests
 ```
+
+Every change ships with its tests; see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`. `out/` can also
 go on any static host (Vercel, Netlify, Cloudflare Pages, S3…). When the site lives under a sub-path,

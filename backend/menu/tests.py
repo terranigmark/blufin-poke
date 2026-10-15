@@ -1,7 +1,8 @@
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.test import TestCase, override_settings
 
-from .models import Beer, Ingredient
+from .models import Beer, Drink, Ingredient, Size
 
 User = get_user_model()
 PASSWORD = "una-clave-larga-123"
@@ -66,6 +67,9 @@ class MenuAccessTests(TestCase):
 
 
 class MenuApiTests(TestCase):
+    def setUp(self):
+        cache.clear()  # the login throttle counts in the cache, which outlives each test
+
     def token(self, email):
         response = self.client.post("/api/auth/login/", {"email": email, "password": PASSWORD})
         return response
@@ -119,3 +123,41 @@ class MenuApiTests(TestCase):
         self.assertEqual(r["Access-Control-Allow-Origin"], "https://blufinpoke.com")
         r = self.client.get("/api/menu/", HTTP_ORIGIN="https://evil.example")
         self.assertNotIn("Access-Control-Allow-Origin", r)
+
+    def test_anonymous_cannot_write(self):
+        size = Size.objects.first()
+        self.assertEqual(self.client.patch(f"/api/editor/sizes/{size.pk}/", {"price": 1}, content_type="application/json").status_code, 401)
+        self.assertEqual(self.client.delete(f"/api/editor/sizes/{size.pk}/").status_code, 401)
+        self.assertEqual(self.client.post("/api/menu/", {}).status_code, 405)
+        self.assertNotEqual(Size.objects.get(pk=size.pk).price, 1)
+
+    def test_editor_sees_hidden_items_the_public_does_not(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        Drink.objects.filter(name="Kombucha").update(available=False)
+        names = lambda data: {d["name"] for d in data["drinks"]}
+        self.assertNotIn("Kombucha", names(self.client.get("/api/menu/").json()))
+        self.assertIn("Kombucha", names(self.client.get("/api/editor/", **self.auth("mesera@blufin.mx")).json()))
+
+    def test_invalid_data_is_refused(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        size = Size.objects.first()
+        r = self.client.patch(f"/api/editor/sizes/{size.pk}/", {"price": "mucho"}, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("price", r.json())
+        r = self.client.post("/api/editor/ingredients/", {"step": "nope", "name": "X"}, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 400)
+
+    def test_refresh_token_gives_a_new_access_token(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        refresh = self.token("mesera@blufin.mx").json()["refresh"]
+        r = self.client.post("/api/auth/refresh/", {"refresh": refresh})
+        self.assertEqual(r.status_code, 200)
+        h = {"HTTP_AUTHORIZATION": "Bearer " + r.json()["access"]}
+        self.assertEqual(self.client.get("/api/editor/", **h).status_code, 200)
+        self.assertEqual(self.client.post("/api/auth/refresh/", {"refresh": "basura"}).status_code, 401)
+
+    def test_login_is_throttled(self):
+        codes = [self.token("nadie@blufin.mx").status_code for _ in range(11)]
+        self.assertEqual(codes[:10], [401] * 10)
+        self.assertEqual(codes[10], 429)
