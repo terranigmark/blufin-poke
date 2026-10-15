@@ -53,7 +53,7 @@ export const PHOTOS = {
  */
 const EN: Record<string, string> = {
   "Arroz sushi": "Sushi rice",
-  Ensalada: "Salad",
+  Ensalada: "Green mix",
   Totopos: "Tortilla chips",
   "Pesca del día": "Catch of the day",
   Atún: "Tuna",
@@ -61,27 +61,28 @@ const EN: Record<string, string> = {
   Camarón: "Shrimp",
   "Cebolla morada": "Red onion",
   "Cebolla blanca": "White onion",
-  Cebollín: "Green onion",
-  "Chile jalapeño": "Jalapeño",
+  Cebollín: "Chives",
+  "Chile jalapeño": "Jalapeño pepper",
   Ajonjolí: "Sesame seeds",
   "Aceite de Ajonjolí": "Sesame oil",
   Aguacate: "Avocado",
   "Ensalada de cangrejo": "Crab salad",
-  Edamames: "Edamame",
-  "Tomate cherry": "Cherry tomatoes",
+  "Tomate cherry": "Cherry tomato",
   Zanahoria: "Carrot",
-  "Alga wakame": "Wakame seaweed",
-  "Col morada": "Red cabbage",
+  "Alga wakame": "Seaweed",
+  "Col morada": "Purple cabbage",
   Germinado: "Sprouts",
   Pepino: "Cucumber",
-  "Fruta de temporada": "Seasonal fruit",
+  "Fruta de temporada": "Fruit",
   "Cebolla crispy": "Crispy onion",
   "Nueces de macadamia": "Macadamia nuts",
   Jengibre: "Ginger",
   Proteína: "Protein",
   Cangrejo: "Crab",
   Salsa: "Sauce",
-  "Arroz / ensalada / totopos": "Rice / salad / tortilla chips",
+  "Arroz / ensalada / totopos": "Rice / green mix / nachos",
+  Shoyu: "Secret Shoyu",
+  "50/50": "Mix",
   "Agua mineral": "Sparkling water",
   "Agua de coco": "Coconut water",
   "Agua natural": "Still water",
@@ -114,10 +115,11 @@ export type Step = {
   opts: StepOption[];
 };
 
-const opt = (id: string, name: string, photoId?: string, w = 300): StepOption => ({
+// `nameEn` defaults by Spanish name; Totopos is "Nachos" as a base but "Tortilla chips" as a crunchy.
+const opt = (id: string, name: string, photoId?: string, w = 300, nameEn = EN[name]): StepOption => ({
   id,
   name,
-  nameEn: EN[name],
+  nameEn,
   img: photoId ? unsplash(photoId, w) : null,
 });
 
@@ -134,7 +136,7 @@ export const STEPS: Step[] = [
     opts: [
       opt("arroz", "Arroz sushi", "1516684732162-798a0062be99", 500),
       opt("ensalada", "Ensalada", "1540420773420-3366772f4999", 500),
-      opt("totopos", "Totopos", "1582169296194-e4d644c48063", 500),
+      opt("totopos", "Totopos", "1582169296194-e4d644c48063", 500, "Nachos"),
       opt("mitad", "50/50", "1512621776951-a57141f2eefd", 500),
     ],
   },
@@ -240,7 +242,7 @@ export const SECOND_PROTEIN_PRICE = 25;
 /** From this many salsas on, a "we recommend up to 2" note appears. */
 export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
-export const PROTEIN_NOTE_EN = "* Proteins subject to change and/or while supplies last";
+export const PROTEIN_NOTE_EN = "* Ask for protein availability. They are fresh products which are subject to changes and/or while supplies last";
 
 // PLACEHOLDER: bowl prices were invented in the design.
 export type Size = { id: string; name: string; nameEn?: string; price: number };

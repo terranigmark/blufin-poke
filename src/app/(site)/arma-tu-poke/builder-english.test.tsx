@@ -24,6 +24,8 @@ it("builds a bowl in English; the waiter's QR carries the order in Spanish", asy
   );
   await click(/Start/);
   expect(screen.getByRole("heading", { name: "Choose your base" })).toBeInTheDocument();
+  // Names from the printed English menu.
+  for (const name of ["Green mix", "Nachos", "Mix"]) expect(screen.getByText(name, { selector: "span" })).toBeInTheDocument();
   await pick("Sushi rice");
   await next();
   await pick("Tuna");

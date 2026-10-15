@@ -6,7 +6,7 @@ from django.db import migrations, models
 # Names that read the same in both languages stay empty: the website falls back to them.
 NAMES = {
     "Arroz sushi": "Sushi rice",
-    "Ensalada": "Salad",
+    "Ensalada": "Green mix",
     "Totopos": "Tortilla chips",
     "Pesca del día": "Catch of the day",
     "Atún": "Tuna",
@@ -14,27 +14,28 @@ NAMES = {
     "Camarón": "Shrimp",
     "Cebolla morada": "Red onion",
     "Cebolla blanca": "White onion",
-    "Cebollín": "Green onion",
-    "Chile jalapeño": "Jalapeño",
+    "Cebollín": "Chives",
+    "Chile jalapeño": "Jalapeño pepper",
     "Ajonjolí": "Sesame seeds",
     "Aceite de Ajonjolí": "Sesame oil",
     "Aguacate": "Avocado",
     "Ensalada de cangrejo": "Crab salad",
-    "Edamames": "Edamame",
-    "Tomate cherry": "Cherry tomatoes",
+    "Tomate cherry": "Cherry tomato",
     "Zanahoria": "Carrot",
-    "Alga wakame": "Wakame seaweed",
-    "Col morada": "Red cabbage",
+    "Alga wakame": "Seaweed",
+    "Col morada": "Purple cabbage",
     "Germinado": "Sprouts",
     "Pepino": "Cucumber",
-    "Fruta de temporada": "Seasonal fruit",
+    "Fruta de temporada": "Fruit",
     "Cebolla crispy": "Crispy onion",
     "Nueces de macadamia": "Macadamia nuts",
     "Jengibre": "Ginger",
     "Proteína": "Protein",
     "Cangrejo": "Crab",
     "Salsa": "Sauce",
-    "Arroz / ensalada / totopos": "Rice / salad / tortilla chips",
+    "Arroz / ensalada / totopos": "Rice / green mix / nachos",
+    "Shoyu": "Secret Shoyu",
+    "50/50": "Mix",
     "Agua mineral": "Sparkling water",
     "Agua de coco": "Coconut water",
     "Agua natural": "Still water",
@@ -58,6 +59,8 @@ DESCRIPTIONS = {
 
 
 def translate(apps, schema_editor):
+    # Totopos is "Nachos" as a base and "Tortilla chips" as a crunchy (NAMES).
+    apps.get_model("menu", "Ingredient").objects.filter(step="base", name="Totopos", name_en="").update(name_en="Nachos")
     for model in ("Size", "Ingredient", "Extra", "Beer", "Drink"):
         M = apps.get_model("menu", model)
         for spanish, english in NAMES.items():

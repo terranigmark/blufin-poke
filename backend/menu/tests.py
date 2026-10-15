@@ -91,6 +91,9 @@ class MenuApiTests(TestCase):
         # Same in both languages: left empty, the website shows the Spanish name.
         tofu = next(i for i in data["ingredients"] if i["key"] == "tofu")
         self.assertEqual(tofu["name_en"], "")
+        # Totopos reads "Nachos" as a base and "Tortilla chips" as a crunchy, as on the printed menu.
+        totopos = {i["step"]: i["name_en"] for i in data["ingredients"] if i["key"] == "totopos"}
+        self.assertEqual(totopos, {"base": "Nachos", "crunch": "Tortilla chips"})
         stout = next(b for b in data["beers"] if b["tap"] == "01")
         self.assertEqual(stout["description_en"], "Roasted coffee, bitter cocoa and a silky body.")
         self.assertTrue(all(d["name_en"] for d in data["drinks"] if d["category"] == "aguas" and d["name"].startswith("Agua")))
