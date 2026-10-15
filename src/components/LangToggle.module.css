@@ -1,0 +1,23 @@
+.toggle {
+  display: flex;
+  border: 1.5px solid var(--navy);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.toggle button {
+  min-width: 40px;
+  min-height: 34px;
+  padding: 3px 9px 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font-family: var(--bebas);
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+.toggle button[aria-pressed="true"] {
+  background: var(--navy);
+  color: var(--cream);
+}
+

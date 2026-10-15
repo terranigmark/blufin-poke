@@ -9,7 +9,7 @@ export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.blufinpo
 
 // ---------------------------------------------------------------- Rows as the API sends them
 
-type Row = { id: number; name: string; available: boolean; order: number };
+type Row = { id: number; name: string; name_en: string; available: boolean; order: number };
 export type SizeRow = Row & { key: string; price: number };
 export type IngredientRow = Row & { step: StepKey; key: string; image_url: string };
 export type ExtraRow = Row & { key: string; price: number; in_builder: boolean };
@@ -21,6 +21,7 @@ export type BeerRow = Row & {
   price_16: number;
   color: string;
   description: string;
+  description_en: string;
 };
 export type DrinkRow = Row & { category: "aguas" | "nacional"; price: number; size: string; pack: "Botella" | "Lata" };
 
@@ -36,29 +37,31 @@ export type Kind = keyof MenuRows;
 /** API rows → the shapes src/data/menu.ts exports, so pages need no other change. */
 export function toMenu(m: MenuRows): Menu {
   const packaged = (cat: DrinkRow["category"]) =>
-    m.drinks.filter((d) => d.category === cat).map(({ name, price, size, pack }) => ({ name, price, size, pack }));
+    m.drinks.filter((d) => d.category === cat).map(({ name, name_en, price, size, pack }) => ({ name, nameEn: name_en, price, size, pack }));
   const BEERS = m.beers.map((b) => ({
     tap: b.tap,
     name: b.name,
+    nameEn: b.name_en,
     style: b.style,
     abv: b.abv,
     price12: b.price_12,
     price16: b.price_16,
     color: b.color,
     desc: b.description,
+    descEn: b.description_en,
   }));
   const AGUAS = packaged("aguas");
   const NACIONAL = packaged("nacional");
   return {
-    SIZES: m.sizes.map((z) => ({ id: z.key, name: z.name, price: z.price })),
+    SIZES: m.sizes.map((z) => ({ id: z.key, name: z.name, nameEn: z.name_en, price: z.price })),
     STEPS: STEPS.map((st) => ({
       ...st,
       opts: m.ingredients
         .filter((i) => i.step === st.key)
-        .map((i) => ({ id: i.key, name: i.name, img: i.image_url || null })),
+        .map((i) => ({ id: i.key, name: i.name, nameEn: i.name_en, img: i.image_url || null })),
     })),
-    BOWL_EXTRAS: m.extras.filter((e) => e.in_builder).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, price: e.price })),
-    MENU_EXTRAS: m.extras.map(({ name, price }) => ({ name, price })),
+    BOWL_EXTRAS: m.extras.filter((e) => e.in_builder).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, nameEn: e.name_en, price: e.price })),
+    MENU_EXTRAS: m.extras.map(({ name, name_en, price }) => ({ name, nameEn: name_en, price })),
     BEERS,
     AGUAS,
     NACIONAL,

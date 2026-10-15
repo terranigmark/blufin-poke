@@ -79,6 +79,7 @@
 }
 
 .desktopNav {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 30px;
@@ -108,6 +109,10 @@
     background: var(--navy-2);
     color: var(--cream);
   }
+}
+
+.lang {
+  flex-shrink: 0;
 }
 
 .burger {
@@ -208,6 +213,9 @@
 @media (max-width: 759px) {
   .desktopNav {
     display: none;
+  }
+  .lang {
+    margin-left: auto;
   }
   .burger,
   .mobileNav {

@@ -5,34 +5,34 @@ import { ApiError, API_URL, editorFetch, isSignedIn, signIn, signOut, toMenu, ty
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 const ROWS: MenuRows = {
-  sizes: [{ id: 1, key: "small", name: "Small", price: 170, available: true, order: 0 }],
+  sizes: [{ id: 1, key: "small", name: "Small", name_en: "", price: 170, available: true, order: 0 }],
   ingredients: [
-    { id: 2, step: "base", key: "arroz", name: "Arroz", image_url: "", available: true, order: 0 },
-    { id: 3, step: "crunch", key: "totopos", name: "Totopos", image_url: "https://x/t.jpg", available: true, order: 0 },
+    { id: 2, step: "base", key: "arroz", name: "Arroz", name_en: "", image_url: "", available: true, order: 0 },
+    { id: 3, step: "crunch", key: "totopos", name: "Totopos", name_en: "", image_url: "https://x/t.jpg", available: true, order: 0 },
   ],
   extras: [
-    { id: 4, key: "xagu", name: "Aguacate", price: 20, in_builder: true, available: true, order: 0 },
-    { id: 5, key: "", name: "Salsa", price: 10, in_builder: false, available: true, order: 1 },
+    { id: 4, key: "xagu", name: "Aguacate", name_en: "", price: 20, in_builder: true, available: true, order: 0 },
+    { id: 5, key: "", name: "Salsa", name_en: "", price: 10, in_builder: false, available: true, order: 1 },
   ],
-  beers: [{ id: 6, tap: "01", name: "Stout", style: "Stout", abv: "5%", price_12: 70, price_16: 90, color: "#000", description: "Rica", available: true, order: 0 }],
+  beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, color: "#000", description: "Rica", description_en: "", available: true, order: 0 }],
   drinks: [
-    { id: 7, category: "aguas", name: "Agua", price: 15, size: "500 ml", pack: "Botella", available: true, order: 0 },
-    { id: 8, category: "nacional", name: "Modelo", price: 50, size: "355 ml", pack: "Lata", available: true, order: 0 },
+    { id: 7, category: "aguas", name: "Agua", name_en: "", price: 15, size: "500 ml", pack: "Botella", available: true, order: 0 },
+    { id: 8, category: "nacional", name: "Modelo", name_en: "", price: 50, size: "355 ml", pack: "Lata", available: true, order: 0 },
   ],
 };
 
 describe("toMenu", () => {
   it("turns API rows into the shapes the pages use", () => {
     const m = toMenu(ROWS);
-    expect(m.SIZES).toEqual([{ id: "small", name: "Small", price: 170 }]);
+    expect(m.SIZES).toEqual([{ id: "small", name: "Small", nameEn: "", price: 170 }]);
     expect(m.STEPS.map((s) => s.key)).toEqual(MENU.STEPS.map((s) => s.key));
-    expect(m.STEPS[0].opts).toEqual([{ id: "arroz", name: "Arroz", img: null }]);
-    expect(m.STEPS[5].opts).toEqual([{ id: "totopos", name: "Totopos", img: "https://x/t.jpg" }]);
+    expect(m.STEPS[0].opts).toEqual([{ id: "arroz", name: "Arroz", nameEn: "", img: null }]);
+    expect(m.STEPS[5].opts).toEqual([{ id: "totopos", name: "Totopos", nameEn: "", img: "https://x/t.jpg" }]);
     // Only builder extras are offered in Arma tu poke; the menu lists them all.
-    expect(m.BOWL_EXTRAS).toEqual([{ id: "xagu", name: "Aguacate", price: 20 }]);
+    expect(m.BOWL_EXTRAS).toEqual([{ id: "xagu", name: "Aguacate", nameEn: "", price: 20 }]);
     expect(m.MENU_EXTRAS).toHaveLength(2);
     expect(m.BEERS[0]).toMatchObject({ tap: "01", price12: 70, price16: 90, desc: "Rica" });
-    expect(m.AGUAS).toEqual([{ name: "Agua", price: 15, size: "500 ml", pack: "Botella" }]);
+    expect(m.AGUAS).toEqual([{ name: "Agua", nameEn: "", price: 15, size: "500 ml", pack: "Botella" }]);
     expect(m.NACIONAL[0].name).toBe("Modelo");
     expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "n0", "a0"]);
   });
@@ -90,5 +90,21 @@ describe("editor auth", () => {
   it("returns null for an empty 204", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
     await expect(editorFetch("editor/beers/1/", { method: "DELETE" })).resolves.toBeNull();
+  });
+});
+
+describe("toMenu English names", () => {
+  it("carries the English name and description, empty when the editor left them blank", () => {
+    const rows: MenuRows = {
+      ...ROWS,
+      ingredients: [{ ...ROWS.ingredients[0], name: "Atún", name_en: "Tuna" }],
+      beers: [{ ...ROWS.beers[0], description_en: "Tasty" }],
+    };
+    const m = toMenu(rows);
+    expect(m.STEPS[0].opts[0]).toMatchObject({ name: "Atún", nameEn: "Tuna" });
+    expect(m.STEPS[0].en.title).toBe("Choose your base");
+    expect(m.BEERS[0]).toMatchObject({ desc: "Rica", descEn: "Tasty" });
+    expect(m.AGUAS[0].nameEn).toBe("");
+    expect(m.DRINKS.find((d) => d.id === "n0")).toMatchObject({ meta: "Lata · 355 ml", metaEn: "Can · 355 ml" });
   });
 });

@@ -32,26 +32,31 @@ type Field = {
   type?: "text" | "number" | "url" | "color" | "textarea" | "checkbox" | "select";
   options?: string[];
   hint?: string;
+  optional?: boolean;
 };
 
 const NAME: Field = { name: "name", label: "Nombre" };
+// The public site shows these when a visitor reads it in English; empty falls back to the Spanish.
+const NAME_EN: Field = { name: "name_en", label: "Nombre en inglés", optional: true, hint: "Opcional. Si lo dejas vacío, se usa el nombre en español." };
 const PRICE: Field = { name: "price", label: "Precio (MXN)", type: "number" };
 
 const FIELDS: Record<Kind, Field[]> = {
-  sizes: [NAME, PRICE],
-  ingredients: [NAME, { name: "image_url", label: "Foto (URL)", type: "url", hint: "Opcional. Enlace a una imagen." }],
-  extras: [NAME, PRICE, { name: "in_builder", label: "Se ofrece en Arma tu poke", type: "checkbox" }],
+  sizes: [NAME, NAME_EN, PRICE],
+  ingredients: [NAME, NAME_EN, { name: "image_url", label: "Foto (URL)", type: "url", hint: "Opcional. Enlace a una imagen." }],
+  extras: [NAME, NAME_EN, PRICE, { name: "in_builder", label: "Se ofrece en Arma tu poke", type: "checkbox" }],
   beers: [
     { name: "tap", label: "Grifo", hint: "Ej. 09" },
     NAME,
+    NAME_EN,
     { name: "style", label: "Estilo" },
     { name: "abv", label: "ABV", hint: "Ej. 5.2%" },
     { name: "price_12", label: "Precio 12 oz", type: "number" },
     { name: "price_16", label: "Precio 16 oz", type: "number" },
     { name: "color", label: "Color en el menú", type: "color" },
     { name: "description", label: "Descripción", type: "textarea" },
+    { name: "description_en", label: "Descripción en inglés", type: "textarea", hint: "Opcional. Si la dejas vacía, se usa la descripción en español." },
   ],
-  drinks: [NAME, PRICE, { name: "size", label: "Tamaño", hint: "Ej. 355 ml" }, { name: "pack", label: "Envase", type: "select", options: ["Botella", "Lata"] }],
+  drinks: [NAME, NAME_EN, PRICE, { name: "size", label: "Tamaño", hint: "Ej. 355 ml" }, { name: "pack", label: "Envase", type: "select", options: ["Botella", "Lata"] }],
 };
 
 type Section = {
@@ -566,7 +571,7 @@ function ItemSheet({
                   name={fl.name}
                   type={fl.type ?? "text"}
                   defaultValue={String(value(fl.name) ?? "")}
-                  required={fl.type !== "url"}
+                  required={!fl.optional && fl.type !== "url"}
                   min={fl.type === "number" ? 0 : undefined}
                   inputMode={fl.type === "number" ? "numeric" : undefined}
                   onChange={fl.type === "url" ? (e) => setImg(e.target.value) : undefined}
