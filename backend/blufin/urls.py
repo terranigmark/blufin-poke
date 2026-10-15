@@ -1,6 +1,9 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from menu import api
 from menu.admin import menu_site
 
 urlpatterns = [
@@ -8,4 +11,10 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     # Owners and designated employees: the menu only.
     path("menu/", menu_site.urls),
+    # The website: public menu, and the editor at blufinpoke.com/login.
+    path("api/menu/", api.public_menu),
+    path("api/auth/login/", api.LoginView.as_view()),
+    path("api/auth/refresh/", TokenRefreshView.as_view()),
+    path("api/editor/", api.editor_menu),
+    path("api/", include(api.router.urls)),
 ]

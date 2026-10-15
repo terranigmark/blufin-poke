@@ -6,21 +6,19 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { BUILD_RESET_EVENT } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import {
-  BOWL_EXTRAS,
-  DRINKS,
   DRINK_TABS,
   PHOTOS,
   PROTEIN_NOTE,
   SALSA_RECOMMENDED_MAX,
   SECOND_PROTEIN_PRICE,
-  SIZES,
-  STEPS,
   money,
+  type Drink,
   type DrinkCat,
   type SizeId,
   type Step,
   type StepKey,
 } from "@/data/menu";
+import { useMenu } from "@/lib/api";
 import { encodeOrder, type OrderData } from "@/lib/order";
 import s from "./builder.module.css";
 
@@ -32,9 +30,11 @@ const DRINKS_STEP = 9;
 type Selection = Record<StepKey, string[]>;
 const emptySelection = (): Selection => ({ base: [], protein: [], mix: [], salsa: [], top: [], crunch: [] });
 
-const names = (st: Step, ids: string[]) => ids.map((id) => st.opts.find((o) => o.id === id)!.name).join(", ");
+// `?.` and filter: an item the editor removes can still be in a selection made before the live menu loaded.
+const names = (opts: { id: string; name: string }[], ids: string[]) =>
+  ids.map((id) => opts.find((o) => o.id === id)?.name).filter(Boolean).join(", ");
 
-function drinkLines(drinks: Record<string, number>) {
+function drinkLines(DRINKS: Drink[], drinks: Record<string, number>) {
   const out: string[] = [];
   DRINKS.forEach((d) =>
     d.sizes.forEach((z) => {
@@ -62,6 +62,7 @@ function gridClass(n: number) {
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export function Builder() {
+  const { SIZES, STEPS, BOWL_EXTRAS, DRINKS } = useMenu();
   const [step, setStepState] = useState(0);
   const [sel, setSel] = useState<Selection>(emptySelection);
   const [size, setSize] = useState<SizeId | null>(null);
@@ -118,19 +119,19 @@ export function Builder() {
   const st = step >= 1 && step <= 6 ? STEPS[step - 1] : null;
   const canNext = !st || (sel[st.key].length >= st.min && (st.key !== "protein" || !!size));
   const sizeName = SIZES.find((z) => z.id === size)?.name;
-  const dsel = drinkLines(drinks);
+  const dsel = drinkLines(DRINKS, drinks);
   const drinkTotal = Object.values(drinks).reduce((a, b) => a + b, 0);
   const drinkCount = drinkTotal ? `${drinkTotal} ${drinkTotal === 1 ? "bebida" : "bebidas"}` : "";
 
   type Row = { label: string; value: string; step: number | null };
   const summaryRows: Row[] = [];
   STEPS.forEach((x, i) => {
-    summaryRows.push({ label: x.short, value: sel[x.key].length ? names(x, sel[x.key]) : "—", step: i + 1 });
+    summaryRows.push({ label: x.short, value: sel[x.key].length ? names(x.opts, sel[x.key]) : "—", step: i + 1 });
     if (x.key === "protein") summaryRows.push({ label: "Tamaño", value: sizeName ?? "—", step: 2 });
   });
   if (dsel.length) summaryRows.push({ label: "Bebidas", value: dsel.join(", "), step: DRINKS_STEP });
   if (extras.length)
-    summaryRows.push({ label: "Extras", value: extras.map((id) => BOWL_EXTRAS.find((e) => e.id === id)!.name).join(", "), step: null });
+    summaryRows.push({ label: "Extras", value: names(BOWL_EXTRAS, extras), step: null });
 
   // ---- Actions
   const toggle = (st: Step, id: string) =>
@@ -153,10 +154,10 @@ export function Builder() {
     const rows: [string, string][] = [];
     const add = (l: string, v: string | undefined) => v && rows.push([l, v]);
     STEPS.forEach((x) => {
-      add(x.short, sel[x.key].length ? names(x, sel[x.key]) : "");
+      add(x.short, sel[x.key].length ? names(x.opts, sel[x.key]) : "");
       if (x.key === "protein") add("Tamaño", sizeName);
     });
-    add("Extras", extras.map((id) => BOWL_EXTRAS.find((e) => e.id === id)!.name).join(", "));
+    add("Extras", names(BOWL_EXTRAS, extras));
     add("Bebidas", dsel.join(", "));
     const now = new Date();
     const t = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;

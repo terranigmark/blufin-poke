@@ -1,0 +1,443 @@
+/* Menu editor: phone-first, like Cervesoft's taplist-admin, in Blufin's colours. */
+
+.center {
+  min-height: 100svh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.blufin {
+  font-family: var(--bebas);
+  font-size: 26px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.pokeco {
+  font-family: var(--script);
+  font-size: 16px;
+  color: var(--blue);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+/* ---------------------------------------------------------------- Login */
+
+.loginCard {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 12px 40px rgba(16, 48, 77, 0.12);
+}
+.loginTitle {
+  font-family: var(--bebas);
+  font-weight: 400;
+  font-size: 40px;
+  line-height: 1;
+  margin: 8px 0 0;
+}
+.back {
+  font-size: 14px;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* ---------------------------------------------------------------- Form controls */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.field input,
+.field textarea,
+.field select,
+.search {
+  font: inherit;
+  font-weight: 400;
+  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  width: 100%;
+}
+.field input[type="color"] {
+  height: 46px;
+  padding: 4px;
+}
+.field input:focus-visible,
+.field textarea:focus-visible,
+.field select:focus-visible,
+.search:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 1px;
+}
+.field small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--navy);
+}
+
+.primary,
+.danger,
+.ghost,
+.add {
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 11px 20px;
+  border: 0;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.primary {
+  background: var(--navy);
+  color: var(--cream);
+}
+.primary:disabled,
+.danger:disabled {
+  opacity: 0.6;
+}
+.danger {
+  background: transparent;
+  color: #b3261e;
+  border: 1px solid rgba(179, 38, 30, 0.35);
+}
+.ghost {
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  font-size: 14px;
+}
+.add {
+  background: var(--sand);
+  color: var(--navy);
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.error {
+  background: rgba(179, 38, 30, 0.08);
+  color: #b3261e;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+.errorText {
+  color: #b3261e;
+}
+
+/* ---------------------------------------------------------------- Panel */
+
+.page {
+  min-height: 100svh;
+  padding-bottom: 48px;
+}
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--cream-light);
+  border-bottom: 1px solid var(--line);
+  padding: max(12px, env(safe-area-inset-top)) 16px 12px;
+}
+.headerRow,
+.header .search {
+  display: block;
+  max-width: 760px;
+  margin: 0 auto;
+}
+.header .headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.headerActions {
+  display: flex;
+  gap: 8px;
+}
+.saveState {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.main {
+  max-width: 792px; /* 760px of content, like the header */
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
+}
+.cardToggle {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: 0;
+  padding: 10px 8px;
+  text-align: left;
+  min-width: 0;
+}
+.chevron {
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 160ms var(--ease-out);
+}
+.chevron[data-open="true"] {
+  transform: rotate(90deg);
+}
+.cardTitle {
+  font-family: var(--bebas);
+  font-size: 24px;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+.count {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.empty {
+  padding: 18px 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px 8px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.row:last-child {
+  border-bottom: 0;
+}
+.row[data-hidden="true"] .rowName,
+.row[data-hidden="true"] .thumb {
+  opacity: 0.45;
+}
+.row[data-hidden="true"] .rowName {
+  text-decoration: line-through;
+}
+.thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--cream-2);
+}
+.dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.rowMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  text-align: left;
+}
+.rowName {
+  font-weight: 600;
+  font-size: 16px;
+}
+.rowSub {
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.arrows {
+  display: flex;
+  gap: 2px;
+}
+.arrows button {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 15px;
+}
+.arrows button:disabled {
+  opacity: 0.3;
+}
+
+/* Availability switch */
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 46px;
+  height: 28px;
+}
+.switch input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+.switch span {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: rgba(16, 48, 77, 0.2);
+  transition: background 160ms var(--ease-out);
+}
+.switch span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 160ms var(--ease-out);
+}
+.switch input:checked + span {
+  background: #2e7d4f;
+}
+.switch input:checked + span::after {
+  transform: translateX(18px);
+}
+.switch input:focus-visible + span {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------- Edit sheet (bottom sheet on phones, dialog on desktop) */
+
+.sheet {
+  border: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 520px;
+  max-height: 92svh;
+  border-radius: 18px;
+  background: var(--card);
+  color: var(--navy);
+  box-shadow: 0 20px 60px rgba(10, 30, 48, 0.3);
+}
+.sheet::backdrop {
+  background: rgba(10, 30, 48, 0.45);
+}
+@media (max-width: 600px) {
+  .sheet {
+    margin: auto 0 0;
+    max-width: none;
+    border-radius: 18px 18px 0 0;
+  }
+}
+.sheetBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 18px max(18px, env(safe-area-inset-bottom));
+}
+.sheetHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.sheetHead h2 {
+  font-family: var(--bebas);
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  margin: 0;
+}
+.close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+}
+.preview {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 10px;
+}
+.sheetActions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+.sheetActions .primary {
+  margin-left: auto;
+}

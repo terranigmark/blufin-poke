@@ -24,12 +24,17 @@ waiter to confirm the order.
 ## Backend
 
 The Django backend lives in [`backend/`](backend/README.md): the Django Admin at `/admin/` and
-the protected menu editor at `/menu/` on the backend's host.
+its JSON API at `/api/`.
 
 ## Editing the menu
 
-All menu items, prices, photos, address, hours and social links live in **`src/data/menu.ts`**.
-The website, the builder, the TV screen and the waiter ticket all read from it.
+The manager edits the menu at **`/login`** on the website (sign in with an account that has
+**Puede editar el menú**). Changes show up on the Menú, Arma tu poke and the TV screen on their
+next load. The site reads the live menu from `NEXT_PUBLIC_API_URL` (default
+`https://api.blufinpoke.com`).
+
+`src/data/menu.ts` still holds the address, hours, social links, step rules and photos of the
+page layout, plus the menu the site falls back to when the API can't be reached.
 
 Values marked `PLACEHOLDER` there were guessed during design and still need to be confirmed:
 

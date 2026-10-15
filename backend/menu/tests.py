@@ -63,3 +63,59 @@ class MenuAccessTests(TestCase):
         user = User.objects.get(email="cocina@blufin.mx")
         self.assertTrue(user.can_edit_menu and user.check_password(PASSWORD))
         self.assertFalse(user.is_staff)
+
+
+class MenuApiTests(TestCase):
+    def token(self, email):
+        response = self.client.post("/api/auth/login/", {"email": email, "password": PASSWORD})
+        return response
+
+    def auth(self, email):
+        return {"HTTP_AUTHORIZATION": "Bearer " + self.token(email).json()["access"]}
+
+    def test_public_menu_hides_unavailable_items(self):
+        Beer.objects.filter(tap="01").update(available=False)
+        data = self.client.get("/api/menu/").json()
+        self.assertEqual(len(data["beers"]), 7)
+        self.assertEqual(len(data["ingredients"]), 39)
+        self.assertEqual(data["sizes"][0]["key"], "small")
+
+    def test_only_menu_editors_get_tokens(self):
+        User.objects.create_user("otro@blufin.mx", PASSWORD)
+        self.assertEqual(self.token("otro@blufin.mx").status_code, 403)
+        self.assertEqual(self.token("nadie@blufin.mx").status_code, 401)
+        self.assertEqual(self.client.get("/api/editor/").status_code, 401)
+
+    def test_editor_edits_adds_and_deletes(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        self.assertEqual(len(self.client.get("/api/editor/", **h).json()["drinks"]), 13)
+
+        beer = Beer.objects.get(tap="02")
+        r = self.client.patch(
+            f"/api/editor/beers/{beer.pk}/", {"price_16": 95}, content_type="application/json", **h
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Beer.objects.get(pk=beer.pk).price_16, 95)
+
+        # A new ingredient gets a key from its name, unique within its step.
+        r = self.client.post(
+            "/api/editor/ingredients/", {"step": "crunch", "name": "Totopos"}, content_type="application/json", **h
+        )
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.json()["key"], "totopos-2")
+
+        self.assertEqual(self.client.delete(f"/api/editor/beers/{beer.pk}/", **h).status_code, 204)
+
+    def test_removing_the_flag_locks_out_existing_tokens(self):
+        user = User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        user.can_edit_menu = False
+        user.save()
+        self.assertEqual(self.client.get("/api/editor/", **h).status_code, 403)
+
+    def test_website_origin_may_call_the_api(self):
+        r = self.client.get("/api/menu/", HTTP_ORIGIN="https://blufinpoke.com")
+        self.assertEqual(r["Access-Control-Allow-Origin"], "https://blufinpoke.com")
+        r = self.client.get("/api/menu/", HTTP_ORIGIN="https://evil.example")
+        self.assertNotIn("Access-Control-Allow-Origin", r)

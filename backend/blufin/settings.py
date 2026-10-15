@@ -6,6 +6,7 @@ from environment variables; see .env.example.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import dj_database_url
@@ -35,6 +36,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "corsheaders",
+    "rest_framework",
     "accounts",
     "menu",
 ]
@@ -43,6 +46,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -107,5 +111,30 @@ SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+# --- API (same stack as Cervesoft: DRF + Simple JWT) ---
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
+    "DEFAULT_THROTTLE_RATES": {"login": "10/min"},
+}
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# The website (blufinpoke.com, Vercel previews) calls /api/ from the browser with a
+# Bearer token, never cookies, so no credentials are allowed cross-origin.
+CORS_URLS_REGEX = r"^/api/.*$"
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://(www\.)?blufinpoke\.com$",
+    r"^https://[\w-]+\.vercel\.app$",
+]
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.environ.get("DJANGO_CORS_ALLOWED_ORIGINS", "").split(",") if o.strip()
+]
+if DEBUG:
+    CORS_ALLOWED_ORIGINS += ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
