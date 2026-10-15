@@ -23,12 +23,12 @@ waiter to confirm the order.
 
 ## Backend
 
-The Django backend lives in [`backend/`](backend/README.md): the Django Admin at `/admin/` and
+The Django backend lives in [`backend/`](backend/README.md): the Django Admin at `api.blufinpoke.com/admin/` and
 its JSON API at `/api/`.
 
 ## Editing the menu
 
-The manager edits the menu at **`/login`** on the website (sign in with an account that has
+The manager signs in at **`/login`** on the website and edits the menu at **`/admin`** (sign in with an account that has
 **Puede editar el menú**). Changes show up on the Menú, Arma tu poke and the TV screen on their
 next load. The site reads the live menu from `NEXT_PUBLIC_API_URL` (default
 `https://api.blufinpoke.com`).
