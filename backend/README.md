@@ -3,14 +3,20 @@
 | Route | Who | What |
 | --- | --- | --- |
 | `/admin/` | Owners (superusers) | Django Admin: create and edit accounts |
-| `/menu/` | Owners and employees with **Puede editar el menú** | Menu editor: bowl sizes, ingredients, extras, tap beers, drinks |
+| `/menu/` | Owners and employees with **Puede editar el menú** | Django-admin menu editor (backup for the one at blufinpoke.com/login) |
+| `/api/menu/` | Anyone | The live menu the website shows (available items only) |
+| `/api/auth/login/`, `/api/auth/refresh/` | Menu editors | Email + password → JWT pair (30 min access, 7 day refresh), like Cervesoft |
+| `/api/editor/`, `/api/editor/<sizes\|ingredients\|extras\|beers\|drinks>/` | Menu editors | Everything incl. hidden items; create, edit, delete |
 
 Everyone signs in with email and password. To give an employee menu access, open
 `/admin/` → Usuarios → Añadir, enter their email and a password, and tick
 **Puede editar el menú**. Leave "Es staff" off so they only see the menu.
 
 The menu starts with the items the website ships today (`src/data/menu.ts`). The
-website still reads that file; serving it from here is a later step.
+website's editor at `blufinpoke.com/login` edits it through `/api/`, and the menu,
+Arma tu poke and the TV screen read `/api/menu/`, falling back to `menu.ts` if the
+API can't be reached. CORS lets `blufinpoke.com`, `www.blufinpoke.com` and
+`*.vercel.app` call `/api/`; add others with `DJANGO_CORS_ALLOWED_ORIGINS`.
 
 ## Local
 

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AGUAS, BEERS, MENU_EXTRAS, NACIONAL, PHOTOS, SIZES, money } from "@/data/menu";
+import { PHOTOS, money } from "@/data/menu";
+import { useMenu } from "@/lib/api";
 import s from "./menu.module.css";
 
 const TABS = [
@@ -34,6 +35,7 @@ function PriceList({ title, items }: { title: string; items: { name: string; pri
 }
 
 export function MenuView() {
+  const { AGUAS, BEERS, MENU_EXTRAS, NACIONAL, SIZES } = useMenu();
   const [tab, setTab] = useState<Tab>("all");
 
   // ?tab=beer etc. lets other pages deep-link into a filtered menu.

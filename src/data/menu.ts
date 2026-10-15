@@ -185,11 +185,12 @@ export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
 
 // PLACEHOLDER: bowl prices were invented in the design.
-export const SIZES = [
+export type Size = { id: string; name: string; price: number };
+export const SIZES: Size[] = [
   { id: "small", name: "Small", price: 165 },
   { id: "regular", name: "Regular", price: 235 },
-] as const;
-export type SizeId = (typeof SIZES)[number]["id"];
+];
+export type SizeId = string;
 
 /** Paid extras offered on the "Así queda tu bowl" screen and the TV menu. */
 export const BOWL_EXTRAS = [
@@ -269,8 +270,8 @@ export type Drink = {
   sizes: { k: string; label: string; price: number }[];
 };
 
-export const DRINKS: Drink[] = [
-  ...BEERS.map((b) => ({
+export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[]): Drink[] => [
+  ...beers.map((b) => ({
     id: "b" + b.tap,
     cat: "beer" as const,
     name: b.name,
@@ -280,14 +281,14 @@ export const DRINKS: Drink[] = [
       { k: "16", label: "16 oz", price: b.price16 },
     ],
   })),
-  ...NACIONAL.map((a, i) => ({
+  ...nacional.map((a, i) => ({
     id: "n" + i,
     cat: "nac" as const,
     name: a.name,
     meta: `${a.pack} · ${a.size}`,
     sizes: [{ k: "u", label: "", price: a.price }],
   })),
-  ...AGUAS.map((a, i) => ({
+  ...aguas.map((a, i) => ({
     id: "a" + i,
     cat: "aguas" as const,
     name: a.name,
@@ -296,6 +297,8 @@ export const DRINKS: Drink[] = [
   })),
 ];
 
+export const DRINKS = drinksFrom(BEERS, NACIONAL, AGUAS);
+
 export const DRINK_TABS: [DrinkCat, string][] = [
   ["beer", "Cerveza artesanal"],
   ["nac", "Cerveza nacional"],
@@ -303,3 +306,7 @@ export const DRINK_TABS: [DrinkCat, string][] = [
 ];
 
 export const money = (n: number) => "$" + n;
+
+/** The editable part of the menu. The website starts from these and swaps in the live menu from the API (src/lib/api.ts). */
+export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, BEERS, AGUAS, NACIONAL, DRINKS };
+export type Menu = typeof MENU;

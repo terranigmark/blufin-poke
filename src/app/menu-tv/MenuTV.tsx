@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AGUAS, BEERS, BOWL_EXTRAS, NACIONAL, PHOTOS, PROTEIN_NOTE, SIZES, STEPS, money } from "@/data/menu";
+import { useEffect, useMemo, useState } from "react";
+import { PHOTOS, PROTEIN_NOTE, money, type Menu } from "@/data/menu";
+import { useMenu } from "@/lib/api";
 import s from "./tv.module.css";
 
 /*
@@ -19,7 +20,7 @@ type Slide = {
   items: { name: string; meta: string; prices: string[] }[];
 };
 
-const SLIDES: Slide[] = [
+const slides = ({ BEERS, AGUAS, NACIONAL }: Menu): Slide[] => [
   {
     key: "beer",
     title: "Cerveza artesanal",
@@ -49,6 +50,9 @@ const SLIDES: Slide[] = [
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
 export function MenuTV() {
+  const menu = useMenu();
+  const { SIZES, STEPS, BOWL_EXTRAS } = menu;
+  const SLIDES = useMemo(() => slides(menu), [menu]);
   const [i, setI] = useState(0);
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(10);
