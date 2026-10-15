@@ -52,6 +52,7 @@ npm run dev      # http://localhost:3000
 npm run build    # static export to out/
 npm start        # serve out/ locally
 npm run lint     # type-check
+npm test         # front-end tests
 ```
 
 Every push to `main` deploys to GitHub Pages through `.github/workflows/pages.yml`. `out/` can also
@@ -68,7 +69,8 @@ build.
 ## Tests
 
 - Backend: `cd backend && uv run python manage.py test` (CI: `.github/workflows/backend.yml`).
-- Website: `npm run test:e2e` runs the Playwright browser tests in `e2e/` against a throwaway
+- Website: `npm test` runs the Vitest unit and component tests next to the code (`src/**/*.test.ts(x)`;
+  CI: `.github/workflows/frontend.yml`). `npm run test:e2e` runs the Playwright browser tests in `e2e/` against a throwaway
   backend on SQLite (CI: `.github/workflows/e2e.yml`). Run `npx playwright install chromium` once first.
 
-Every new or changed feature adds or updates its tests in the same PR.
+Every new or changed feature adds or updates its tests in the same PR; see [CONTRIBUTING.md](CONTRIBUTING.md).

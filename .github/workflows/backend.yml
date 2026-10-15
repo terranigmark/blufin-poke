@@ -1,11 +1,10 @@
 name: Backend
 
+# Every PR runs every check, so a red test always blocks the merge.
 on:
   pull_request:
-    paths: ["backend/**", ".github/workflows/backend.yml"]
   push:
     branches: [main]
-    paths: ["backend/**", ".github/workflows/backend.yml"]
 
 defaults:
   run:
