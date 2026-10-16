@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LANDING, type Landing } from "@/data/landing";
@@ -212,18 +212,31 @@ describe("/admin", () => {
     expect(JSON.parse(String(init!.body))).toMatchObject({ id: 2, name_en: "", description_en: "Roasted coffee." });
   });
 
-  it("picks a beer's colour on the SRM chart instead of a colour picker", async () => {
+  it("picks a beer's colour on an SRM slider, or by typing the number, with a swatch of it", async () => {
     signedIn();
     const fetch = api();
     render(<AdminPage />);
     await userEvent.click(await screen.findByRole("button", { name: /^American Stout/ }));
 
     const sheet = screen.getByRole("dialog");
-    expect(sheet.querySelector('input[type="color"]')).toBeNull();
-    expect(within(sheet).getAllByRole("radio")).toHaveLength(40);
-    expect(within(sheet).getByRole("radio", { name: "SRM 40" })).toBeChecked();
-    await userEvent.click(within(sheet).getByRole("radio", { name: "SRM 12" }));
-    expect(within(sheet).getByText("Color en el menú · SRM 12")).toBeInTheDocument();
+    const slider = within(sheet).getByRole("slider", { name: "SRM" });
+    const number = within(sheet).getByRole("spinbutton", { name: "Número SRM" });
+    const swatch = sheet.querySelector('[class*="srmSwatch"]')!;
+    expect(slider).toHaveValue("40");
+    expect(swatch).toHaveStyle({ background: "#36080A" });
+
+    fireEvent.change(slider, { target: { value: "20" } });
+    expect(number).toHaveValue(20);
+    // Typing moves the slider and the swatch, and stays within 1 to 40.
+    await userEvent.clear(number);
+    await userEvent.type(number, "99");
+    expect(slider).toHaveValue("40");
+    await userEvent.tab();
+    expect(number).toHaveValue(40);
+    await userEvent.clear(number);
+    await userEvent.type(number, "12");
+    expect(slider).toHaveValue("12");
+    expect(swatch).toHaveStyle({ background: "#CF6900" });
     await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());

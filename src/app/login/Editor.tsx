@@ -938,21 +938,36 @@ function ItemSheet({
   );
 }
 
-/** A beer's colour as a value on the SRM chart: 40 swatches, from pale straw to black. */
+/** A beer's colour as a value on the SRM chart: a slider over the SRM colours, the number, and a swatch of it. */
 function SrmPicker({ name, label, value }: { name: string; label: string; value: number }) {
-  const [srm, setSrm] = useState(value);
+  // What's typed in the number box; the slider, swatch and saved value use it clamped to 1–40.
+  const [text, setText] = useState(String(value));
+  const srm = Math.min(40, Math.max(1, Math.round(Number(text)) || 1));
   return (
     <fieldset className={s.srm}>
-      <legend>
-        {label} · SRM {srm}
-      </legend>
-      <div className={s.srmGrid}>
-        {SRM.map((hex, i) => (
-          <label key={i} title={`SRM ${i + 1}`}>
-            <input type="radio" name={name} value={i + 1} checked={srm === i + 1} onChange={() => setSrm(i + 1)} aria-label={`SRM ${i + 1}`} />
-            <span style={{ background: hex, color: i < 12 ? "var(--navy)" : "#fff" }}>{i + 1}</span>
-          </label>
-        ))}
+      <legend>{label}</legend>
+      <div className={s.srmRow}>
+        <span className={s.srmSwatch} style={{ background: srmColor(srm) }} aria-hidden />
+        <input
+          type="range"
+          name={name}
+          min={1}
+          max={40}
+          value={srm}
+          onChange={(e) => setText(e.target.value)}
+          aria-label="SRM"
+          style={{ background: `linear-gradient(to right, ${SRM.join(", ")})` }}
+        />
+        <input
+          type="number"
+          min={1}
+          max={40}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onBlur={() => setText(String(srm))}
+          aria-label="Número SRM"
+          inputMode="numeric"
+        />
       </div>
       <small>Como en la tabla SRM: 1 es la más clara y 40 la más oscura.</small>
     </fieldset>

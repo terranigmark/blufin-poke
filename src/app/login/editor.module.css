@@ -98,37 +98,59 @@
   font-size: 14px;
   color: var(--muted);
 }
-.srmGrid {
-  display: grid;
-  grid-template-columns: repeat(10, 1fr);
-  gap: 4px;
+.srmRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
-.srmGrid label {
-  position: relative;
-}
-.srmGrid input {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  opacity: 0;
-}
-.srmGrid span {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
+.srmSwatch {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
 }
-.srmGrid input:checked + span {
-  outline: 3px solid var(--navy);
-  outline-offset: 1px;
+/* The track shows the whole SRM scale; the thumb is a white ring so it reads on light and dark beers. */
+.srmRow input[type="range"] {
+  flex: 1;
+  min-width: 0;
+  height: 14px;
+  margin: 0;
+  border-radius: 999px;
+  appearance: none;
+  -webkit-appearance: none;
 }
-.srmGrid input:focus-visible + span {
+.srmRow input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: transparent;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 1px var(--navy), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.srmRow input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: transparent;
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 1px var(--navy), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+.srmRow input[type="range"]:focus-visible {
   outline: 2px solid var(--blue);
-  outline-offset: 3px;
+  outline-offset: 4px;
+}
+.srmRow input[type="number"] {
+  width: 64px;
+  font: inherit;
+  font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: center;
 }
 .field input:focus-visible,
 .field textarea:focus-visible,
