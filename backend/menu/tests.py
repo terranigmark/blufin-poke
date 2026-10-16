@@ -84,6 +84,33 @@ class MenuApiTests(TestCase):
         self.assertEqual(len(data["ingredients"]), 39)
         self.assertEqual(data["sizes"][0]["key"], "small")
 
+    def test_public_menu_has_english_names_with_spanish_fallback(self):
+        data = self.client.get("/api/menu/").json()
+        tuna = next(i for i in data["ingredients"] if i["key"] == "atun")
+        self.assertEqual((tuna["name"], tuna["name_en"]), ("Atún", "Tuna"))
+        # Same in both languages: left empty, the website shows the Spanish name.
+        tofu = next(i for i in data["ingredients"] if i["key"] == "tofu")
+        self.assertEqual(tofu["name_en"], "")
+        # Totopos reads "Nachos" as a base and "Tortilla chips" as a crunchy, as on the printed menu.
+        totopos = {i["step"]: i["name_en"] for i in data["ingredients"] if i["key"] == "totopos"}
+        self.assertEqual(totopos, {"base": "Nachos", "crunch": "Tortilla chips"})
+        stout = next(b for b in data["beers"] if b["tap"] == "01")
+        self.assertEqual(stout["description_en"], "Roasted coffee, bitter cocoa and a silky body.")
+        self.assertTrue(all(d["name_en"] for d in data["drinks"] if d["category"] == "aguas" and d["name"].startswith("Agua")))
+
+    def test_editor_saves_english_name(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        size = Size.objects.get(key="small")
+        response = self.client.patch(
+            f"/api/editor/sizes/{size.pk}/",
+            {"name_en": "Small bowl"},
+            content_type="application/json",
+            **self.auth("mesera@blufin.mx"),
+        )
+        self.assertEqual(response.status_code, 200)
+        size.refresh_from_db()
+        self.assertEqual(size.name_en, "Small bowl")
+
     def test_only_menu_editors_get_tokens(self):
         User.objects.create_user("otro@blufin.mx", PASSWORD)
         self.assertEqual(self.token("otro@blufin.mx").status_code, 403)

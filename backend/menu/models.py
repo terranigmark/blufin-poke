@@ -9,6 +9,8 @@ from django.db import models
 
 class MenuItem(models.Model):
     name = models.CharField("nombre", max_length=100)
+    # Optional: the website shows `name` in English too when this is empty.
+    name_en = models.CharField("nombre en inglés", max_length=100, blank=True)
     available = models.BooleanField("disponible", default=True)
     order = models.PositiveIntegerField("orden", default=0)
 
@@ -70,6 +72,7 @@ class Beer(MenuItem):
     price_16 = models.PositiveIntegerField("precio 16 oz (MXN)")
     color = models.CharField("color", max_length=7, default="#E8B84A", help_text="Hex, ej. #E8B84A")
     description = models.CharField("descripción", max_length=200, blank=True)
+    description_en = models.CharField("descripción en inglés", max_length=200, blank=True)
 
     class Meta(MenuItem.Meta):
         verbose_name = "cerveza de barril"

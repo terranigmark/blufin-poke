@@ -15,7 +15,9 @@ export const BUSINESS = {
   addressShort: "Belisario Domínguez 1251, La Paz",
   addressLines: ["Belisario Domínguez 1251, CP 23000", "La Paz, Baja California Sur"],
   hoursShort: "Mar – Dom · 13:30 – 21:30",
+  hoursShortEn: "Tue – Sun · 1:30 – 9:30 pm",
   hoursLines: ["Martes a domingo · 13:30 – 21:30", "Lunes cerrado"],
+  hoursLinesEn: ["Tuesday to Sunday · 1:30 – 9:30 pm", "Closed Mondays"],
   mapsEmbed:
     "https://maps.google.com/maps?q=Belisario%20Dominguez%201251%2C%20La%20Paz%2C%20Baja%20California%20Sur&z=15&output=embed",
   mapsLink: "https://maps.google.com/?q=Belisario+Dominguez+1251+La+Paz+BCS",
@@ -43,11 +45,59 @@ export const PHOTOS = {
   tvNac: unsplash("1514933651103-005eec06c04b", 1200),
 };
 
+// ---------------------------------------------------------------- English names
+
+/**
+ * English for the bundled menu below, by Spanish name. The live menu brings its own
+ * (`name_en` in the editor); names that read the same in both languages are left out.
+ */
+export const EN: Record<string, string> = {
+  "Arroz sushi": "Sushi rice",
+  Ensalada: "Green mix",
+  Totopos: "Tortilla chips",
+  "Pesca del día": "Catch of the day",
+  Atún: "Tuna",
+  "Atún Spicy": "Spicy tuna",
+  Camarón: "Shrimp",
+  "Cebolla morada": "Red onion",
+  "Cebolla blanca": "White onion",
+  Cebollín: "Chives",
+  "Chile jalapeño": "Jalapeño pepper",
+  Ajonjolí: "Sesame seeds",
+  "Aceite de Ajonjolí": "Sesame oil",
+  Aguacate: "Avocado",
+  "Ensalada de cangrejo": "Crab salad",
+  "Tomate cherry": "Cherry tomato",
+  Zanahoria: "Carrot",
+  "Alga wakame": "Seaweed",
+  "Col morada": "Purple cabbage",
+  Germinado: "Sprouts",
+  Pepino: "Cucumber",
+  "Fruta de temporada": "Fruit",
+  "Cebolla crispy": "Crispy onion",
+  "Nueces de macadamia": "Macadamia nuts",
+  Jengibre: "Ginger",
+  Proteína: "Protein",
+  Cangrejo: "Crab",
+  Salsa: "Sauce",
+  "Arroz / ensalada / totopos": "Rice / green mix / nachos",
+  Shoyu: "Secret Shoyu",
+  "50/50": "Mix",
+  "Agua mineral": "Sparkling water",
+  "Agua de coco": "Coconut water",
+  "Agua natural": "Still water",
+  "Té gasificado": "Sparkling tea",
+  Refresco: "Soda",
+  "Agua de sabor": "Flavored water",
+  "Té frío": "Iced tea",
+};
+const en = <T extends { name: string }>(x: T) => ({ ...x, nameEn: EN[x.name] });
+
 // ---------------------------------------------------------------- Poke builder
 
 export type StepKey = "base" | "protein" | "mix" | "salsa" | "top" | "crunch";
 
-export type StepOption = { id: string; name: string; img: string | null };
+export type StepOption = { id: string; name: string; nameEn?: string; img: string | null };
 
 export type Step = {
   key: StepKey;
@@ -56,6 +106,7 @@ export type Step = {
   title: string;
   /** Rule shown on the TV menu. */
   tvRule: string;
+  en: { short: string; title: string; tvRule: string };
   min: number;
   /** `Infinity` = no limit. */
   max: number;
@@ -64,15 +115,18 @@ export type Step = {
   opts: StepOption[];
 };
 
-const opt = (id: string, name: string, photoId?: string, w = 300): StepOption => ({
+// `nameEn` defaults by Spanish name; Totopos is "Nachos" as a base but "Tortilla chips" as a crunchy.
+const opt = (id: string, name: string, photoId?: string, w = 300, nameEn = EN[name]): StepOption => ({
   id,
   name,
+  nameEn,
   img: photoId ? unsplash(photoId, w) : null,
 });
 
 export const STEPS: Step[] = [
   {
     key: "base",
+    en: { short: "Base", title: "Choose your base", tvRule: "Pick 1" },
     short: "Base",
     title: "Elige tu base",
     tvRule: "Elige 1",
@@ -82,12 +136,13 @@ export const STEPS: Step[] = [
     opts: [
       opt("arroz", "Arroz sushi", "1516684732162-798a0062be99", 500),
       opt("ensalada", "Ensalada", "1540420773420-3366772f4999", 500),
-      opt("totopos", "Totopos", "1582169296194-e4d644c48063", 500),
+      opt("totopos", "Totopos", "1582169296194-e4d644c48063", 500, "Nachos"),
       opt("mitad", "50/50", "1512621776951-a57141f2eefd", 500),
     ],
   },
   {
     key: "protein",
+    en: { short: "Protein", title: "Choose your protein", tvRule: "Up to 2 · 2nd +$25" },
     short: "Proteína",
     title: "Elige tu proteína",
     tvRule: "Hasta 2 · la 2ª +$25",
@@ -104,6 +159,7 @@ export const STEPS: Step[] = [
   },
   {
     key: "mix",
+    en: { short: "Mix-ins", title: "Choose your mix-ins", tvRule: "As many as you like" },
     short: "Mix-ins",
     title: "Elige tus mix-ins",
     tvRule: "Los que quieras",
@@ -121,6 +177,7 @@ export const STEPS: Step[] = [
   },
   {
     key: "salsa",
+    en: { short: "Sauce", title: "Choose your sauce", tvRule: "We recommend 2" },
     short: "Salsa",
     title: "Elige tu salsa",
     tvRule: "Recomendamos 2",
@@ -141,6 +198,7 @@ export const STEPS: Step[] = [
   },
   {
     key: "top",
+    en: { short: "Toppings", title: "Choose your toppings", tvRule: "As many as you like" },
     short: "Toppings",
     title: "Elige tus toppings",
     tvRule: "Los que quieras",
@@ -162,6 +220,7 @@ export const STEPS: Step[] = [
   },
   {
     key: "crunch",
+    en: { short: "Crunchies", title: "Crunchies", tvRule: "As many as you like" },
     short: "Crunchies",
     title: "Crunchies",
     tvRule: "Los que quieras",
@@ -183,9 +242,10 @@ export const SECOND_PROTEIN_PRICE = 25;
 /** From this many salsas on, a "we recommend up to 2" note appears. */
 export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
+export const PROTEIN_NOTE_EN = "* Ask for protein availability. They are fresh products which are subject to changes and/or while supplies last";
 
 // PLACEHOLDER: bowl prices were invented in the design.
-export type Size = { id: string; name: string; price: number };
+export type Size = { id: string; name: string; nameEn?: string; price: number };
 export const SIZES: Size[] = [
   { id: "small", name: "Small", price: 165 },
   { id: "regular", name: "Regular", price: 235 },
@@ -193,12 +253,13 @@ export const SIZES: Size[] = [
 export type SizeId = string;
 
 /** Paid extras offered on the "Así queda tu bowl" screen and the TV menu. */
-export const BOWL_EXTRAS = [
+export type Extra = { id: string; name: string; nameEn?: string; price: number };
+export const BOWL_EXTRAS: Extra[] = [
   { id: "xprot", name: "Proteína", price: 25 },
   { id: "xagu", name: "Aguacate", price: 20 },
   { id: "xwak", name: "Wakame", price: 20 },
   { id: "xcan", name: "Cangrejo", price: 20 },
-];
+].map(en);
 
 // ---------------------------------------------------------------- Drinks
 
@@ -213,23 +274,26 @@ export type Beer = {
   /** Dot colour on the menu tap list. */
   color: string;
   desc: string;
+  nameEn?: string;
+  descEn?: string;
 };
 
 export const BEERS: Beer[] = [
-  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, color: "#2A1810", desc: "Café tostado, cacao amargo y cuerpo sedoso." },
-  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, color: "#3B2216", desc: "Vainilla, chocolate y un final dulce de postre." },
-  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, color: "#E8B84A", desc: "Jugosa y turbia, con notas de mango y durazno." },
-  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, color: "#D99A2B", desc: "Cítrica y resinosa, como brisa de costa." },
-  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, color: "#E0A93A", desc: "Ligera y aromática, para toda la tarde." },
-  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, color: "#C8822B", desc: "Levadura belga, especiada y frutal." },
-  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, color: "#F0CF6A", desc: "Limpia y refrescante, hecha para el calor." },
-  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, color: "#EBC150", desc: "Crujiente, con lúpulo estilo costa oeste." },
+  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, color: "#2A1810", desc: "Café tostado, cacao amargo y cuerpo sedoso.", descEn: "Roasted coffee, bitter cocoa and a silky body." },
+  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, color: "#3B2216", desc: "Vainilla, chocolate y un final dulce de postre.", descEn: "Vanilla, chocolate and a sweet, dessert-like finish." },
+  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, color: "#E8B84A", desc: "Jugosa y turbia, con notas de mango y durazno.", descEn: "Juicy and hazy, with notes of mango and peach." },
+  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, color: "#D99A2B", desc: "Cítrica y resinosa, como brisa de costa.", descEn: "Citrusy and resinous, like a coastal breeze." },
+  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, color: "#E0A93A", desc: "Ligera y aromática, para toda la tarde.", descEn: "Light and aromatic, for the whole afternoon." },
+  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, color: "#C8822B", desc: "Levadura belga, especiada y frutal.", descEn: "Belgian yeast, spicy and fruity." },
+  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, color: "#F0CF6A", desc: "Limpia y refrescante, hecha para el calor.", descEn: "Clean and refreshing, made for the heat." },
+  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, color: "#EBC150", desc: "Crujiente, con lúpulo estilo costa oeste.", descEn: "Crisp, with West Coast-style hops." },
 ];
 
 // PLACEHOLDER: "Botella" vs "Lata" was guessed.
-export type Packaged = { name: string; price: number; size: string; pack: "Botella" | "Lata" };
+export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata" };
 
-export const AGUAS: Packaged[] = [
+export const AGUAS: Packaged[] = (
+  [
   { name: "Agua mineral", price: 40, size: "355 ml", pack: "Botella" },
   { name: "Agua de coco", price: 40, size: "330 ml", pack: "Lata" },
   { name: "Agua natural", price: 15, size: "500 ml", pack: "Botella" },
@@ -240,7 +304,8 @@ export const AGUAS: Packaged[] = [
   { name: "Cold brew", price: 75, size: "355 ml", pack: "Lata" },
   { name: "Kombucha", price: 80, size: "355 ml", pack: "Botella" },
   { name: "Soda Orita", price: 65, size: "355 ml", pack: "Lata" },
-];
+] as Packaged[]
+).map(en);
 
 export const NACIONAL: Packaged[] = [
   { name: "Pacífico", price: 35, size: "210 ml", pack: "Botella" },
@@ -249,7 +314,7 @@ export const NACIONAL: Packaged[] = [
 ];
 
 /** Full extras list for the Menú page. */
-export const MENU_EXTRAS = [
+export const MENU_EXTRAS: { name: string; nameEn?: string; price: number }[] = [
   { name: "Proteína", price: 25 },
   { name: "Aguacate", price: 20 },
   { name: "Wakame", price: 20 },
@@ -258,7 +323,7 @@ export const MENU_EXTRAS = [
   { name: "Cangrejo", price: 20 },
   { name: "Salsa", price: 10 },
   { name: "Arroz / ensalada / totopos", price: 50 },
-];
+].map(en);
 
 // Drinks as orderable items in the "Agrega una bebida" step.
 export type DrinkCat = "beer" | "nac" | "aguas";
@@ -266,16 +331,22 @@ export type Drink = {
   id: string;
   cat: DrinkCat;
   name: string;
+  nameEn?: string;
   meta: string;
+  metaEn: string;
   sizes: { k: string; label: string; price: number }[];
 };
+
+export const PACK_EN = { Botella: "Bottle", Lata: "Can" } as const;
 
 export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[]): Drink[] => [
   ...beers.map((b) => ({
     id: "b" + b.tap,
     cat: "beer" as const,
     name: b.name,
+    nameEn: b.nameEn,
     meta: `De barril · ${b.style} · ${b.abv}`,
+    metaEn: `On tap · ${b.style} · ${b.abv}`,
     sizes: [
       { k: "12", label: "12 oz", price: b.price12 },
       { k: "16", label: "16 oz", price: b.price16 },
@@ -285,24 +356,28 @@ export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[
     id: "n" + i,
     cat: "nac" as const,
     name: a.name,
+    nameEn: a.nameEn,
     meta: `${a.pack} · ${a.size}`,
+    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
     sizes: [{ k: "u", label: "", price: a.price }],
   })),
   ...aguas.map((a, i) => ({
     id: "a" + i,
     cat: "aguas" as const,
     name: a.name,
+    nameEn: a.nameEn,
     meta: `${a.pack} · ${a.size}`,
+    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
     sizes: [{ k: "u", label: "", price: a.price }],
   })),
 ];
 
 export const DRINKS = drinksFrom(BEERS, NACIONAL, AGUAS);
 
-export const DRINK_TABS: [DrinkCat, string][] = [
-  ["beer", "Cerveza artesanal"],
-  ["nac", "Cerveza nacional"],
-  ["aguas", "Aguas y refrescos"],
+export const DRINK_TABS: [DrinkCat, string, string][] = [
+  ["beer", "Cerveza artesanal", "Craft beer"],
+  ["nac", "Cerveza nacional", "Mexican beer"],
+  ["aguas", "Aguas y refrescos", "Water & soft drinks"],
 ];
 
 export const money = (n: number) => "$" + n;

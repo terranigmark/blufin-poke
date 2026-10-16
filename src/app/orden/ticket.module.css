@@ -45,6 +45,11 @@
   background: var(--navy);
   color: var(--cream);
 }
+.headEnd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .body {
   display: flex;
   flex-direction: column;
@@ -116,4 +121,9 @@
   font-size: 17px;
   line-height: 1.45;
   color: var(--ink-2);
+}
+.headEnd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }

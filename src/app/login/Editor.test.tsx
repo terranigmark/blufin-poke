@@ -14,10 +14,10 @@ const signedIn = () => {
 };
 
 const ROWS: MenuRows = {
-  sizes: [{ id: 1, key: "small", name: "Small", price: 165, available: true, order: 0 }],
+  sizes: [{ id: 1, key: "small", name: "Small", name_en: "", price: 165, available: true, order: 0 }],
   ingredients: [],
   extras: [],
-  beers: [{ id: 2, tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, color: "#2A1810", description: "", available: true, order: 0 }],
+  beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, color: "#2A1810", description: "", description_en: "", available: true, order: 0 }],
   drinks: [],
 };
 
@@ -112,8 +112,25 @@ describe("/admin", () => {
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const [, init] = fetch.mock.calls.at(-1)!;
-    expect(JSON.parse(String(init!.body))).toMatchObject({ id: 1, name: "Small", price: 175, available: true });
+    expect(JSON.parse(String(init!.body))).toMatchObject({ id: 1, name: "Small", name_en: "", price: 175, available: true });
     expect(screen.getByText("$175")).toBeInTheDocument();
+  });
+
+  it("edits a beer's English name and description, which are optional", async () => {
+    signedIn();
+    const fetch = api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
+    await userEvent.click(screen.getByRole("button", { name: /^American Stout/ }));
+
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByLabelText(/^Nombre en inglés/)).not.toBeRequired();
+    await userEvent.type(within(sheet).getByLabelText(/^Descripción en inglés/), "Roasted coffee.");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    const [, init] = fetch.mock.calls.at(-1)!;
+    expect(JSON.parse(String(init!.body))).toMatchObject({ id: 2, name_en: "", description_en: "Roasted coffee." });
   });
 
   it("puts the switch back when saving fails", async () => {

@@ -10,7 +10,7 @@ it("swaps in the live menu from the API", async () => {
     ingredients: [],
     extras: [],
     beers: [],
-    drinks: [{ id: 1, category: "aguas", name: "Horchata de la casa", price: 45, size: "500 ml", pack: "Botella", available: true, order: 0 }],
+    drinks: [{ id: 1, category: "aguas", name: "Horchata de la casa", name_en: "", price: 45, size: "500 ml", pack: "Botella", available: true, order: 0 }],
   };
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify(rows)));
   vi.stubGlobal("fetch", fetch);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useT } from "@/lib/i18n";
 import s from "./home.module.css";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -12,6 +13,7 @@ const POSTER = `${BASE}/video/hero-waves-poster.jpg`;
 export function HeroMedia() {
   const wrap = useRef<HTMLDivElement>(null);
   const [motion, setMotion] = useState(false);
+  const t = useT();
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -36,7 +38,7 @@ export function HeroMedia() {
 
   return (
     <div ref={wrap} className={s.heroMedia}>
-      <img src={POSTER} alt="Olas al atardecer en la playa" className={s.heroImg} fetchPriority="high" />
+      <img src={POSTER} alt={t("Olas al atardecer en la playa", "Waves at sunset on the beach")} className={s.heroImg} fetchPriority="high" />
       {motion && (
         <video className={s.heroImg} src={VIDEO} poster={POSTER} autoPlay muted loop playsInline aria-hidden="true" />
       )}

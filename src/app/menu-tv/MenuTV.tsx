@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PHOTOS, PROTEIN_NOTE, money, type Menu } from "@/data/menu";
+import { PACK_EN, PHOTOS, PROTEIN_NOTE, PROTEIN_NOTE_EN, money, type Menu } from "@/data/menu";
 import { useMenu } from "@/lib/api";
+import { pick, useLang } from "@/lib/i18n";
 import s from "./tv.module.css";
 
 /*
@@ -20,30 +21,34 @@ type Slide = {
   items: { name: string; meta: string; prices: string[] }[];
 };
 
-const slides = ({ BEERS, AGUAS, NACIONAL }: Menu): Slide[] => [
+const slides = ({ BEERS, AGUAS, NACIONAL }: Menu, t: ReturnType<typeof pick>): Slide[] => [
   {
     key: "beer",
-    title: "Cerveza artesanal",
+    title: t("Cerveza artesanal", "Craft beer"),
     script: "Black Marlin Brewing",
     img: PHOTOS.tvBeer,
     variant: "beer",
-    items: BEERS.map((b) => ({ name: b.name, meta: `De barril · ${b.style} · ${b.abv}`, prices: [money(b.price12), money(b.price16)] })),
+    items: BEERS.map((b) => ({
+      name: t(b.name, b.nameEn),
+      meta: `${t("De barril", "On tap")} · ${b.style} · ${b.abv}`,
+      prices: [money(b.price12), money(b.price16)],
+    })),
   },
   {
     key: "aguas",
-    title: "Aguas y refrescos",
-    script: "Bien frías",
+    title: t("Aguas y refrescos", "Water & soft drinks"),
+    script: t("Bien frías", "Ice cold"),
     img: PHOTOS.tvAguas,
     variant: "aguas",
-    items: AGUAS.map((a) => ({ name: a.name, meta: `${a.pack} · ${a.size}`, prices: [money(a.price)] })),
+    items: AGUAS.map((a) => ({ name: t(a.name, a.nameEn), meta: `${t(a.pack, PACK_EN[a.pack])} · ${a.size}`, prices: [money(a.price)] })),
   },
   {
     key: "nac",
-    title: "Cerveza nacional",
-    script: "Las de siempre",
+    title: t("Cerveza nacional", "Mexican beer"),
+    script: t("Las de siempre", "The classics"),
     img: PHOTOS.tvNac,
     variant: "nac",
-    items: NACIONAL.map((a) => ({ name: a.name, meta: `${a.pack} · ${a.size}`, prices: [money(a.price)] })),
+    items: NACIONAL.map((a) => ({ name: t(a.name, a.nameEn), meta: `${t(a.pack, PACK_EN[a.pack])} · ${a.size}`, prices: [money(a.price)] })),
   },
 ];
 
@@ -52,7 +57,9 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 export function MenuTV() {
   const menu = useMenu();
   const { SIZES, STEPS, BOWL_EXTRAS } = menu;
-  const SLIDES = useMemo(() => slides(menu), [menu]);
+  const { lang } = useLang();
+  const t = pick(lang);
+  const SLIDES = useMemo(() => slides(menu, pick(lang)), [menu, lang]);
   const [i, setI] = useState(0);
   const [scale, setScale] = useState(1);
   const [seconds, setSeconds] = useState(10);
@@ -94,11 +101,11 @@ export function MenuTV() {
                 <span className={s.brandRule} />
                 <span className={s.pokeco}>Poke Co</span>
               </div>
-              <h1>Arma tu poke</h1>
+              <h1>{t("Arma tu poke", "Build your poke")}</h1>
               <div className={s.prices}>
                 {SIZES.map((z) => (
                   <span key={z.id}>
-                    <span>{z.name}</span>
+                    <span>{t(z.name, z.nameEn)}</span>
                     <span className={s.blue}>{money(z.price)}</span>
                   </span>
                 ))}
@@ -112,12 +119,12 @@ export function MenuTV() {
               <div key={x.key} className={s.stepCol}>
                 <div className={s.stepHead}>
                   <span className={s.stepNum}>{n + 1}</span>
-                  <span className={s.stepTitle}>{x.short}</span>
+                  <span className={s.stepTitle}>{t(x.short, x.en.short)}</span>
                 </div>
-                <span className={s.rule}>{x.tvRule}</span>
+                <span className={s.rule}>{t(x.tvRule, x.en.tvRule)}</span>
                 <div className={s.opts}>
                   {x.opts.map((o) => (
-                    <span key={o.id}>{o.name}</span>
+                    <span key={o.id}>{t(o.name, o.nameEn)}</span>
                   ))}
                 </div>
               </div>
@@ -129,11 +136,11 @@ export function MenuTV() {
               <span className={s.extrasTitle}>Extras</span>
               {BOWL_EXTRAS.map((e) => (
                 <span key={e.id} className={s.extra}>
-                  {e.name} <span className={s.blue}>{money(e.price)}</span>
+                  {t(e.name, e.nameEn)} <span className={s.blue}>{money(e.price)}</span>
                 </span>
               ))}
             </div>
-            <span className={s.note}>{PROTEIN_NOTE}</span>
+            <span className={s.note}>{t(PROTEIN_NOTE, PROTEIN_NOTE_EN)}</span>
           </div>
         </section>
 

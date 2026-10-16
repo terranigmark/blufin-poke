@@ -2,12 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useT } from "@/lib/i18n";
+import { LangToggle } from "./LangToggle";
 import s from "./Header.module.css";
 
 /** Clicking "Arma tu poke" while already in the builder sends it back to the intro. */
 export const BUILD_RESET_EVENT = "blufin:build-reset";
 
 export function Header() {
+  const t = useT();
   const [open, setOpen] = useState(false);
   // While closing, the menu stays mounted until its exit animation ends.
   const [closing, setClosing] = useState(false);
@@ -38,7 +41,7 @@ export function Header() {
   return (
     <header className={s.header}>
       <div className={s.bar}>
-        <Link href="/" className={s.logo} onClick={close} aria-label="Blufin Poke Co · Inicio">
+        <Link href="/" className={s.logo} onClick={close} aria-label={t("Blufin Poke Co · Inicio", "Blufin Poke Co · Home")}>
           <span className={s.marlin}>
             <span>BLACK</span>
             <span>MARLIN</span>
@@ -56,15 +59,17 @@ export function Header() {
         </Link>
 
         <nav className={s.desktopNav}>
-          <Link href="/menu">Menú</Link>
-          <Link href="/#nosotros">Nosotros</Link>
-          <Link href="/#ubicacion">Ubicación</Link>
+          <Link href="/menu">{t("Menú", "Menu")}</Link>
+          <Link href="/#nosotros">{t("Nosotros", "About")}</Link>
+          <Link href="/#ubicacion">{t("Ubicación", "Location")}</Link>
           <Link href="/arma-tu-poke" className={s.cta} onClick={goBuild}>
-            Arma tu poke →
+            {t("Arma tu poke", "Build your poke")} →
           </Link>
         </nav>
 
-        <button className={s.burger} aria-label={shown ? "Cerrar menú" : "Menú"} aria-expanded={shown} onClick={toggle}>
+        <LangToggle className={s.lang} />
+
+        <button className={s.burger} aria-label={shown ? t("Cerrar menú", "Close menu") : t("Menú", "Menu")} aria-expanded={shown} onClick={toggle}>
           <span />
           <span />
           <span />
@@ -82,16 +87,16 @@ export function Header() {
           }}
         >
           <Link href="/arma-tu-poke" onClick={goBuild}>
-            Arma tu poke
+            {t("Arma tu poke", "Build your poke")}
           </Link>
           <Link href="/menu" onClick={close}>
-            Menú
+            {t("Menú", "Menu")}
           </Link>
           <Link href="/#nosotros" onClick={close}>
-            Nosotros
+            {t("Nosotros", "About")}
           </Link>
           <Link href="/#ubicacion" onClick={close}>
-            Ubicación
+            {t("Ubicación", "Location")}
           </Link>
         </nav>
       )}

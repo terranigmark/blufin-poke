@@ -4,20 +4,22 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { PHOTOS, money } from "@/data/menu";
 import { useMenu } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import s from "./menu.module.css";
 
 const TABS = [
-  ["all", "Todo"],
-  ["poke", "Poke"],
-  ["beer", "Black Marlin"],
-  ["aguas", "Aguas y refrescos"],
-  ["nac", "Cerveza nacional"],
-  ["extras", "Extras"],
+  ["all", "Todo", "All"],
+  ["poke", "Poke", "Poke"],
+  ["beer", "Black Marlin", "Black Marlin"],
+  ["aguas", "Aguas y refrescos", "Water & soft drinks"],
+  ["nac", "Cerveza nacional", "Mexican beer"],
+  ["extras", "Extras", "Extras"],
 ] as const;
 type Tab = (typeof TABS)[number][0];
 const isTab = (v: string | null): v is Tab => TABS.some(([id]) => id === v);
 
-function PriceList({ title, items }: { title: string; items: { name: string; price: number; size?: string }[] }) {
+function PriceList({ title, items }: { title: string; items: { name: string; nameEn?: string; price: number; size?: string }[] }) {
+  const t = useT();
   return (
     <section className={s.list}>
       <div className={s.listHead}>
@@ -25,7 +27,7 @@ function PriceList({ title, items }: { title: string; items: { name: string; pri
       </div>
       {items.map((i) => (
         <div key={i.name} className={s.listRow}>
-          <span className={s.listName}>{i.name}</span>
+          <span className={s.listName}>{t(i.name, i.nameEn)}</span>
           <span className={s.listPrice}>{money(i.price)}</span>
           <span className={s.listSize}>{i.size ?? ""}</span>
         </div>
@@ -37,6 +39,7 @@ function PriceList({ title, items }: { title: string; items: { name: string; pri
 export function MenuView() {
   const { AGUAS, BEERS, MENU_EXTRAS, NACIONAL, SIZES } = useMenu();
   const [tab, setTab] = useState<Tab>("all");
+  const t = useT();
 
   // ?tab=beer etc. lets other pages deep-link into a filtered menu.
   useEffect(() => {
@@ -56,19 +59,19 @@ export function MenuView() {
   return (
     <main>
       <section className={s.hero}>
-        <img src={PHOTOS.menuBar} alt="Barra de cervezas" className={s.heroImg} />
+        <img src={PHOTOS.menuBar} alt={t("Barra de cervezas", "Beer bar")} className={s.heroImg} />
         <div className={s.heroShade} />
         <div className={s.heroInner}>
           <span className={s.heroScript}>Baja beer for ocean people</span>
-          <h1 className={s.heroTitle}>Menú</h1>
+          <h1 className={s.heroTitle}>{t("Menú", "Menu")}</h1>
         </div>
       </section>
 
       <div className={s.tabsBar}>
         <div className={s.tabs}>
-          {TABS.map(([id, label]) => (
+          {TABS.map(([id, label, en]) => (
             <button key={id} className={s.tab} aria-pressed={tab === id} onClick={() => select(id)}>
-              {label}
+              {t(label, en)}
             </button>
           ))}
         </div>
@@ -83,13 +86,13 @@ export function MenuView() {
             <div className={s.sizes}>
               {SIZES.map((z) => (
                 <div key={z.id} className={s.sizeRow}>
-                  <span className={s.sizeName}>{z.name}</span>
+                  <span className={s.sizeName}>{t(z.name, z.nameEn)}</span>
                   <span className={s.sizePrice}>{money(z.price)}</span>
                 </div>
               ))}
             </div>
             <Link href="/arma-tu-poke" className={s.pokeCta}>
-              Arma tu poke →
+              {t("Arma tu poke", "Build your poke")} →
             </Link>
           </section>
         )}
@@ -106,8 +109,8 @@ export function MenuView() {
                   <span className={s.tapDot} style={{ background: b.color }} />
                 </div>
                 <div className={s.beerInfo}>
-                  <span className={s.beerName}>{b.name}</span>
-                  <span className={s.beerDesc}>{b.desc}</span>
+                  <span className={s.beerName}>{t(b.name, b.nameEn)}</span>
+                  <span className={s.beerDesc}>{t(b.desc, b.descEn)}</span>
                   <div className={s.chips}>
                     <span className={s.chipSolid}>{b.style}</span>
                     <span className={s.chipLine}>ABV {b.abv}</span>
@@ -129,8 +132,8 @@ export function MenuView() {
         )}
 
         <div className={s.lists}>
-          {has("aguas") && <PriceList title="Aguas y refrescos" items={AGUAS} />}
-          {has("nac") && <PriceList title="Cerveza nacional" items={NACIONAL} />}
+          {has("aguas") && <PriceList title={t("Aguas y refrescos", "Water & soft drinks")} items={AGUAS} />}
+          {has("nac") && <PriceList title={t("Cerveza nacional", "Mexican beer")} items={NACIONAL} />}
           {has("extras") && <PriceList title="Extras" items={MENU_EXTRAS} />}
         </div>
       </div>

@@ -1,7 +1,11 @@
+"use client";
+
 import { BUSINESS } from "@/data/menu";
+import { useT } from "@/lib/i18n";
 import s from "./Footer.module.css";
 
 export function Footer({ className = "" }: { className?: string }) {
+  const t = useT();
   return (
     <footer className={`${s.footer} ${className}`}>
       <div className={s.inner}>
@@ -30,7 +34,7 @@ export function Footer({ className = "" }: { className?: string }) {
         <a href={`mailto:${BUSINESS.email}`} className={s.email}>
           {BUSINESS.email}
         </a>
-        <span className={s.copy}>© 2026 Blufin Poke Co. Todos los derechos reservados.</span>
+        <span className={s.copy}>© 2026 Blufin Poke Co. {t("Todos los derechos reservados.", "All rights reserved.")}</span>
       </div>
     </footer>
   );
