@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LANDING, type Landing } from "@/data/landing";
 import { API_URL, type CategoryRow, type MenuRows } from "@/lib/api";
-import { AdminPage, LoginPage } from "./Editor";
+import { AdminPage, LoginPage, ResetPasswordPage } from "./Editor";
 
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
@@ -68,6 +68,48 @@ describe("/login", () => {
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Correo o contraseña incorrectos.");
     expect(replace).not.toHaveBeenCalled();
+  });
+});
+
+describe("forgot password", () => {
+  it("asks for the email and shows the server's answer", async () => {
+    const fetch = api((url) => (url.endsWith("/password/forgot/") ? json({ detail: "Si ese correo tiene una cuenta, te llegará un enlace." }) : undefined));
+    render(<LoginPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "¿Olvidaste tu contraseña?" }));
+    await userEvent.type(screen.getByLabelText("Correo"), "mesera@blufin.mx");
+    await userEvent.click(screen.getByRole("button", { name: "Enviar enlace" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("te llegará un enlace");
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({ email: "mesera@blufin.mx" });
+    await userEvent.click(screen.getByRole("button", { name: "← Volver a entrar" }));
+    expect(screen.getByRole("button", { name: "Entrar" })).toBeInTheDocument();
+  });
+
+  it("sets the new password from the emailed link and clears it from the address bar", async () => {
+    window.history.replaceState(null, "", "/login/restablecer/#MQ/abc-123");
+    const fetch = api((url) => (url.endsWith("/password/reset/") ? json({ detail: "Listo. Ya puedes entrar con tu nueva contraseña." }) : undefined));
+    render(<ResetPasswordPage />);
+    await waitFor(() => expect(window.location.hash).toBe(""));
+    await userEvent.type(screen.getByLabelText("Contraseña nueva"), "otra-clave-larga-456");
+    await userEvent.type(screen.getByLabelText("Repítela"), "otra-distinta-456");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar contraseña" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("no son iguales");
+    expect(fetch).not.toHaveBeenCalled();
+
+    await userEvent.clear(screen.getByLabelText("Repítela"));
+    await userEvent.type(screen.getByLabelText("Repítela"), "otra-clave-larga-456");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar contraseña" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("Listo");
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({ uid: "MQ", token: "abc-123", password: "otra-clave-larga-456" });
+  });
+
+  it("says when the link was already used or expired", async () => {
+    window.history.replaceState(null, "", "/login/restablecer/#MQ/viejo");
+    api(() => json({ detail: "Este enlace ya se usó o venció." }, 400));
+    render(<ResetPasswordPage />);
+    await userEvent.type(screen.getByLabelText("Contraseña nueva"), "otra-clave-larga-456");
+    await userEvent.type(screen.getByLabelText("Repítela"), "otra-clave-larga-456");
+    await userEvent.click(screen.getByRole("button", { name: "Guardar contraseña" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("ya se usó o venció");
   });
 });
 

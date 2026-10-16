@@ -21,6 +21,7 @@ import {
   ApiError,
   editorFetch,
   isSignedIn,
+  passwordReset,
   signIn,
   signOut,
   type BeerRow,
@@ -229,6 +230,7 @@ function Brand() {
 function LoginForm({ onDone }: { onDone: () => void }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false);
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -244,6 +246,7 @@ function LoginForm({ onDone }: { onDone: () => void }) {
     }
   };
 
+  if (forgot) return <ForgotForm onBack={() => setForgot(false)} />;
   return (
     <main className={s.center}>
       <form className={s.loginCard} onSubmit={submit}>
@@ -266,8 +269,115 @@ function LoginForm({ onDone }: { onDone: () => void }) {
         <button className={s.primary} disabled={busy}>
           {busy ? "Entrando…" : "Entrar"}
         </button>
+        <button type="button" className={s.linkButton} onClick={() => setForgot(true)}>
+          ¿Olvidaste tu contraseña?
+        </button>
         <Link href="/" className={s.back}>
           ← Volver al sitio
+        </Link>
+      </form>
+    </main>
+  );
+}
+
+/** Sends the reset link; the same answer whether or not the email has an account. */
+function ForgotForm({ onBack }: { onBack: () => void }) {
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setBusy(true);
+    try {
+      setMsg({ ok: true, text: await passwordReset("forgot", { email: String(new FormData(e.currentTarget).get("email")) }) });
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof ApiError ? err.message : "No hay conexión con el servidor. Revisa tu internet." });
+    }
+    setBusy(false);
+  };
+
+  return (
+    <main className={s.center}>
+      <form className={s.loginCard} onSubmit={submit}>
+        <Brand />
+        <h1 className={s.loginTitle}>Cambiar contraseña</h1>
+        <p className={s.muted}>Escribe tu correo y te mandamos un enlace para elegir una contraseña nueva.</p>
+        <label className={s.field}>
+          <span>Correo</span>
+          <input name="email" type="email" autoComplete="username" required autoFocus />
+        </label>
+        {msg && (
+          <p className={msg.ok ? s.muted : s.error} role={msg.ok ? "status" : "alert"}>
+            {msg.text}
+          </p>
+        )}
+        <button className={s.primary} disabled={busy}>
+          {busy ? "Enviando…" : "Enviar enlace"}
+        </button>
+        <button type="button" className={s.linkButton} onClick={onBack}>
+          ← Volver a entrar
+        </button>
+      </form>
+    </main>
+  );
+}
+
+/** /login/restablecer/#<uid>/<token>: the link from the email. */
+export function ResetPasswordPage() {
+  const [link, setLink] = useState<{ uid: string; token: string } | null>(null);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const [uid = "", token = ""] = window.location.hash.slice(1).split("/");
+    setLink({ uid, token });
+    // Out of the address bar and history once read.
+    history.replaceState(null, "", window.location.pathname);
+  }, []);
+
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    if (f.get("password") !== f.get("again")) return setMsg({ ok: false, text: "Las dos contraseñas no son iguales." });
+    setBusy(true);
+    try {
+      setMsg({ ok: true, text: await passwordReset("reset", { ...link!, password: String(f.get("password")) }) });
+    } catch (err) {
+      setMsg({ ok: false, text: err instanceof ApiError ? err.message : "No hay conexión con el servidor. Revisa tu internet." });
+    }
+    setBusy(false);
+  };
+
+  return (
+    <main className={s.center}>
+      <form className={s.loginCard} onSubmit={submit}>
+        <Brand />
+        <h1 className={s.loginTitle}>Contraseña nueva</h1>
+        {msg?.ok ? (
+          <p className={s.muted} role="status">
+            {msg.text}
+          </p>
+        ) : (
+          <>
+            <label className={s.field}>
+              <span>Contraseña nueva</span>
+              <input name="password" type="password" autoComplete="new-password" required minLength={8} autoFocus />
+            </label>
+            <label className={s.field}>
+              <span>Repítela</span>
+              <input name="again" type="password" autoComplete="new-password" required />
+            </label>
+            {msg && (
+              <p className={s.error} role="alert">
+                {msg.text}
+              </p>
+            )}
+            <button className={s.primary} disabled={busy || !link}>
+              {busy ? "Guardando…" : "Guardar contraseña"}
+            </button>
+          </>
+        )}
+        <Link href="/login/" className={s.back}>
+          Ir a entrar
         </Link>
       </form>
     </main>

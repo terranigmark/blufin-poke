@@ -1,12 +1,16 @@
+import json
 from datetime import timedelta
 from importlib import import_module
+from unittest import mock
 
 from django.apps import apps
 from django.core.cache import cache
-from django.test import TestCase
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.utils import timezone
 
 from menu.models import Size
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import Activity, User
 
@@ -158,3 +162,73 @@ class ActivityTests(TestCase):
         # Deleting the account keeps who did it.
         user.delete()
         self.assertEqual(self.log()[0][0], "mesera@blufin.mx")
+
+
+@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend", SITE_URL="https://blufinpoke.com")
+class PasswordResetTests(TestCase):
+    def setUp(self):
+        cache.clear()  # the reset throttle counts in the cache
+        self.user = User.objects.create_user("mesera@blufin.mx", PASSWORD, first_name="Ana", can_edit_menu=True)
+
+    def forgot(self, email):
+        return self.client.post("/api/auth/password/forgot/", {"email": email}, content_type="application/json")
+
+    def link(self):
+        uid, token = mail.outbox[-1].body.split("/login/restablecer/#")[1].split()[0].split("/")
+        return uid, token
+
+    def reset(self, uid, token, password=NEW_PASSWORD):
+        return self.client.post("/api/auth/password/reset/", {"uid": uid, "token": token, "password": password}, content_type="application/json")
+
+    def test_link_by_email_sets_a_new_password_once(self):
+        response = self.forgot(" Mesera@Blufin.mx ")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, ["mesera@blufin.mx"])
+        self.assertIn("Hola Ana", mail.outbox[0].body)
+        self.assertIn("https://blufinpoke.com/login/restablecer/#", mail.outbox[0].body)
+        uid, token = self.link()
+
+        self.assertEqual(self.reset(uid, token, "123").status_code, 400)  # too weak; the link still works
+        self.assertEqual(self.reset(uid, token).status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(NEW_PASSWORD))
+        self.assertTrue(Activity.objects.filter(email="mesera@blufin.mx", text__contains="enlace del correo").exists())
+        # Single use: the token is tied to the old password.
+        self.assertEqual(self.reset(uid, token, PASSWORD + "-otra").status_code, 400)
+
+    def test_same_answer_whether_or_not_the_account_exists(self):
+        User.objects.create_user("sin-acceso@blufin.mx", PASSWORD)
+        User.objects.create_user("baja@blufin.mx", PASSWORD, can_edit_menu=True, is_active=False)
+        answers = {self.forgot(e).json()["detail"] for e in ["nadie@blufin.mx", "sin-acceso@blufin.mx", "baja@blufin.mx", "mesera@blufin.mx"]}
+        self.assertEqual(len(answers), 1)
+        self.assertEqual([m.to for m in mail.outbox], [["mesera@blufin.mx"]])
+
+    def test_expired_or_forged_links_are_refused(self):
+        self.forgot("mesera@blufin.mx")
+        uid, token = self.link()
+        self.assertEqual(self.reset(uid, "no-es-un-token").status_code, 400)
+        self.assertEqual(self.reset("basura", token).status_code, 400)
+        with self.settings(PASSWORD_RESET_TIMEOUT=-1):
+            self.assertEqual(self.reset(uid, token).status_code, 400)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(PASSWORD))
+
+    # DRF reads the rates once at import, so the test patches them on the class.
+    @mock.patch.object(ScopedRateThrottle, "THROTTLE_RATES", {"password_reset": "2/hour"})
+    def test_requests_are_throttled(self):
+        self.assertEqual([self.forgot("mesera@blufin.mx").status_code for _ in range(3)], [200, 200, 429])
+
+
+class ResendBackendTests(TestCase):
+    @override_settings(EMAIL_BACKEND="accounts.resend.ResendBackend", RESEND_API_KEY="re_test")
+    def test_posts_the_email_to_resend(self):
+        with mock.patch("urllib.request.urlopen") as urlopen:
+            mail.send_mail("Asunto", "Texto", "Blufin <no-reply@blufinpoke.com>", ["ana@blufin.mx"])
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.resend.com/emails")
+        self.assertEqual(request.get_header("Authorization"), "Bearer re_test")
+        self.assertEqual(
+            json.loads(request.data),
+            {"from": "Blufin <no-reply@blufinpoke.com>", "to": ["ana@blufin.mx"], "subject": "Asunto", "text": "Texto"},
+        )
