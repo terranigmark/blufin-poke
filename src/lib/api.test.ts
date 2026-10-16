@@ -24,15 +24,15 @@ const ROWS: MenuRows = {
 describe("toMenu", () => {
   it("turns API rows into the shapes the pages use", () => {
     const m = toMenu(ROWS);
-    expect(m.SIZES).toEqual([{ id: "small", name: "Small", nameEn: "", price: 170 }]);
+    expect(m.SIZES).toEqual([{ id: "small", name: "Small", price: 170 }]);
     expect(m.STEPS.map((s) => s.key)).toEqual(MENU.STEPS.map((s) => s.key));
-    expect(m.STEPS[0].opts).toEqual([{ id: "arroz", name: "Arroz", nameEn: "", img: null }]);
-    expect(m.STEPS[5].opts).toEqual([{ id: "totopos", name: "Totopos", nameEn: "", img: "https://x/t.jpg" }]);
+    expect(m.STEPS[0].opts).toEqual([{ id: "arroz", name: "Arroz", img: null }]);
+    expect(m.STEPS[5].opts).toEqual([{ id: "totopos", name: "Totopos", nameEn: "Tortilla chips", img: "https://x/t.jpg" }]);
     // Only builder extras are offered in Arma tu poke; the menu lists them all.
-    expect(m.BOWL_EXTRAS).toEqual([{ id: "xagu", name: "Aguacate", nameEn: "", price: 20 }]);
+    expect(m.BOWL_EXTRAS).toEqual([{ id: "xagu", name: "Aguacate", nameEn: "Avocado", price: 20 }]);
     expect(m.MENU_EXTRAS).toHaveLength(2);
     expect(m.BEERS[0]).toMatchObject({ tap: "01", price12: 70, price16: 90, desc: "Rica" });
-    expect(m.AGUAS).toEqual([{ name: "Agua", nameEn: "", price: 15, size: "500 ml", pack: "Botella" }]);
+    expect(m.AGUAS).toEqual([{ name: "Agua", price: 15, size: "500 ml", pack: "Botella" }]);
     expect(m.NACIONAL[0].name).toBe("Modelo");
     expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "n0", "a0"]);
   });
@@ -94,7 +94,7 @@ describe("editor auth", () => {
 });
 
 describe("toMenu English names", () => {
-  it("carries the English name and description, empty when the editor left them blank", () => {
+  it("carries the English name and description from the API", () => {
     const rows: MenuRows = {
       ...ROWS,
       ingredients: [{ ...ROWS.ingredients[0], name: "Atún", name_en: "Tuna" }],
@@ -104,7 +104,25 @@ describe("toMenu English names", () => {
     expect(m.STEPS[0].opts[0]).toMatchObject({ name: "Atún", nameEn: "Tuna" });
     expect(m.STEPS[0].en.title).toBe("Choose your base");
     expect(m.BEERS[0]).toMatchObject({ desc: "Rica", descEn: "Tasty" });
-    expect(m.AGUAS[0].nameEn).toBe("");
+    expect(m.AGUAS[0].nameEn).toBeUndefined(); // no English anywhere: the page shows the Spanish
     expect(m.DRINKS.find((d) => d.id === "n0")).toMatchObject({ meta: "Lata · 355 ml", metaEn: "Can · 355 ml" });
   });
+});
+
+it("falls back to the bundled English when the API has none (blank, or a backend without the field)", () => {
+  const rows = {
+    ...ROWS,
+    ingredients: [
+      { id: 2, step: "base", key: "totopos", name: "Totopos", image_url: "", available: true, order: 0 },
+      { id: 3, step: "crunch", key: "totopos", name: "Totopos", image_url: "", available: true, order: 0 },
+      { id: 4, step: "salsa", key: "shoyu", name: "Shoyu", name_en: "", image_url: "", available: true, order: 0 },
+    ],
+    beers: [{ ...ROWS.beers[0], description: "Café tostado, cacao amargo y cuerpo sedoso.", description_en: "" }],
+  } as MenuRows;
+  const m = toMenu(rows);
+  expect(m.STEPS[0].opts[0].nameEn).toBe("Nachos");
+  expect(m.STEPS[5].opts[0].nameEn).toBe("Tortilla chips");
+  expect(m.STEPS[3].opts[0].nameEn).toBe("Secret Shoyu");
+  expect(m.BEERS[0].descEn).toBe("Roasted coffee, bitter cocoa and a silky body.");
+  expect(m.BOWL_EXTRAS[0].nameEn).toBe("Avocado"); // "Aguacate" with name_en ""
 });

@@ -51,7 +51,7 @@ export const PHOTOS = {
  * English for the bundled menu below, by Spanish name. The live menu brings its own
  * (`name_en` in the editor); names that read the same in both languages are left out.
  */
-const EN: Record<string, string> = {
+export const EN: Record<string, string> = {
   "Arroz sushi": "Sushi rice",
   Ensalada: "Green mix",
   Totopos: "Tortilla chips",
