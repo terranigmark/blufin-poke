@@ -31,6 +31,8 @@ it("shows the home page as edited in /admin, in English with Spanish where Engli
         hours: "Diario",
         hours_en: "Every day",
       },
+      build: { ...LANDING.build, title: "Tu bowl", title_en: "", steps: [{ text: "Base", text_en: "" }, { text: "Proteína", text_en: "Protein" }], cta: "Vamos", cta_en: "Let's go" },
+      cravings: { title: "Antojos", title_en: "Cravings", tiles: [{ image: "/api/media/5/", text: "Bowls", text_en: "", link: "/menu?tab=poke" }] },
     },
   } as MenuRows;
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(rows))));
@@ -54,4 +56,13 @@ it("shows the home page as edited in /admin, in English with Spanish where Engli
   expect(within(logo).queryByText("MARLIN")).toBeNull();
   expect(within(logo).getByText("Blufin")).toBeInTheDocument();
   expect(screen.getAllByTestId("text-band")[0]).toHaveTextContent("Catch of the day");
+
+  // Arma tu poke: English falls back to Spanish per field; steps number themselves.
+  const build = screen.getByRole("heading", { name: "Tu bowl" }).parentElement!;
+  expect(within(build).getAllByRole("listitem").map((li) => li.textContent)).toEqual(["1Base", "2Protein"]);
+  expect(within(build).getByRole("link", { name: "Let's go →" })).toHaveAttribute("href", "/arma-tu-poke");
+  // ¿Qué se te antoja?: one tile, as edited.
+  const tile = within(screen.getByRole("heading", { name: "Cravings" }).parentElement!).getByRole("link");
+  expect(tile).toHaveAttribute("href", "/menu?tab=poke");
+  expect(within(tile).getByRole("img", { name: "Bowls" })).toHaveAttribute("src", `${API_URL}/api/media/5/`);
 });

@@ -724,23 +724,23 @@
 }
 .landingItem {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 6px;
-  align-items: center;
-}
-.landingItem input {
-  font: inherit;
-  font-size: 16px;
-  color: var(--navy);
-  background: #fff;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: start;
+  padding: 10px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 9px 10px;
+  border-radius: 12px;
+}
+.landingItemFields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   min-width: 0;
 }
 .landingItemActions {
   display: flex;
-  gap: 2px;
+  flex-direction: column;
+  gap: 4px;
 }
 .landingItemActions button {
   width: 34px;
@@ -753,9 +753,4 @@
 }
 .landingItemActions button:disabled {
   opacity: 0.35;
-}
-@media (max-width: 520px) {
-  .landingItem {
-    grid-template-columns: 1fr;
-  }
 }

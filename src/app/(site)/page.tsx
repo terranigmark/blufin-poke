@@ -4,24 +4,18 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { TextBand } from "@/components/TextBand";
-import { BUSINESS, PHOTOS, STEPS, money, orderable } from "@/data/menu";
-import { useLanding, useMenu } from "@/lib/api";
+import { BUSINESS, PHOTOS, money, orderable } from "@/data/menu";
+import { mediaUrl, useLanding, useMenu } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 import { HeroMedia } from "./HeroMedia";
 import s from "./home.module.css";
-
-const TILES = [
-  { label: "Extras", en: "Extras", img: PHOTOS.tileExtras, href: "/menu?tab=extras" },
-  { label: "Bebidas", en: "Drinks", img: PHOTOS.tileDrinks, href: "/menu?tab=aguas" },
-  { label: "Cerveza craft", en: "Craft beer", img: PHOTOS.tileBeer, href: "/menu?tab=beer" },
-];
 
 export default function Home() {
   const t = useT();
   const english = useLang().lang === "en";
   // Shown only once the manager has added three; sold-out or coming-soon bowls stay off the home page.
   const bowls = useMenu().HOUSE_BOWLS.filter(orderable).slice(0, 3);
-  const { hero } = useLanding();
+  const { hero, build, cravings } = useLanding();
   return (
     <>
       <main>
@@ -89,22 +83,22 @@ export default function Home() {
         <section className={s.build}>
           <div className={s.buildGrid}>
             <div className={s.buildPhoto} data-reveal>
-              <img src={PHOTOS.bowl(1200)} alt={t("Poke bowl de salmón", "Salmon poke bowl")} loading="lazy" />
+              {build.image && <img src={mediaUrl(build.image)} alt={t("Poke bowl de salmón", "Salmon poke bowl")} loading="lazy" />}
             </div>
             <div className={s.buildCopy} data-reveal>
-              <h2 className={s.buildTitle}>{t("Arma tu poke", "Build your poke")}</h2>
-              <p className={s.buildLead}>{t("Seis pasos y tú decides todo. Lo armamos al momento.", "Six steps and you call the shots. We make it fresh to order.")}</p>
+              <h2 className={s.buildTitle}>{t(build.title, build.title_en)}</h2>
+              <p className={s.buildLead}>{t(build.lead, build.lead_en)}</p>
               <ol className={s.buildSteps}>
-                {STEPS.map((x, i) => (
-                  <li key={x.key}>
+                {build.steps.map((x, i) => (
+                  <li key={i}>
                     <span className={s.stepNum}>{i + 1}</span>
-                    <span className={s.stepTitle}>{english ? x.en.title : x.title}</span>
+                    <span className={s.stepTitle}>{t(x.text, x.text_en)}</span>
                   </li>
                 ))}
               </ol>
               <div>
                 <Link href="/arma-tu-poke" className={s.buildCta}>
-                  {t("Empezar mi bowl", "Start my bowl")} →
+                  {t(build.cta, build.cta_en)} →
                 </Link>
               </div>
             </div>
@@ -113,13 +107,13 @@ export default function Home() {
 
         <section className={s.antojo}>
           <div className={s.antojoInner}>
-            <h2 className={s.antojoTitle} data-reveal>{t("¿Qué se te antoja?", "What are you craving?")}</h2>
+            <h2 className={s.antojoTitle} data-reveal>{t(cravings.title, cravings.title_en)}</h2>
             <div className={s.tiles} data-reveal>
-              {TILES.map((x) => (
-                <Link key={x.label} href={x.href} className={s.tile}>
-                  <img src={x.img} alt={t(x.label, x.en)} loading="lazy" />
+              {cravings.tiles.map((x, i) => (
+                <Link key={i} href={x.link} className={s.tile}>
+                  <img src={mediaUrl(x.image)} alt={t(x.text, x.text_en)} loading="lazy" />
                   <span className={s.tileShade} />
-                  <span className={s.tileLabel}>{t(x.label, x.en)}</span>
+                  <span className={s.tileLabel}>{t(x.text, x.text_en)}</span>
                 </Link>
               ))}
             </div>

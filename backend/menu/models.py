@@ -202,7 +202,7 @@ class Highlight(models.Model):
 
 
 class Landing(models.Model):
-    """The home page's editable content: one row, a JSON object per section ("header", "hero", "belt").
+    """The home page's editable content: one row, a JSON object per section (LANDING_SECTIONS in api.py).
 
     Texts come in pairs, `x` in Spanish and `x_en` in English (empty shows the Spanish).
     Pictures and videos are links: uploads (`/api/media/<id>/`), site files (`/video/…`) or https.

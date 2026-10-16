@@ -394,6 +394,30 @@ class LandingTests(TestCase):
             self.assertEqual(self.call("post", "/api/editor/media/", data).status_code, 400, data)
         self.assertEqual(self.client.post("/api/editor/media/", {}).status_code, 401)
 
+    def test_build_and_cravings_are_seeded_and_editable(self):
+        landing = self.landing()
+        self.assertEqual(len(landing["build"]["steps"]), 6)
+        self.assertEqual([t["link"] for t in landing["cravings"]["tiles"]], ["/menu?tab=extras", "/menu?tab=aguas", "/menu?tab=beer"])
+
+        build = {**landing["build"], "steps": [{"text": "Base"}, {"text": "Proteína", "text_en": "Protein"}]}
+        self.assertEqual(self.call("patch", "/api/editor/landing/", {"build": build}).status_code, 200)
+        self.assertEqual(self.landing()["build"]["steps"][1], {"text": "Proteína", "text_en": "Protein"})
+
+        tile = {"image": "/api/media/1/", "text": "Bowls", "text_en": "", "link": "/menu?tab=poke"}
+        cravings = {**landing["cravings"], "tiles": [tile]}
+        self.assertEqual(self.call("patch", "/api/editor/landing/", {"cravings": cravings}).status_code, 200)
+        self.assertEqual(self.landing()["cravings"]["tiles"], [tile])
+
+        bad = [
+            {"cravings": {**cravings, "tiles": [{**tile, "link": "javascript:alert(1)"}]}},
+            {"cravings": {**cravings, "tiles": [{**tile, "link": "//evil.example"}]}},
+            {"cravings": {**cravings, "tiles": [{**tile, "image": ""}]}},
+            {"cravings": {**cravings, "tiles": [tile] * 7}},
+            {"build": {**build, "steps": [{"text": "x"}] * 11}},
+        ]
+        for data in bad:
+            self.assertEqual(self.call("patch", "/api/editor/landing/", data).status_code, 400, data)
+
     def test_saving_clears_old_unused_uploads(self):
         used = Media.objects.create(data=b"a", content_type="image/png")
         stale = Media.objects.create(data=b"b", content_type="image/png")
