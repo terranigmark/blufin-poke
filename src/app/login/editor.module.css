@@ -686,7 +686,7 @@
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  z-index: 20;
+  z-index: 30; /* an open menu sits above the Deshacer bar and the + button */
   min-width: 200px;
   display: flex;
   flex-direction: column;

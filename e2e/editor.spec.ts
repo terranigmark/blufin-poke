@@ -106,6 +106,8 @@ test("dragging a row with the mouse reorders it", async ({ page }) => {
 });
 
 test("the ⋮ menu marks a status the public menu shows, duplicates and deletes", async ({ page }) => {
+  // Short enough that the copy's menu reaches the Deshacer bar, which must not cover it.
+  await page.setViewportSize({ width: 412, height: 790 });
   await signIn(page);
   const statusOf = async (name: string) =>
     (await (await page.request.get(API)).json()).sizes.find((z: { name: string }) => z.name === name)?.status;
@@ -125,7 +127,8 @@ test("the ⋮ menu marks a status the public menu shows, duplicates and deletes"
 
   await action("Small", "Duplicar");
   await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235,Small (copia):165");
-  // The menu of a section's last row must not be cut off by the section (real bug: Eliminar was unreachable).
+  // The menu of a section's last row must not be cut off by the section or covered by the Deshacer bar
+  // (real bugs: Eliminar was unreachable).
   await page.click("button[aria-label='Opciones de Small (copia)']");
   const hit = await page.locator("[role=menuitem]:has-text('Eliminar')").evaluate((el) => {
     // Scroll the page, not the section: scrollIntoView would scroll a clipping section and hide the bug.
