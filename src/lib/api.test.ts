@@ -38,6 +38,27 @@ describe("toMenu", () => {
   });
 });
 
+describe("toMenu statuses", () => {
+  it("keeps every status on the menu lists but leaves sold-out and coming-soon items out of Arma tu poke", () => {
+    const m = toMenu({
+      ...ROWS,
+      sizes: [{ ...ROWS.sizes[0], status: "agotado" }],
+      ingredients: [{ ...ROWS.ingredients[0], status: "agotado" }, { ...ROWS.ingredients[1], status: "novedad" }],
+      extras: [{ ...ROWS.extras[0], status: "proximamente" }, ROWS.extras[1]],
+      beers: [{ ...ROWS.beers[0], status: "agotado" }],
+      drinks: [{ ...ROWS.drinks[0], status: "por_agotarse" }, ROWS.drinks[1]],
+    });
+    expect(m.SIZES[0].status).toBe("agotado");
+    expect(m.BEERS[0].status).toBe("agotado");
+    expect(m.AGUAS[0].status).toBe("por_agotarse");
+    expect(m.MENU_EXTRAS.map((e) => e.status)).toEqual(["proximamente", undefined]);
+    expect(m.STEPS[0].opts).toEqual([]);
+    expect(m.STEPS[5].opts.map((o) => o.id)).toEqual(["totopos"]);
+    expect(m.BOWL_EXTRAS).toEqual([]);
+    expect(m.DRINKS.map((d) => d.id)).toEqual(["n0", "a0"]);
+  });
+});
+
 describe("editor auth", () => {
   it("stores the token pair on sign-in and forgets it on sign-out", async () => {
     const fetch = vi.fn().mockResolvedValue(json({ access: "a1", refresh: "r1" }));

@@ -13,6 +13,7 @@ import {
   SALSA_RECOMMENDED_MAX,
   SECOND_PROTEIN_PRICE,
   money,
+  orderable,
   type Drink,
   type DrinkCat,
   type SizeId,
@@ -304,7 +305,7 @@ export function Builder() {
                     <span className={s.sizeNote}>{t(PROTEIN_NOTE, PROTEIN_NOTE_EN)}</span>
                   </div>
                   <div className={s.sizes}>
-                    {SIZES.map((z) => (
+                    {SIZES.filter(orderable).map((z) => (
                       <button key={z.id} className={s.size} aria-pressed={size === z.id} onClick={() => setSize(z.id)}>
                         <span className={s.sizeName}>{t(z.name, z.nameEn)}</span>
                         <span className={s.sizePrice}>{money(z.price)}</span>

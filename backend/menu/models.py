@@ -4,6 +4,7 @@
 by them, so they must not change once an item is live.
 """
 
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 
 
@@ -11,7 +12,17 @@ class MenuItem(models.Model):
     name = models.CharField("nombre", max_length=100)
     # Optional: the website shows `name` in English too when this is empty.
     name_en = models.CharField("nombre en inglés", max_length=100, blank=True)
+    STATUSES = [
+        ("", "Disponible"),
+        ("agotado", "Agotado"),
+        ("proximamente", "Próximamente"),
+        ("por_agotarse", "Por agotarse"),
+        ("novedad", "Novedad"),
+    ]
+
+    # `available` decides whether the item is on the menu at all; `status` is the badge it shows there.
     available = models.BooleanField("disponible", default=True)
+    status = models.CharField("estado", max_length=12, choices=STATUSES, blank=True, default="")
     order = models.PositiveIntegerField("orden", default=0)
 
     class Meta:
@@ -81,10 +92,10 @@ class Beer(MenuItem):
 
 
 class Drink(MenuItem):
-    CATEGORIES = [("aguas", "Aguas y refrescos"), ("nacional", "Cerveza nacional")]
     PACKS = [("Botella", "Botella"), ("Lata", "Lata")]
 
-    category = models.CharField("categoría", max_length=10, choices=CATEGORIES)
+    # The key of a "drinks" Category: aguas, nacional, or a list the manager added.
+    category = models.CharField("categoría", max_length=50)
     price = models.PositiveIntegerField("precio (MXN)")
     size = models.CharField("tamaño", max_length=20, help_text="Ej. 355 ml")
     pack = models.CharField("envase", max_length=10, choices=PACKS)
@@ -93,3 +104,85 @@ class Drink(MenuItem):
         verbose_name = "bebida"
         verbose_name_plural = "bebidas"
         ordering = ("category", "order", "id")
+
+
+class Category(models.Model):
+    """A section of the menu, as in Cervesoft's categories card.
+
+    Every section has one, so the editor can rename, reorder and hide it. Only
+    price lists (`kind="drinks"`) can be added or deleted; the rest are built in,
+    because Arma tu poke and the beer list depend on them. `key` is the
+    Ingredient step for builder steps, and Drink.category for price lists.
+    """
+
+    KINDS = [
+        ("sizes", "Tamaños de bowl"),
+        ("ingredients", "Paso de Arma tu poke"),
+        ("extras", "Extras"),
+        ("beers", "Cerveza de barril"),
+        ("drinks", "Lista de precios"),
+    ]
+
+    key = models.SlugField("clave", max_length=50, unique=True)
+    kind = models.CharField("tipo", max_length=12, choices=KINDS, default="drinks")
+    name = models.CharField("nombre", max_length=60)
+    name_en = models.CharField("nombre en inglés", max_length=60, blank=True)
+    # Hidden lists leave the public menu and the TV; Arma tu poke's sections can't be hidden.
+    available = models.BooleanField("visible", default=True)
+    order = models.PositiveIntegerField("orden", default=0)
+    builtin = models.BooleanField("de fábrica", default=False, editable=False)
+
+    class Meta:
+        ordering = ("order", "id")
+        verbose_name = "categoría"
+        verbose_name_plural = "categorías"
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def in_builder(self):
+        return self.kind in ("sizes", "ingredients")
+
+
+class Settings(models.Model):
+    """Display settings, as in Cervesoft's settings card: one row, created on first read."""
+
+    tv_seconds = models.PositiveSmallIntegerField(
+        "segundos por pantalla en la TV", default=10, validators=[MinValueValidator(4), MaxValueValidator(60)]
+    )
+    tv_poke_right = models.BooleanField("poke a la derecha en la TV", default=False)
+    tv_text_scale = models.FloatField(
+        "tamaño del texto en la TV", default=1, validators=[MinValueValidator(0.8), MaxValueValidator(1.3)]
+    )
+    menu_text_scale = models.FloatField(
+        "tamaño del texto en el menú", default=1, validators=[MinValueValidator(0.85), MaxValueValidator(1.3)]
+    )
+    highlight_seconds = models.PositiveSmallIntegerField(
+        "segundos por destacado", default=8, validators=[MinValueValidator(3), MaxValueValidator(60)]
+    )
+
+    class Meta:
+        verbose_name = verbose_name_plural = "ajustes"
+
+    @classmethod
+    def get(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+class Highlight(models.Model):
+    """A promo image for the menu's carousel and the TV, as in Cervesoft's highlights card.
+
+    Either an uploaded picture (stored here: Koyeb's disk doesn't survive a deploy)
+    or a link to one hosted elsewhere.
+    """
+
+    image = models.BinaryField("imagen", blank=True)
+    content_type = models.CharField(max_length=20, blank=True)
+    url = models.URLField("enlace a la imagen", blank=True)
+    order = models.PositiveIntegerField("orden", default=0)
+
+    class Meta:
+        ordering = ("order", "id")
+        verbose_name = "destacado"
+        verbose_name_plural = "destacados"

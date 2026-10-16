@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PHOTOS, money } from "@/data/menu";
+import { PHOTOS, STATUS_LABELS, money, type Status } from "@/data/menu";
 import { useMenu } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import s from "./menu.module.css";
@@ -18,7 +18,14 @@ const TABS = [
 type Tab = (typeof TABS)[number][0];
 const isTab = (v: string | null): v is Tab => TABS.some(([id]) => id === v);
 
-function PriceList({ title, items }: { title: string; items: { name: string; nameEn?: string; price: number; size?: string }[] }) {
+/** The editor's "Marcar como…" badge; sold-out items also get their name struck through (see the CSS). */
+function Badge({ status }: { status?: Status }) {
+  const t = useT();
+  if (!status) return null;
+  return <span className={s.badge} data-status={status}>{t(...STATUS_LABELS[status])}</span>;
+}
+
+function PriceList({ title, items }: { title: string; items: { name: string; nameEn?: string; price: number; size?: string; status?: Status }[] }) {
   const t = useT();
   return (
     <section className={s.list}>
@@ -26,8 +33,10 @@ function PriceList({ title, items }: { title: string; items: { name: string; nam
         <h2>{title}</h2>
       </div>
       {items.map((i) => (
-        <div key={i.name} className={s.listRow}>
-          <span className={s.listName}>{t(i.name, i.nameEn)}</span>
+        <div key={i.name} className={s.listRow} data-status={i.status || undefined}>
+          <span className={s.listName}>
+            {t(i.name, i.nameEn)} <Badge status={i.status} />
+          </span>
           <span className={s.listPrice}>{money(i.price)}</span>
           <span className={s.listSize}>{i.size ?? ""}</span>
         </div>
@@ -85,8 +94,10 @@ export function MenuView() {
             </div>
             <div className={s.sizes}>
               {SIZES.map((z) => (
-                <div key={z.id} className={s.sizeRow}>
-                  <span className={s.sizeName}>{t(z.name, z.nameEn)}</span>
+                <div key={z.id} className={s.sizeRow} data-status={z.status || undefined}>
+                  <span className={s.sizeName}>
+                    {t(z.name, z.nameEn)} <Badge status={z.status} />
+                  </span>
                   <span className={s.sizePrice}>{money(z.price)}</span>
                 </div>
               ))}
@@ -103,13 +114,15 @@ export function MenuView() {
               <h2>Black Marlin Brewing Co.</h2>
             </div>
             {BEERS.map((b) => (
-              <div key={b.tap} className={s.beer}>
+              <div key={b.tap} className={s.beer} data-status={b.status || undefined}>
                 <div className={s.tap}>
                   <span className={s.tapLabel}>Tap {b.tap}</span>
                   <span className={s.tapDot} style={{ background: b.color }} />
                 </div>
                 <div className={s.beerInfo}>
-                  <span className={s.beerName}>{t(b.name, b.nameEn)}</span>
+                  <span className={s.beerName}>
+                    {t(b.name, b.nameEn)} <Badge status={b.status} />
+                  </span>
                   <span className={s.beerDesc}>{t(b.desc, b.descEn)}</span>
                   <div className={s.chips}>
                     <span className={s.chipSolid}>{b.style}</span>
