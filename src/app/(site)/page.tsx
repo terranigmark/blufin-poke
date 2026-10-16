@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
+import { TextBand } from "@/components/TextBand";
 import { BUSINESS, PHOTOS, STEPS } from "@/data/menu";
 import { useLang, useT } from "@/lib/i18n";
 import { HeroMedia } from "./HeroMedia";
@@ -46,6 +47,8 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+        <TextBand />
 
         <section className={s.build}>
           <div className={s.buildGrid}>
@@ -132,13 +135,15 @@ export default function Home() {
                 <a href={BUSINESS.mapsLink} target="_blank" rel="noreferrer" className={s.navyPillSm}>
                   {t("Cómo llegar", "Get directions")} →
                 </a>
-                <a href={`mailto:${BUSINESS.email}`} className={s.outlinePillSm}>
+                <a href={`mailto:${BUSINESS.email}`} className={s.visitEmail}>
                   {BUSINESS.email}
                 </a>
               </div>
             </div>
           </div>
         </section>
+
+        <TextBand />
       </main>
       <Footer />
       <Reveal />

@@ -121,4 +121,11 @@ h2 {
     opacity: 0;
     transform: translateY(28px);
   }
+  /* Photos also settle from a slight zoom as they fade in. */
+  [data-reveal] img {
+    transition: transform 0.9s var(--ease-out);
+  }
+  .reveal-hidden img {
+    transform: scale(1.06);
+  }
 }

@@ -1,0 +1,24 @@
+.band {
+  overflow: hidden;
+  padding: clamp(20px, 4vw, 48px) 0;
+  background: var(--cream);
+  color: var(--navy);
+  font-family: var(--bebas);
+  font-size: clamp(44px, 8vw, 112px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: pre;
+  user-select: none;
+}
+/* Wider than the screen and centred, so it overflows evenly on both sides. */
+.row {
+  display: flex;
+  justify-content: center;
+  will-change: transform;
+  transform: translateX(calc((var(--p, 0.5) - 0.5) * 30vw));
+}
+.outline {
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--navy);
+  transform: translateX(calc((var(--p, 0.5) - 0.5) * -30vw));
+}

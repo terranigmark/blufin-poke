@@ -361,8 +361,7 @@
   line-height: 0.9;
 }
 .navyPill,
-.navyPillSm,
-.outlinePillSm {
+.navyPillSm {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -392,11 +391,10 @@
   color: var(--cream);
   font-size: 22px;
 }
-.outlinePillSm {
-  min-height: 52px;
-  padding: 12px 26px 10px;
-  border: 2px solid var(--navy);
-  font-size: 22px;
+/* One button per section: the email is a plain link beside "Cómo llegar". */
+.visitEmail {
+  font-size: 17px;
+  font-weight: 600;
 }
 .map {
   border-radius: 20px;
@@ -438,7 +436,8 @@
 .visitCtas {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
+  gap: 12px 24px;
 }
 
 /* Press feedback on the link-styled buttons (real <button>s get it from globals.css). */
