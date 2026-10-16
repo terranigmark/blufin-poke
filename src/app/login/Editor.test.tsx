@@ -2,7 +2,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { LANDING, type Landing } from "@/data/landing";
-import { API_URL, type MenuRows } from "@/lib/api";
+import { API_URL, type CategoryRow, type MenuRows } from "@/lib/api";
 import { AdminPage, LoginPage } from "./Editor";
 
 const replace = vi.fn();
@@ -18,7 +18,7 @@ const ROWS: MenuRows = {
   sizes: [{ id: 1, key: "small", name: "Small", name_en: "", price: 165, available: true, order: 0 }],
   ingredients: [],
   extras: [],
-  beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, color: "#2A1810", description: "", description_en: "", available: true, order: 0 }],
+  beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, srm: 40, description: "", description_en: "", available: true, order: 0 }],
   drinks: [],
   bowls: [],
 };
@@ -199,6 +199,24 @@ describe("/admin", () => {
     expect(JSON.parse(String(init!.body))).toMatchObject({ id: 2, name_en: "", description_en: "Roasted coffee." });
   });
 
+  it("picks a beer's colour on the SRM chart instead of a colour picker", async () => {
+    signedIn();
+    const fetch = api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^American Stout/ }));
+
+    const sheet = screen.getByRole("dialog");
+    expect(sheet.querySelector('input[type="color"]')).toBeNull();
+    expect(within(sheet).getAllByRole("radio")).toHaveLength(40);
+    expect(within(sheet).getByRole("radio", { name: "SRM 40" })).toBeChecked();
+    await userEvent.click(within(sheet).getByRole("radio", { name: "SRM 12" }));
+    expect(within(sheet).getByText("Color en el menú · SRM 12")).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toMatchObject({ id: 2, srm: 12 });
+  });
+
   it("lists Cervesoft's actions in the ⋮ menu and closes it with Esc", async () => {
     signedIn();
     api();
@@ -276,6 +294,47 @@ describe("/admin", () => {
     const [url, init] = fetch.mock.calls.at(-1)!;
     expect(url).toBe(`${API_URL}/api/editor/beers/`);
     expect(JSON.parse(String(init!.body))).toMatchObject({ tap: "01", name: "American Stout" });
+  });
+
+  it("groups the lists into poke elements, drinks and others, and adds, moves and deletes price lists", async () => {
+    signedIn();
+    const cat = (id: number, key: string, kind: CategoryRow["kind"], group: CategoryRow["group"], name: string, builtin = true): CategoryRow =>
+      ({ id, key, kind, group, name, name_en: "", available: true, order: id, builtin });
+    const cats = [cat(1, "sizes", "sizes", "poke", "Tamaños de bowl"), cat(10, "aguas", "drinks", "drinks", "Aguas y refrescos"), cat(12, "postres", "drinks", "others", "Postres", false)];
+    const brownie = { id: 5, category: "postres", name: "Brownie", name_en: "", price: 60, size: "", pack: "" as const, available: true, order: 0 };
+    const fetch = api((url, init) => {
+      if (url === `${API_URL}/api/editor/`) return json({ ...ROWS, categories: cats, drinks: [brownie] });
+      const body = init?.body ? JSON.parse(String(init.body)) : {};
+      if (url.endsWith("/editor/categories/") && init?.method === "POST") return json({ ...cat(13, "cocteles", "drinks", "drinks", "", false), ...body }, 201);
+      if (url.endsWith("/editor/categories/12/") && init?.method === "PATCH") return json({ ...cats[2], ...body });
+      if (init?.method === "DELETE") return new Response(null, { status: 204 });
+    });
+    render(<AdminPage />);
+    expect((await screen.findAllByRole("heading", { level: 2 })).map((h) => h.textContent)).toEqual(["Elementos del poke", "Bebidas", "Otros"]);
+    // Items in a list that isn't drinks need no bottle or can.
+    expect(screen.getByText("Brownie").closest("button")).toHaveTextContent(/^Brownie\$60$/);
+
+    vi.spyOn(window, "prompt").mockReturnValue("Cócteles");
+    await userEvent.click(screen.getByRole("button", { name: "Nueva lista en Bebidas" }));
+    expect(await screen.findByRole("button", { name: "Añadir a Cócteles" })).toBeInTheDocument();
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toEqual({ name: "Cócteles", group: "drinks", order: 13 });
+
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de la lista Postres" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Mover a Bebidas" }));
+    await waitFor(() => expect(fetch.mock.calls.at(-1)![1]).toMatchObject({ method: "PATCH", body: JSON.stringify({ id: 12, group: "drinks" }) }));
+    expect(await screen.findByText("Aquí van las listas que no son bebidas, como postres. Arma tu poke no las ofrece.")).toBeInTheDocument();
+
+    // The lists the menu ships with can move but not go away.
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de la lista Aguas y refrescos" }));
+    expect(screen.queryByRole("menuitem", { name: "Eliminar lista" })).not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de la lista Postres" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Eliminar lista" }));
+    await waitFor(() => expect(screen.queryByText("Brownie")).not.toBeInTheDocument());
+    expect(confirm).toHaveBeenCalledWith("¿Eliminar la lista “Postres” y sus 1 artículo? No se puede deshacer.");
+    expect(fetch.mock.calls.at(-1)![0]).toBe(`${API_URL}/api/editor/categories/12/`);
   });
 
   it("puts a hidden item back when saving fails", async () => {

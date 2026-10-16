@@ -94,6 +94,13 @@ class CategorySerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ("key", "kind", "builtin")
 
+    def validate_group(self, value):
+        # Built-in sections stay where they are; price lists (new ones included) go in Bebidas or Otros.
+        fixed = self.instance and self.instance.kind != "drinks"
+        if (value != self.instance.group) if fixed else (value == "poke"):
+            raise ValidationError("Solo las listas de precios cambian de grupo, entre Bebidas y Otros.")
+        return value
+
     def validate_available(self, value):
         if not value and self.instance and self.instance.in_builder:
             raise ValidationError("Arma tu poke necesita esta sección, así que no se puede ocultar.")

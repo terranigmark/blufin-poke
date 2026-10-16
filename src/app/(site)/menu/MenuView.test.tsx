@@ -10,17 +10,19 @@ describe("Menú page", () => {
     render(<MenuView />);
     expect(screen.getByText("Pacífico")).toBeInTheDocument();
     expect(screen.getByText("Kombucha")).toBeInTheDocument();
+    // Each tap's dot is its beer's SRM colour: the stout is SRM 40.
+    expect(screen.getByText("Tap 01").nextElementSibling).toHaveStyle({ background: "#36080A" });
 
     await userEvent.click(screen.getByRole("button", { name: "Cerveza nacional" }));
     expect(screen.queryByText("Kombucha")).not.toBeInTheDocument();
     expect(screen.getByText("Pacífico")).toBeInTheDocument();
-    expect(location.search).toBe("?tab=nac");
+    expect(location.search).toBe("?tab=nacional");
   });
 
   it("reads in English, falling back to Spanish names that have no translation", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("offline")));
     localStorage.setItem("blufin.lang", "en");
-    history.replaceState(null, "", "/menu"); // the first test left ?tab=nac
+    history.replaceState(null, "", "/menu"); // the first test left ?tab=nacional
     render(
       <LanguageProvider>
         <MenuView />

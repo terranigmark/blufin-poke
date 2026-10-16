@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from "react";
 import { LANDING, type Landing } from "@/data/landing";
-import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, orderable, type Menu, type Status, type StepKey } from "@/data/menu";
+import { BEERS as BUNDLED_BEERS, EN, LISTS, MENU, STEPS, drinkTabs, drinksFrom, orderable, secondProteinPrice, type Menu, type PriceList, type Status, type StepKey } from "@/data/menu";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.blufinpoke.com").replace(/\/$/, "");
 
@@ -20,12 +20,23 @@ export type BeerRow = Row & {
   abv: string;
   price_12: number;
   price_16: number;
-  color: string;
+  srm: number;
   description: string;
   description_en: string;
 };
 export type BowlRow = Row & { price: number; description: string; description_en: string; image_url: string };
-export type DrinkRow = Row & { category: "aguas" | "nacional"; price: number; size: string; pack: "Botella" | "Lata" };
+export type DrinkRow = Row & { category: string; price: number; size: string; pack: "Botella" | "Lata" | "" };
+export type CategoryRow = {
+  id: number;
+  key: string;
+  kind: "sizes" | "ingredients" | "extras" | "beers" | "drinks";
+  group: "poke" | "drinks" | "others";
+  name: string;
+  name_en: string;
+  available: boolean;
+  order: number;
+  builtin: boolean;
+};
 
 export type MenuRows = {
   sizes: SizeRow[];
@@ -34,10 +45,12 @@ export type MenuRows = {
   beers: BeerRow[];
   drinks: DrinkRow[];
   bowls: BowlRow[];
+  /** The editor's sections; a backend from before them has none. */
+  categories?: CategoryRow[];
   /** Missing on a backend from before the home page was editable, or sections it doesn't have yet. */
   landing?: Partial<Landing>;
 };
-export type Kind = Exclude<keyof MenuRows, "landing">;
+export type Kind = Exclude<keyof MenuRows, "categories" | "landing">;
 
 /** API rows → the shapes src/data/menu.ts exports, so pages need no other change. */
 // English left blank in the editor (or a backend without it yet) falls back to the bundled
@@ -47,9 +60,17 @@ const ingredientEn = (i: IngredientRow) =>
   i.name_en || (STEPS.find((st) => st.key === i.step)?.opts.find((o) => o.id === i.key && o.name === i.name)?.nameEn ?? EN[i.name]);
 
 export function toMenu(m: MenuRows): Menu {
-  const packaged = (cat: DrinkRow["category"]) =>
+  const packaged = (cat: string) =>
     m.drinks.filter((d) => d.category === cat).map(({ name, name_en, price, size, pack, status }) => ({ name, nameEn: en(name, name_en), price, size, pack, status }));
-  const BEERS = m.beers.map((b) => ({
+  // A list the editor hid leaves the menu and Arma tu poke.
+  const shown = (key: string) => m.categories?.find((c) => c.key === key)?.available !== false;
+  const lists: PriceList[] = m.categories
+    ? [...m.categories]
+        .filter((c) => c.kind === "drinks" && c.available)
+        .sort((a, b) => a.order - b.order || a.id - b.id)
+        .map((c) => ({ key: c.key, name: c.name, nameEn: c.name_en || undefined, group: c.group === "others" ? "others" : "drinks", items: packaged(c.key) }))
+    : LISTS.map((l) => ({ ...l, items: packaged(l.key) }));
+  const BEERS = (shown("beers") ? m.beers : []).map((b) => ({
     tap: b.tap,
     name: b.name,
     nameEn: en(b.name, b.name_en),
@@ -57,13 +78,14 @@ export function toMenu(m: MenuRows): Menu {
     abv: b.abv,
     price12: b.price_12,
     price16: b.price_16,
-    color: b.color,
+    srm: b.srm,
     desc: b.description,
     descEn: b.description_en || BUNDLED_BEERS.find((x) => x.desc === b.description)?.descEn,
     status: b.status,
   }));
-  const AGUAS = packaged("aguas");
-  const NACIONAL = packaged("nacional");
+  const AGUAS = shown("aguas") ? packaged("aguas") : [];
+  const NACIONAL = shown("nacional") ? packaged("nacional") : [];
+  const orderableLists = lists.map((l) => ({ ...l, items: l.items.filter(orderable) }));
   return {
     SIZES: m.sizes.map((z) => ({ id: z.key, name: z.name, nameEn: en(z.name, z.name_en), price: z.price, status: z.status })),
     STEPS: STEPS.map((st) => ({
@@ -74,11 +96,14 @@ export function toMenu(m: MenuRows): Menu {
     })),
     // Arma tu poke only offers what can be ordered now; /menu lists everything with its badge.
     BOWL_EXTRAS: m.extras.filter((e) => e.in_builder && orderable(e)).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, nameEn: en(e.name, e.name_en), price: e.price })),
+    SECOND_PROTEIN_PRICE: secondProteinPrice(m.extras.map((e) => ({ ...e, id: e.key }))),
     MENU_EXTRAS: m.extras.map(({ name, name_en, price, status }) => ({ name, nameEn: en(name, name_en), price, status })),
     BEERS,
     AGUAS,
     NACIONAL,
-    DRINKS: drinksFrom(BEERS.filter(orderable), NACIONAL.filter(orderable), AGUAS.filter(orderable)),
+    LISTS: lists,
+    DRINKS: drinksFrom(BEERS.filter(orderable), orderableLists),
+    DRINK_TABS: drinkTabs(lists),
     // `?? []`: a backend from before house bowls simply has none.
     HOUSE_BOWLS: (m.bowls ?? []).map((b) => ({
       id: b.id,

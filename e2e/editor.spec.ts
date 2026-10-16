@@ -106,6 +106,8 @@ test("dragging a row with the mouse reorders it", async ({ page }) => {
 });
 
 test("the ⋮ menu marks a status the public menu shows, duplicates and deletes", async ({ page }) => {
+  // Short enough that the copy's menu reaches the Deshacer bar, which must not cover it.
+  await page.setViewportSize({ width: 412, height: 790 });
   await signIn(page);
   const statusOf = async (name: string) =>
     (await (await page.request.get(API)).json()).sizes.find((z: { name: string }) => z.name === name)?.status;
@@ -125,7 +127,8 @@ test("the ⋮ menu marks a status the public menu shows, duplicates and deletes"
 
   await action("Small", "Duplicar");
   await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235,Small (copia):165");
-  // The menu of a section's last row must not be cut off by the section (real bug: Eliminar was unreachable).
+  // The menu of a section's last row must not be cut off by the section or covered by the Deshacer bar
+  // (real bugs: Eliminar was unreachable).
   await page.click("button[aria-label='Opciones de Small (copia)']");
   const hit = await page.locator("[role=menuitem]:has-text('Eliminar')").evaluate((el) => {
     // Scroll the page, not the section: scrollIntoView would scroll a clipping section and hide the bug.
@@ -159,6 +162,34 @@ test("three house bowls added in the editor show on the home page and the menu",
   await expect(section.getByRole("heading", { level: 3 })).toHaveText(["Clásico", "Picante", "Verde"]);
   await page.goto("/menu/?tab=poke");
   await expect(page.getByText("Picante con atún y aguacate")).toBeVisible();
+});
+
+test("a beer's SRM colour from the editor shows as its tap dot on the menu", async ({ page }) => {
+  await signIn(page);
+  await page.click("button:has-text('American Stout')");
+  await page.getByRole("dialog").getByRole("radio", { name: "SRM 12" }).check({ force: true });
+  await page.click("dialog button:has-text('Guardar cambios')");
+  await expect(page.locator("dialog")).toHaveCount(0);
+
+  await page.goto("/menu/?tab=beer");
+  await expect(page.getByText("Tap 01").locator("+ span")).toHaveCSS("background-color", "rgb(207, 105, 0)");
+});
+
+test("a list added in Otros gets its own section on the menu", async ({ page }) => {
+  await signIn(page);
+  page.on("dialog", (d) => d.accept("Postres"));
+  await page.click("button:has-text('Nueva lista en Otros')");
+  await page.click("button[aria-label='Añadir a Postres']");
+  await page.fill("dialog input[name=name]", "Brownie");
+  await page.fill("dialog input[name=price]", "60");
+  await page.click("dialog button:has-text('Añadir artículo')");
+  await expect(page.locator("dialog")).toHaveCount(0);
+
+  await page.goto("/menu/?tab=postres");
+  await expect(page.getByRole("heading", { name: "Postres" })).toBeVisible();
+  await expect(page.getByText("Brownie")).toBeVisible();
+  const menu = await (await page.request.get(API)).json();
+  expect(menu.categories.find((c: { key: string }) => c.key === "postres").group).toBe("others");
 });
 
 test("the home page's cards save to the live site, and Deshacer puts it back", async ({ page }) => {

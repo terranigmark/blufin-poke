@@ -237,8 +237,6 @@ export const STEPS: Step[] = [
   },
 ];
 
-/** Shown when a second protein is picked. */
-export const SECOND_PROTEIN_PRICE = 25;
 /** From this many salsas on, a "we recommend up to 2" note appears. */
 export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
@@ -271,6 +269,10 @@ export const BOWL_EXTRAS: Extra[] = [
   { id: "xcan", name: "Cangrejo", price: 20 },
 ].map(en);
 
+/** Shown when a second protein is picked: the price of the "Proteína" extra on the menu, or none when it isn't there. */
+export const secondProteinPrice = (extras: { id?: string; name: string; price: number }[]): number | null =>
+  extras.find((e) => e.id === "xprot" || e.name === "Proteína")?.price ?? null;
+
 // ---------------------------------------------------------------- Drinks
 
 export type Beer = {
@@ -281,27 +283,36 @@ export type Beer = {
   /** PLACEHOLDER: 12 oz prices were guessed as $20 below the 16 oz price. */
   price12: number;
   price16: number;
-  /** Dot colour on the menu tap list. */
-  color: string;
+  /** Colour on the SRM scale (1–40), drawn as the dot on the menu tap list. */
+  srm: number;
   desc: string;
   nameEn?: string;
   descEn?: string;
   status?: Status;
 };
 
+/** The standard SRM beer colours, SRM 1 to 40, as on the AIH SRM chart; the editor's picker shows these. */
+export const SRM = (
+  "#FFE699 #FFD878 #FFCA5A #FFBF42 #FBB123 #F8A600 #F39C00 #EA8F00 #E58500 #DE7C00 " +
+  "#D77200 #CF6900 #CB6200 #C35900 #BB5100 #B54C00 #B04500 #A63E00 #A13700 #9B3200 " +
+  "#952D00 #8E2900 #882300 #821E00 #7B1A00 #771900 #701400 #6A0E00 #660D00 #5E0B00 " +
+  "#5A0A02 #600903 #520907 #4C0505 #470606 #440607 #3F0708 #3B0607 #3A070B #36080A"
+).split(" ");
+export const srmColor = (srm: number) => SRM[Math.min(40, Math.max(1, Math.round(srm) || 1)) - 1];
+
 export const BEERS: Beer[] = [
-  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, color: "#2A1810", desc: "Café tostado, cacao amargo y cuerpo sedoso.", descEn: "Roasted coffee, bitter cocoa and a silky body." },
-  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, color: "#3B2216", desc: "Vainilla, chocolate y un final dulce de postre.", descEn: "Vanilla, chocolate and a sweet, dessert-like finish." },
-  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, color: "#E8B84A", desc: "Jugosa y turbia, con notas de mango y durazno.", descEn: "Juicy and hazy, with notes of mango and peach." },
-  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, color: "#D99A2B", desc: "Cítrica y resinosa, como brisa de costa.", descEn: "Citrusy and resinous, like a coastal breeze." },
-  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, color: "#E0A93A", desc: "Ligera y aromática, para toda la tarde.", descEn: "Light and aromatic, for the whole afternoon." },
-  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, color: "#C8822B", desc: "Levadura belga, especiada y frutal.", descEn: "Belgian yeast, spicy and fruity." },
-  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, color: "#F0CF6A", desc: "Limpia y refrescante, hecha para el calor.", descEn: "Clean and refreshing, made for the heat." },
-  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, color: "#EBC150", desc: "Crujiente, con lúpulo estilo costa oeste.", descEn: "Crisp, with West Coast-style hops." },
+  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, srm: 40, desc: "Café tostado, cacao amargo y cuerpo sedoso.", descEn: "Roasted coffee, bitter cocoa and a silky body." },
+  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, srm: 40, desc: "Vainilla, chocolate y un final dulce de postre.", descEn: "Vanilla, chocolate and a sweet, dessert-like finish." },
+  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, srm: 4, desc: "Jugosa y turbia, con notas de mango y durazno.", descEn: "Juicy and hazy, with notes of mango and peach." },
+  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, srm: 5, desc: "Cítrica y resinosa, como brisa de costa.", descEn: "Citrusy and resinous, like a coastal breeze." },
+  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, srm: 5, desc: "Ligera y aromática, para toda la tarde.", descEn: "Light and aromatic, for the whole afternoon." },
+  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, srm: 11, desc: "Levadura belga, especiada y frutal.", descEn: "Belgian yeast, spicy and fruity." },
+  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, srm: 2, desc: "Limpia y refrescante, hecha para el calor.", descEn: "Clean and refreshing, made for the heat." },
+  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, srm: 3, desc: "Crujiente, con lúpulo estilo costa oeste.", descEn: "Crisp, with West Coast-style hops." },
 ];
 
 // PLACEHOLDER: "Botella" vs "Lata" was guessed.
-export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata"; status?: Status };
+export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata" | ""; status?: Status };
 
 export const AGUAS: Packaged[] = (
   [
@@ -336,8 +347,18 @@ export const MENU_EXTRAS: { name: string; nameEn?: string; price: number; status
   { name: "Arroz / ensalada / totopos", price: 50 },
 ].map(en);
 
-// Drinks as orderable items in the "Agrega una bebida" step.
-export type DrinkCat = "beer" | "nac" | "aguas";
+/**
+ * A price list, as the editor groups them: "drinks" lists are also offered in Arma tu poke's
+ * "Agrega una bebida"; "others" (desserts, say) only show on the menu.
+ */
+export type PriceList = { key: string; name: string; nameEn?: string; group: "drinks" | "others"; items: Packaged[] };
+export const LISTS: PriceList[] = [
+  { key: "aguas", name: "Aguas y refrescos", nameEn: "Water & soft drinks", group: "drinks", items: AGUAS },
+  { key: "nacional", name: "Cerveza nacional", nameEn: "Mexican beer", group: "drinks", items: NACIONAL },
+];
+
+// Drinks as orderable items in the "Agrega una bebida" step: the tap beers ("beer") and the items of each drinks list (its key).
+export type DrinkCat = string;
 export type Drink = {
   id: string;
   cat: DrinkCat;
@@ -348,9 +369,9 @@ export type Drink = {
   sizes: { k: string; label: string; price: number }[];
 };
 
-export const PACK_EN = { Botella: "Bottle", Lata: "Can" } as const;
+export const PACK_EN = { Botella: "Bottle", Lata: "Can", "": "" } as const;
 
-export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[]): Drink[] => [
+export const drinksFrom = (beers: Beer[], lists: PriceList[]): Drink[] => [
   ...beers.map((b) => ({
     id: "b" + b.tap,
     cat: "beer" as const,
@@ -363,32 +384,27 @@ export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[
       { k: "16", label: "16 oz", price: b.price16 },
     ],
   })),
-  ...nacional.map((a, i) => ({
-    id: "n" + i,
-    cat: "nac" as const,
-    name: a.name,
-    nameEn: a.nameEn,
-    meta: `${a.pack} · ${a.size}`,
-    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
-    sizes: [{ k: "u", label: "", price: a.price }],
-  })),
-  ...aguas.map((a, i) => ({
-    id: "a" + i,
-    cat: "aguas" as const,
-    name: a.name,
-    nameEn: a.nameEn,
-    meta: `${a.pack} · ${a.size}`,
-    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
-    sizes: [{ k: "u", label: "", price: a.price }],
-  })),
+  ...lists
+    .filter((l) => l.group === "drinks")
+    .flatMap((l) =>
+      l.items.map((a, i) => ({
+        id: `${l.key}-${i}`,
+        cat: l.key,
+        name: a.name,
+        nameEn: a.nameEn,
+        meta: [a.pack, a.size].filter(Boolean).join(" · "),
+        metaEn: [PACK_EN[a.pack], a.size].filter(Boolean).join(" · "),
+        sizes: [{ k: "u", label: "", price: a.price }],
+      })),
+    ),
 ];
 
-export const DRINKS = drinksFrom(BEERS, NACIONAL, AGUAS);
+export const DRINKS = drinksFrom(BEERS, LISTS);
 
-export const DRINK_TABS: [DrinkCat, string, string][] = [
+/** Arma tu poke's drink tabs: [id, Spanish, English], the tap beers first and then the drinks lists in the menu's order. */
+export const drinkTabs = (lists: PriceList[]): [DrinkCat, string, string][] => [
   ["beer", "Cerveza artesanal", "Craft beer"],
-  ["nac", "Cerveza nacional", "Mexican beer"],
-  ["aguas", "Aguas y refrescos", "Water & soft drinks"],
+  ...lists.filter((l) => l.group === "drinks").map((l): [DrinkCat, string, string] => [l.key, l.name, l.nameEn || l.name]),
 ];
 
 /** Ready-made bowls the manager adds in the editor; none ship with the site. */
@@ -398,5 +414,18 @@ export const HOUSE_BOWLS: HouseBowl[] = [];
 export const money = (n: number) => "$" + n;
 
 /** The editable part of the menu. The website starts from these and swaps in the live menu from the API (src/lib/api.ts). */
-export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, BEERS, AGUAS, NACIONAL, DRINKS, HOUSE_BOWLS };
+export const MENU = {
+  SIZES,
+  STEPS,
+  BOWL_EXTRAS,
+  MENU_EXTRAS,
+  SECOND_PROTEIN_PRICE: secondProteinPrice(MENU_EXTRAS),
+  BEERS,
+  AGUAS,
+  NACIONAL,
+  LISTS,
+  DRINKS,
+  DRINK_TABS: drinkTabs(LISTS),
+  HOUSE_BOWLS,
+};
 export type Menu = typeof MENU;

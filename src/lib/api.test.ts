@@ -14,7 +14,7 @@ const ROWS: MenuRows = {
     { id: 4, key: "xagu", name: "Aguacate", name_en: "", price: 20, in_builder: true, available: true, order: 0 },
     { id: 5, key: "", name: "Salsa", name_en: "", price: 10, in_builder: false, available: true, order: 1 },
   ],
-  beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, color: "#000", description: "Rica", description_en: "", available: true, order: 0 }],
+  beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, srm: 40, description: "Rica", description_en: "", available: true, order: 0 }],
   bowls: [],
   drinks: [
     { id: 7, category: "aguas", name: "Agua", name_en: "", price: 15, size: "500 ml", pack: "Botella", available: true, order: 0 },
@@ -35,7 +35,32 @@ describe("toMenu", () => {
     expect(m.BEERS[0]).toMatchObject({ tap: "01", price12: 70, price16: 90, desc: "Rica" });
     expect(m.AGUAS).toEqual([{ name: "Agua", price: 15, size: "500 ml", pack: "Botella" }]);
     expect(m.NACIONAL[0].name).toBe("Modelo");
-    expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "n0", "a0"]);
+    expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "aguas-0", "nacional-0"]);
+  });
+
+  it("follows the editor's lists: Arma tu poke offers the Bebidas ones, the menu shows them all", () => {
+    const cat = (id: number, key: string, kind: "beers" | "drinks", group: "drinks" | "others", order: number, available = true) =>
+      ({ id, key, kind, group, name: key, name_en: "", available, order, builtin: false });
+    const m = toMenu({
+      ...ROWS,
+      categories: [cat(1, "beers", "beers", "drinks", 0), cat(2, "nacional", "drinks", "drinks", 1), cat(3, "postres", "drinks", "others", 2), cat(4, "aguas", "drinks", "drinks", 3, false)],
+      drinks: [...ROWS.drinks, { id: 9, category: "postres", name: "Brownie", name_en: "", price: 60, size: "", pack: "", available: true, order: 0 }],
+    });
+    expect(m.LISTS.map((l) => [l.key, l.group])).toEqual([["nacional", "drinks"], ["postres", "others"]]);
+    expect(m.DRINK_TABS.map(([id]) => id)).toEqual(["beer", "nacional"]);
+    expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "nacional-0"]);
+    expect(m.AGUAS).toEqual([]); // hidden in the editor
+    // A hidden beer list leaves the menu and Arma tu poke too.
+    const noBeers = toMenu({ ...ROWS, categories: [cat(1, "beers", "beers", "drinks", 0, false)] });
+    expect(noBeers.BEERS).toEqual([]);
+    expect(noBeers.LISTS).toEqual([]);
+  });
+
+  it("prices the second protein like the menu's Proteína extra, and leaves the price out without one", () => {
+    expect(toMenu(ROWS).SECOND_PROTEIN_PRICE).toBeNull();
+    const prot = { id: 9, key: "xprot", name: "Proteína", name_en: "", price: 30, in_builder: true, available: true, order: 2 };
+    expect(toMenu({ ...ROWS, extras: [...ROWS.extras, prot] }).SECOND_PROTEIN_PRICE).toBe(30);
+    expect(MENU.SECOND_PROTEIN_PRICE).toBe(25);
   });
 });
 
@@ -56,7 +81,7 @@ describe("toMenu statuses", () => {
     expect(m.STEPS[0].opts).toEqual([]);
     expect(m.STEPS[5].opts.map((o) => o.id)).toEqual(["totopos"]);
     expect(m.BOWL_EXTRAS).toEqual([]);
-    expect(m.DRINKS.map((d) => d.id)).toEqual(["n0", "a0"]);
+    expect(m.DRINKS.map((d) => d.id)).toEqual(["aguas-0", "nacional-0"]);
   });
 });
 
@@ -127,7 +152,7 @@ describe("toMenu English names", () => {
     expect(m.STEPS[0].en.title).toBe("Choose your base");
     expect(m.BEERS[0]).toMatchObject({ desc: "Rica", descEn: "Tasty" });
     expect(m.AGUAS[0].nameEn).toBeUndefined(); // no English anywhere: the page shows the Spanish
-    expect(m.DRINKS.find((d) => d.id === "n0")).toMatchObject({ meta: "Lata · 355 ml", metaEn: "Can · 355 ml" });
+    expect(m.DRINKS.find((d) => d.id === "nacional-0")).toMatchObject({ meta: "Lata · 355 ml", metaEn: "Can · 355 ml" });
   });
 });
 

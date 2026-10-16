@@ -29,7 +29,7 @@ describe("Arma tu poke", () => {
     // Protein needs a size too; the second protein costs extra.
     await pick("Atún");
     await pick("Camarón");
-    expect(screen.getByText(/La segunda proteína tiene costo extra/)).toBeInTheDocument();
+    expect(screen.getByText(/La segunda proteína tiene costo extra/)).toHaveTextContent("La segunda proteína tiene costo extra: +$25");
     await next();
     expect(screen.getByRole("heading", { name: "Elige tu proteína" })).toBeInTheDocument();
     await click(/Regular/);
