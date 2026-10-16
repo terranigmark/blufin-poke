@@ -22,6 +22,8 @@ it("builds a bowl in English; the waiter's QR carries the order in Spanish", asy
       <Builder />
     </LanguageProvider>,
   );
+  const steps = within(screen.getAllByRole("list")[0]).getAllByRole("listitem").map((li) => li.textContent);
+  expect(steps).toEqual(["1Pick your base and protein", "2Add mix-ins, sauces, toppings and crunchies", "3Show your code to your server"]);
   await click(/Start/);
   expect(screen.getByRole("heading", { name: "Choose your base" })).toBeInTheDocument();
   // Names from the printed English menu.

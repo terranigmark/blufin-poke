@@ -15,6 +15,9 @@ beforeEach(() => {
 describe("Arma tu poke", () => {
   it("builds a bowl and shows the order ticket with its QR code", async () => {
     render(<Builder />);
+    // The intro explains the visit in three steps.
+    const steps = within(screen.getAllByRole("list")[0]).getAllByRole("listitem").map((li) => li.textContent);
+    expect(steps).toEqual(["1Elige tu base y tu proteína", "2Ponle mix-ins, salsas, toppings y crunchies", "3Muestra tu código al mesero"]);
     await click(/Empezar/);
 
     // Base: one choice, required.

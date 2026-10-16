@@ -25,6 +25,13 @@ import { pick, useLang } from "@/lib/i18n";
 import { encodeOrder, type OrderData } from "@/lib/order";
 import s from "./builder.module.css";
 
+// The intro groups the six choice screens into three plain steps.
+const INTRO_STEPS = [
+  ["Elige tu base y tu proteína", "Pick your base and protein"],
+  ["Ponle mix-ins, salsas, toppings y crunchies", "Add mix-ins, sauces, toppings and crunchies"],
+  ["Muestra tu código al mesero", "Show your code to your server"],
+] as const;
+
 // Screens: 0 intro · 1–6 selection steps · 7 summary · 8 code/QR · 9 drinks
 const SUMMARY = 7;
 const DONE = 8;
@@ -205,10 +212,10 @@ export function Builder() {
 
   const stepList = (
     <>
-      {STEPS.map((x, i) => (
-        <li key={x.key}>
+      {INTRO_STEPS.map(([es, en], i) => (
+        <li key={i}>
           <span className={s.listNum}>{i + 1}</span>
-          <span className={s.listTitle}>{t(x.title, x.en.title)}</span>
+          <span className={s.listTitle}>{t(es, en)}</span>
         </li>
       ))}
     </>
