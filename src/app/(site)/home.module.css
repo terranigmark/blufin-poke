@@ -47,6 +47,14 @@
   line-height: 1.1;
   text-shadow: 0 2px 12px rgba(10, 30, 48, 0.6);
 }
+.heroHead {
+  /* As wide as the title; the lead wraps to that width. */
+  width: fit-content;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
 .heroTitle {
   margin: 0;
   font-family: var(--bebas);
@@ -63,7 +71,8 @@
   margin: 0;
   font-size: clamp(18px, 1.6vw, 22px);
   font-weight: 500;
-  max-width: 36ch;
+  width: 0; /* keeps the lead from widening .heroHead */
+  min-width: 100%;
   line-height: 1.4;
   text-wrap: pretty;
 }
