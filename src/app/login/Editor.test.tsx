@@ -453,6 +453,24 @@ describe("/admin", () => {
       ]);
     });
 
+    it("adds a social network to the footer and leaves the email empty", async () => {
+      signedIn();
+      const fetch = landingApi();
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      const footer = screen.getByRole("form", { name: "Pie de página" });
+
+      await userEvent.click(within(footer).getByRole("button", { name: "+ Añadir red" }));
+      await userEvent.selectOptions(within(footer).getByLabelText("Red 4"), "WhatsApp");
+      await userEvent.type(within(footer).getByLabelText(/^Enlace 4/), "https://wa.me/526120000000");
+      await userEvent.clear(within(footer).getByLabelText(/^Correo/));
+      await userEvent.click(within(footer).getByRole("button", { name: "Guardar" }));
+
+      await screen.findByText("Guardaste la página de inicio");
+      expect(lastBody(fetch).footer.social.at(-1)).toEqual({ network: "whatsapp", url: "https://wa.me/526120000000" });
+      expect(lastBody(fetch).footer.email).toBe("");
+    });
+
     it("uploads a new hero video, and Quitar leaves the picture alone", async () => {
       signedIn();
       const fetch = landingApi();

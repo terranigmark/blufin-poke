@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Landing } from "@/data/landing";
+import { NETWORKS, type Landing } from "@/data/landing";
 import { editorFetch, mediaUrl } from "@/lib/api";
 import s from "./editor.module.css";
 
@@ -16,7 +16,11 @@ export type LandingSection = keyof Landing;
 type Field = {
   name: string;
   label: string;
-  type?: "text" | "lines" | "image" | "logo" | "video" | "link" | "list";
+  type?: "text" | "lines" | "image" | "logo" | "video" | "link" | "email" | "select" | "list";
+  /** Can be left empty (texts are required otherwise). */
+  optional?: boolean;
+  /** For selects: value → label. */
+  options?: Record<string, string>;
   /** Adds the optional English field `<name>_en`. */
   en?: boolean;
   hint?: string;
@@ -84,6 +88,50 @@ const CARDS: { id: LandingSection; title: string; fields: Field[] }[] = [
         max: 6,
         hint: "Cada foto lleva su texto encima y abre su enlace.",
       },
+    ],
+  },
+  {
+    id: "esencia",
+    title: "Nuestra esencia es Baja",
+    fields: [
+      { name: "title", label: "Título", en: true },
+      { name: "lead", label: "Descripción", type: "lines", en: true },
+      { name: "image_a", label: "Foto grande", type: "image" },
+      { name: "image_b", label: "Foto pequeña", type: "image", hint: "Va encima de la grande, en una esquina." },
+      { name: "cta", label: "Texto del botón", en: true, hint: "El botón lleva a las cervezas del menú." },
+    ],
+  },
+  {
+    id: "visit",
+    title: "Ubicación",
+    fields: [
+      { name: "title", label: "Título", en: true },
+      { name: "address", label: "Dirección", type: "lines", hint: "El mapa y el botón buscan esta dirección. Cada renglón se muestra en su propia línea." },
+      { name: "hours", label: "Horarios", type: "lines", en: true, hint: "Cada renglón se muestra en su propia línea." },
+      { name: "cta", label: "Texto del botón", en: true, hint: "El botón abre la dirección en Google Maps." },
+      { name: "email", label: "Correo", type: "email", optional: true, hint: "Opcional. Vacío no se muestra." },
+    ],
+  },
+  {
+    id: "footer",
+    title: "Pie de página",
+    fields: [
+      { name: "brand", label: "Nombre" },
+      { name: "tagline", label: "Texto bajo el nombre", en: true },
+      { name: "city", label: "Ciudad" },
+      {
+        name: "social",
+        label: "Redes sociales",
+        type: "list",
+        item: [
+          { name: "network", label: "Red", type: "select", options: NETWORKS },
+          { name: "url", label: "Enlace", type: "link", hint: "El enlace completo al perfil, con https://." },
+        ],
+        itemLabel: "red",
+        max: 6,
+      },
+      { name: "email", label: "Correo", type: "email", optional: true, hint: "Opcional. Vacío no se muestra." },
+      { name: "copyright", label: "Derechos reservados", en: true },
     ],
   },
 ];
@@ -240,19 +288,39 @@ function FieldView({ field: f, get, set, n }: { field: Field; get: (name: string
   if (f.type === "image" || f.type === "logo" || f.type === "video")
     return <MediaField field={{ ...f, label }} kind={f.type} value={str(f.name)} onChange={(v) => set(f.name, v)} />;
   if (f.type === "list") return <ListField field={f} items={get(f.name) as Draft[]} onChange={(v) => set(f.name, v)} />;
+  if (f.type === "select")
+    return (
+      <label className={s.field}>
+        <span>{label}</span>
+        <select value={str(f.name)} onChange={(e) => set(f.name, e.target.value)}>
+          {Object.entries(f.options!).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+      </label>
+    );
   const Input = f.type === "lines" ? "textarea" : "input";
-  const max = f.type === "lines" ? 80 : f.type === "link" ? 300 : n ? 60 : 120;
+  const max = f.type === "lines" ? 200 : f.type === "link" ? 300 : n ? 60 : 120;
   return (
     <div className={s.landingPair}>
       <label className={s.field}>
         <span>{label}</span>
-        <Input value={str(f.name)} rows={f.type === "lines" ? 2 : undefined} maxLength={max} required onChange={(e) => set(f.name, e.target.value)} />
+        <Input
+          value={str(f.name)}
+          type={f.type === "email" ? "email" : undefined}
+          rows={f.type === "lines" ? 3 : undefined}
+          maxLength={max}
+          required={!f.optional}
+          onChange={(e) => set(f.name, e.target.value)}
+        />
         {f.hint && <small>{f.hint}</small>}
       </label>
       {f.en && (
         <label className={s.field}>
           <span>{label} en inglés</span>
-          <Input value={str(`${f.name}_en`)} rows={f.type === "lines" ? 2 : undefined} maxLength={max} onChange={(e) => set(`${f.name}_en`, e.target.value)} />
+          <Input value={str(`${f.name}_en`)} rows={f.type === "lines" ? 3 : undefined} maxLength={max} onChange={(e) => set(`${f.name}_en`, e.target.value)} />
           {!n && <small>Opcional. Si lo dejas vacío, se usa el español.</small>}
         </label>
       )}
@@ -263,7 +331,7 @@ function FieldView({ field: f, get, set, n }: { field: Field; get: (name: string
 /** Entries you add, remove and move up or down: belt texts, steps, pictures. */
 function ListField({ field, items, onChange }: { field: Field; items: Draft[]; onChange: (v: Draft[]) => void }) {
   const what = field.itemLabel!;
-  const blank = Object.fromEntries(field.item!.flatMap((f) => [[f.name, ""], ...(f.en ? [[`${f.name}_en`, ""]] : [])]));
+  const blank = Object.fromEntries(field.item!.flatMap((f) => [[f.name, f.options ? Object.keys(f.options)[0] : ""], ...(f.en ? [[`${f.name}_en`, ""]] : [])]));
   const move = (i: number, to: number) => {
     const next = [...items];
     next.splice(to, 0, ...next.splice(i, 1));
