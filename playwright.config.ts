@@ -8,7 +8,8 @@ export default defineConfig({
   testDir: "e2e",
   workers: 1, // the tests share one database
   retries: process.env.CI ? 1 : 0,
-  use: { baseURL: "http://localhost:3000", trace: "retain-on-failure", ...devices["Pixel 7"] },
+  // Spanish device unless a test says otherwise: /admin and the site follow the device language.
+  use: { baseURL: "http://localhost:3000", trace: "retain-on-failure", ...devices["Pixel 7"], locale: "es-MX" },
   webServer: [
     {
       cwd: "backend",

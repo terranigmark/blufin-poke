@@ -40,7 +40,11 @@ function api(overrides: (url: string, init?: RequestInit) => Response | undefine
   return fetch;
 }
 
-beforeEach(() => replace.mockClear());
+beforeEach(() => {
+  replace.mockClear();
+  // jsdom's device language is English; these tests read /admin in Spanish unless they switch.
+  localStorage.setItem("blufin.lang", "es");
+});
 
 describe("/login", () => {
   it("sends a signed-in manager straight to /admin", async () => {
@@ -566,6 +570,85 @@ describe("/admin", () => {
   });
 });
 
+describe("/admin in English", () => {
+  it("switches the whole editor with the ES | EN toggle, and remembers it", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    expect(await screen.findByText(/^2 artículos · /)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "English" }));
+    expect(screen.getByText(/^2 items · \d+ sections · Saved$/)).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe("en");
+    expect(localStorage.getItem("blufin.lang")).toBe("en");
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Menu", "Home page", "QR codes"]);
+    expect(screen.getByRole("heading", { name: "Poke elements" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Draft beer/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Protein/ })).toBeInTheDocument();
+
+    // The ⋮ menu, the edit sheet and its field labels.
+    await userEvent.click(screen.getByRole("button", { name: "Options for American Stout" }));
+    expect(screen.getAllByRole("menuitem").map((m) => m.textContent)).toEqual([
+      "Edit",
+      "Duplicate",
+      "Mark as sold out",
+      "Mark as coming soon",
+      "Mark as almost gone",
+      "Mark as new",
+      "Hide from the menu",
+      "Delete",
+    ]);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Edit" }));
+    const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Edit item" })).toBeInTheDocument();
+    expect(within(sheet).getByLabelText(/^Tap/)).toHaveValue("01");
+    expect(within(sheet).getByLabelText(/^English name/)).toBeInTheDocument();
+    expect(within(sheet).getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole("button", { name: "Cancel" }));
+
+    // The home page cards too.
+    await userEvent.click(screen.getByRole("tab", { name: "Home page" }));
+    expect(screen.getByRole("form", { name: "Hero" })).toBeInTheDocument();
+    expect(screen.getAllByText("Slogan in English").length).toBeGreaterThan(0);
+
+    await userEvent.click(screen.getByRole("button", { name: "Español" }));
+    expect(screen.getByRole("tab", { name: "Página de inicio" })).toBeInTheDocument();
+  });
+
+  it("opens in English on an English device that never picked", async () => {
+    localStorage.removeItem("blufin.lang");
+    signedIn();
+    api();
+    render(<AdminPage />);
+    expect(await screen.findByRole("tab", { name: "Menu" })).toBeInTheDocument();
+  });
+});
+
+describe("/admin Códigos QR", () => {
+  it("shows a QR for /menu and /menu-tv on the live site, each downloadable as a PNG", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: "Códigos QR" }));
+    for (const url of ["https://blufinpoke.com/menu/", "https://blufinpoke.com/menu-tv/"]) {
+      expect(screen.getByRole("img", { name: `Código QR de ${url}` })).toHaveAttribute("src", expect.stringMatching(/^data:image\/svg\+xml/));
+      expect(screen.getByRole("link", { name: url })).toHaveAttribute("href", url);
+    }
+
+    // jsdom has no canvas: fake one and catch the download link's click.
+    const fillRect = vi.fn();
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({ fillRect, fillStyle: "" } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toDataURL").mockReturnValue("data:image/png;base64,AAAA");
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {});
+    const tv = screen.getByRole("region", { name: "Menú para TV" });
+    await userEvent.click(within(tv).getByRole("button", { name: "Descargar PNG" }));
+    expect(click).toHaveBeenCalledTimes(1);
+    const a = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(a.download).toBe("blufin-menu-tv-qr.png");
+    expect(a.href).toBe("data:image/png;base64,AAAA");
+    expect(fillRect.mock.calls.length).toBeGreaterThan(100); // white background, then the dark modules
+  });
+});
+
 describe("/admin Usuarios y Actividad", () => {
   const USERS = [
     { id: 1, email: "ruth@blufin.mx", name: "Ruth", role: "admin", active: true, menu: true, landing: true },
@@ -589,7 +672,7 @@ describe("/admin Usuarios y Actividad", () => {
     signedIn();
     usersApi({ email: "mesera@blufin.mx", admin: false, menu: false, landing: true });
     render(<AdminPage />);
-    await waitFor(() => expect(tabs()).toEqual(["Página de inicio"]));
+    await waitFor(() => expect(tabs()).toEqual(["Página de inicio", "Códigos QR"]));
     // Starts on the one tab it has, not on the menu.
     expect(screen.getByRole("form", { name: "Portada" })).toBeInTheDocument();
     expect(screen.queryByText("American Stout")).not.toBeInTheDocument();
@@ -599,7 +682,7 @@ describe("/admin Usuarios y Actividad", () => {
     signedIn();
     usersApi();
     render(<AdminPage />);
-    await waitFor(() => expect(tabs()).toEqual(["Menú", "Página de inicio", "Usuarios", "Actividad"]));
+    await waitFor(() => expect(tabs()).toEqual(["Menú", "Página de inicio", "Códigos QR", "Usuarios", "Actividad"]));
     await userEvent.click(screen.getByRole("tab", { name: "Actividad" }));
     expect(await screen.findByText("Cambió tamaño de bowl “Small”: precio (MXN): 165 → 170")).toBeInTheDocument();
     expect(screen.getByText(/^mesera@blufin\.mx · /)).toBeInTheDocument();

@@ -33,8 +33,12 @@ import {
   type Kind,
   type MenuRows,
 } from "@/lib/api";
+import { LanguageProvider, pick, useLang } from "@/lib/i18n";
+import { LangToggle } from "@/components/LangToggle";
 import s from "./editor.module.css";
+import { ADMIN_EN } from "./en";
 import { LandingCards, type LandingSection } from "./LandingCards";
+import { QrCard } from "./QrCard";
 import { ActivityCard, UsersCard } from "./UsersCard";
 
 /*
@@ -43,6 +47,13 @@ import { ActivityCard, UsersCard } from "./UsersCard";
  * reorder, a ⋮ menu per row, and a sheet to edit or add. Every change is saved to the API
  * right away, and the last one can be undone.
  */
+
+/** `t("Guardar", "Save")` in /admin, which follows the site's ES | EN choice; fixed labels find their English in ADMIN_EN. */
+export const useAdminT = () => {
+  const t = pick(useLang().lang);
+  return (es: string, en?: string) => t(es, en ?? ADMIN_EN[es]);
+};
+export type T = ReturnType<typeof useAdminT>;
 
 type AnyRow = MenuRows[Kind][number];
 type Field = {
@@ -107,12 +118,13 @@ type ListCat = Pick<CategoryRow, "key" | "name" | "group" | "order"> & Partial<C
 type Section = {
   id: string;
   title: string;
+  titleEn?: string;
   kind: Kind;
   group: Group;
   cat?: ListCat;
   /** Which rows of `kind` belong here, and the values a new one starts with. */
   where?: Record<string, string>;
-  sub: (r: AnyRow) => string;
+  sub: (r: AnyRow, t: T) => string;
 };
 
 const priced = (r: AnyRow) => money((r as ExtraRow).price);
@@ -124,21 +136,22 @@ const FIXED_SECTIONS: Section[] = [
   ...STEPS.map((st) => ({
     id: st.key,
     title: st.short,
+    titleEn: st.en.short,
     kind: "ingredients" as const,
     group: "poke" as const,
     where: { step: st.key },
     // The thumbnail already shows whether it has a photo.
     sub: () => "",
   })),
-  { id: "extras", title: "Extras", kind: "extras", group: "poke", sub: (r) => priced(r) + ((r as ExtraRow).in_builder ? " · en Arma tu poke" : "") },
+  { id: "extras", title: "Extras", kind: "extras", group: "poke", sub: (r, t) => priced(r) + ((r as ExtraRow).in_builder ? t(" · en Arma tu poke", " · in Build your poke") : "") },
   {
     id: "beers",
     title: "Cerveza de barril",
     kind: "beers",
     group: "drinks",
-    sub: (r) => {
+    sub: (r, t) => {
       const b = r as BeerRow;
-      return `Grifo ${b.tap} · ${b.style} · ${b.abv} · ${money(b.price_12)} / ${money(b.price_16)}`;
+      return `${t("Grifo")} ${b.tap} · ${b.style} · ${b.abv} · ${money(b.price_12)} / ${money(b.price_16)}`;
     },
   },
 ];
@@ -151,13 +164,14 @@ const sectionsOf = (data: MenuRows): Section[] => [
     .map((cat) => ({
       id: cat.key,
       title: cat.name,
+      titleEn: cat.name_en || LISTS.find((l) => l.key === cat.key)?.nameEn,
       kind: "drinks" as const,
       group: cat.group,
       cat,
       where: { category: cat.key },
-      sub: (r: AnyRow) => {
+      sub: (r: AnyRow, t: T) => {
         const d = r as DrinkRow;
-        return [money(d.price), d.pack, d.size].filter(Boolean).join(" · ");
+        return [money(d.price), d.pack && t(d.pack), d.size].filter(Boolean).join(" · ");
       },
     })),
 ];
@@ -169,8 +183,8 @@ const STATUSES: [Exclude<Status, "">, string, IconName, string][] = [
   ["por_agotarse", "por agotarse", "flame", "Se muestra con la etiqueta Por agotarse, para que lo pidan antes de que se acabe. Al activarlo se quitan los otros estados."],
   ["novedad", "novedad", "sparkles", "Se muestra con la etiqueta Novedad, para que vean lo que acaba de llegar. Al activarlo se quitan los otros estados."],
 ];
-const statusLabel = (st?: Status) => (st ? STATUS_LABELS[st][0] : "");
-const items = (n: number) => `${n} artículo${n === 1 ? "" : "s"}`;
+const statusLabel = (t: T, st?: Status) => (st ? t(...STATUS_LABELS[st]) : "");
+const items = (n: number, t: T) => t(`${n} artículo${n === 1 ? "" : "s"}`, `${n} item${n === 1 ? "" : "s"}`);
 
 const sortRows = (kind: Kind, rows: AnyRow[]) =>
   [...rows].sort((a, b) =>
@@ -209,12 +223,14 @@ export function AdminPage() {
   const { ok, router } = useGate(true, "/login/");
   if (!ok) return <div className={s.center} />;
   return (
-    <Panel
-      onSignOut={() => {
-        signOut();
-        router.replace("/login/");
-      }}
-    />
+    <LanguageProvider>
+      <Panel
+        onSignOut={() => {
+          signOut();
+          router.replace("/login/");
+        }}
+      />
+    </LanguageProvider>
   );
 }
 
@@ -392,12 +408,13 @@ type Sheet = { sec: Section; row: Partial<AnyRow> } | null;
 export type Undo = { label: string; run: () => Promise<unknown> } | null;
 
 function Panel({ onSignOut }: { onSignOut: () => void }) {
+  const t = useAdminT();
   const [data, setData] = useState<MenuRows | null>(null);
   const [loadError, setLoadError] = useState("");
   const [save, setSave] = useState<Save>("idle");
   const [search, setSearch] = useState("");
-  // "Menú", the home page's cards ("Página de inicio"), and for admins "Usuarios" and "Actividad".
-  const [picked, setView] = useState<"menu" | "inicio" | "usuarios" | "actividad">("menu");
+  // "Menú", the home page's cards ("Página de inicio"), the menus' QR codes, and for admins "Usuarios" and "Actividad".
+  const [picked, setView] = useState<"menu" | "inicio" | "qr" | "usuarios" | "actividad">("menu");
   // Sections start open, as in Cervesoft; this remembers the ones folded away.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // The round + button adds to the section used last.
@@ -426,14 +443,14 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
 
   const fail = (err: unknown) => {
     if (err instanceof ApiError && err.status === 401) return onSignOut();
-    setSave({ error: err instanceof Error ? err.message : "No se pudo guardar." });
+    setSave({ error: err instanceof Error ? err.message : t("No se pudo guardar.", "Couldn't save.") });
   };
 
   const load = () => {
     setLoadError("");
     editorFetch<MenuRows>("editor/").then(setData, (err) => {
       if (err instanceof ApiError && (err.status === 401 || err.status === 403)) return onSignOut();
-      setLoadError(err instanceof Error ? err.message : "No se pudo cargar el menú.");
+      setLoadError(err instanceof Error ? err.message : t("No se pudo cargar el menú.", "Couldn't load the menu."));
     });
   };
   useEffect(load, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -489,7 +506,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const saveLanding = async (id: LandingSection, value: Landing[LandingSection]) => {
     const old = landing[id];
     const ok = await putLanding(id, value);
-    if (ok) setUndo({ label: "Guardaste la página de inicio", run: () => putLanding(id, old) });
+    if (ok) setUndo({ label: t("Guardaste la página de inicio", "You saved the home page"), run: () => putLanding(id, old) });
     return ok;
   };
 
@@ -502,7 +519,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     const moved = next.filter((r, order) => r.order !== order);
     moved.forEach((r) => persist(sec.kind, { id: r.id, order: next.indexOf(r) }, true));
     setUndo({
-      label: `Moviste “${rows[from].name}”`,
+      label: t(`Moviste “${rows[from].name}”`, `You moved “${rows[from].name}”`),
       run: () => Promise.all(moved.map((r) => persist(sec.kind, { id: r.id, order: r.order }, true))),
     });
   };
@@ -510,7 +527,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const toggle = async (sec: Section, r: AnyRow, available: boolean) => {
     if (await persist(sec.kind, { id: r.id, available }, true))
       setUndo({
-        label: `“${r.name}” ${available ? "visible" : "oculto"}`,
+        label: `“${r.name}” ${available ? t("visible") : t("oculto", "hidden")}`,
         run: () => persist(sec.kind, { id: r.id, available: !available }, true),
       });
   };
@@ -518,7 +535,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const setStatus = async (sec: Section, r: AnyRow, status: Status) => {
     if (await persist(sec.kind, { id: r.id, status }, true))
       setUndo({
-        label: `“${r.name}” ${STATUSES.find(([v]) => v === status)?.[1] ?? "disponible"}`,
+        label: `“${r.name}” ${status ? t(STATUS_LABELS[status][0].toLowerCase(), STATUS_LABELS[status][1].toLowerCase()) : t("disponible", "available")}`,
         run: () => persist(sec.kind, { id: r.id, status: r.status ?? "" }, true),
       });
   };
@@ -527,8 +544,8 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const duplicate = async (sec: Section, r: AnyRow, all: AnyRow[]) => {
     const { id: _id, key: _key, ...rest } = r as AnyRow & { key?: string };
     const { order, tap } = blank(sec.kind, all) as Partial<BeerRow>;
-    const saved = await persist(sec.kind, { ...rest, name: `${r.name.slice(0, 92)} (copia)`, order, ...(tap && { tap }) } as Partial<AnyRow>);
-    if (saved) setUndo({ label: `Duplicaste “${r.name}”`, run: () => remove(sec.kind, saved.id) });
+    const saved = await persist(sec.kind, { ...rest, name: `${r.name.slice(0, 92)} ${t("(copia)", "(copy)")}`, order, ...(tap && { tap }) } as Partial<AnyRow>);
+    if (saved) setUndo({ label: t(`Duplicaste “${r.name}”`, `You duplicated “${r.name}”`), run: () => remove(sec.kind, saved.id) });
   };
 
   /** Sheet "Guardar cambios"/"Añadir artículo": undo restores the previous version, or removes the new item. */
@@ -539,14 +556,14 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     setSheet(null);
     setUndo(
       old
-        ? { label: `Guardaste “${saved.name}”`, run: () => persist(sec.kind, old) }
-        : { label: `Añadiste “${saved.name}”`, run: () => remove(sec.kind, saved.id) },
+        ? { label: t(`Guardaste “${saved.name}”`, `You saved “${saved.name}”`), run: () => persist(sec.kind, old) }
+        : { label: t(`Añadiste “${saved.name}”`, `You added “${saved.name}”`), run: () => remove(sec.kind, saved.id) },
     );
   };
 
   /** Deletes straight away, as in Cervesoft; Deshacer puts it back as a new row with the same content and key. */
   const deleteRow = async (sec: Section, r: AnyRow) => {
-    if (await remove(sec.kind, r.id)) setUndo({ label: `Eliminaste “${r.name}”`, run: () => persist(sec.kind, { ...r, id: undefined }) });
+    if (await remove(sec.kind, r.id)) setUndo({ label: t(`Eliminaste “${r.name}”`, `You deleted “${r.name}”`), run: () => persist(sec.kind, { ...r, id: undefined }) });
   };
 
   /** Saves a price list (new, renamed or moved) and puts the server's copy in place. */
@@ -570,21 +587,21 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   };
 
   const addList = async (group: Group) => {
-    const name = prompt(`Nombre de la nueva lista en ${groupName(group)}`)?.trim();
+    const name = prompt(t(`Nombre de la nueva lista en ${groupName(group)}`, `Name of the new list in ${t(groupName(group))}`))?.trim();
     if (!name) return;
     const order = Math.max(0, ...(data?.categories ?? []).map((c) => c.order)) + 1;
     const saved = await saveList({ name, group, order });
-    if (saved) setUndo({ label: `Añadiste la lista “${saved.name}”`, run: () => deleteList(saved, 0) });
+    if (saved) setUndo({ label: t(`Añadiste la lista “${saved.name}”`, `You added the list “${saved.name}”`), run: () => deleteList(saved, 0) });
   };
 
   const moveList = async (c: CategoryRow, group: Group) => {
     if (await saveList({ id: c.id, group }))
-      setUndo({ label: `Moviste “${c.name}” a ${groupName(group)}`, run: () => saveList({ id: c.id, group: c.group }) });
+      setUndo({ label: t(`Moviste “${c.name}” a ${groupName(group)}`, `You moved “${c.name}” to ${t(groupName(group))}`), run: () => saveList({ id: c.id, group: c.group }) });
   };
 
   /** A list goes with its items, so one that has any asks first; this one can't be undone. */
   const deleteList = async (c: CategoryRow, count: number) => {
-    if (count && !confirm(`¿Eliminar la lista “${c.name}” y sus ${items(count)}? No se puede deshacer.`)) return;
+    if (count && !confirm(t(`¿Eliminar la lista “${c.name}” y sus ${items(count, t)}? No se puede deshacer.`, `Delete the list “${c.name}” and its ${items(count, t)}? This can't be undone.`))) return;
     setSave("saving");
     try {
       await editorFetch(`editor/categories/${c.id}/`, { method: "DELETE" });
@@ -615,11 +632,11 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <div className={s.loginCard}>
             <p className={s.error}>{loadError}</p>
             <button className={s.primary} onClick={load}>
-              Reintentar
+              {t("Reintentar", "Try again")}
             </button>
           </div>
         ) : (
-          <p className={s.muted}>Cargando el menú…</p>
+          <p className={s.muted}>{t("Cargando el menú…", "Loading the menu…")}</p>
         )}
       </main>
     );
@@ -629,10 +646,11 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const me = data.me ?? { email: "", admin: false, menu: true, landing: true };
   const tabs = (
     [
-      ["menu", "Menú", me.menu],
-      ["inicio", "Página de inicio", me.landing],
-      ["usuarios", "Usuarios", me.admin],
-      ["actividad", "Actividad", me.admin],
+      ["menu", t("Menú", "Menu"), me.menu],
+      ["inicio", t("Página de inicio", "Home page"), me.landing],
+      ["qr", t("Códigos QR", "QR codes"), true],
+      ["usuarios", t("Usuarios", "Users"), me.admin],
+      ["actividad", t("Actividad", "Activity"), me.admin],
     ] as const
   ).filter(([, , ok]) => ok);
   const view = tabs.some(([v]) => v === picked) ? picked : tabs[0][0];
@@ -648,15 +666,16 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <div>
             <Brand />
             <p className={s.saveState} aria-live="polite">
-              {items(total)} · {sections.length} secciones ·{" "}
-              {save === "saving" ? "Guardando…" : typeof save === "object" ? <span className={s.errorText}>{save.error}</span> : "Guardado"}
+              {items(total, t)} · {sections.length} {t("secciones", "sections")} ·{" "}
+              {save === "saving" ? t("Guardando…", "Saving…") : typeof save === "object" ? <span className={s.errorText}>{save.error}</span> : t("Guardado", "Saved")}
             </p>
           </div>
           <div className={s.headerActions}>
-            <Link href="/menu/" target="_blank" className={s.iconButton} aria-label="Ver menú público">
+            <LangToggle />
+            <Link href="/menu/" target="_blank" className={s.iconButton} aria-label={t("Ver menú público", "View public menu")}>
               <Icon name="externalLink" />
             </Link>
-            <RowMenu label="Más" actions={[["Salir", "logOut", onSignOut]]} />
+            <RowMenu label={t("Más", "More")} actions={[[t("Salir", "Sign out"), "logOut", onSignOut]]} />
           </div>
         </div>
         <div className={s.tabs} role="tablist">
@@ -669,9 +688,9 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
         {view === "menu" && (
           <div className={s.searchBox}>
             <Icon name="search" />
-            <input type="search" placeholder="Buscar artículos" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar artículos" />
+            <input type="search" placeholder={t("Buscar artículos", "Search items")} value={search} onChange={(e) => setSearch(e.target.value)} aria-label={t("Buscar artículos", "Search items")} />
             {search && (
-              <button onClick={() => setSearch("")} aria-label="Borrar búsqueda">
+              <button onClick={() => setSearch("")} aria-label={t("Borrar búsqueda", "Clear search")}>
                 <Icon name="x" />
               </button>
             )}
@@ -690,6 +709,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
             <LandingCards landing={landing} onSave={saveLanding} />
           </>
         )}
+        {view === "qr" && <QrCard />}
         {view === "usuarios" && <UsersCard me={me.email} onUndo={setUndo} />}
         {view === "actividad" && <ActivityCard />}
         {view === "menu" && GROUPS.map(([g, label]) => {
@@ -697,7 +717,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           if (term && !cards.length) return null;
           return (
             <div key={g} className={s.group}>
-              <h2 className={s.groupTitle}>{label}</h2>
+              <h2 className={s.groupTitle}>{t(label)}</h2>
               {cards.map(({ sec, all, rows }) => {
                 const expanded = !!term || !collapsed[sec.id];
                 const hidden = all.filter((r) => !r.available).length;
@@ -710,31 +730,31 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                         <span className={s.chevron} data-open={expanded} aria-hidden>
                           ›
                         </span>
-                        <span className={s.cardTitle}>{sec.title}</span>
+                        <span className={s.cardTitle}>{t(sec.title, sec.titleEn)}</span>
                         <span className={s.count}>
-                          {term ? `${rows.length} de ${all.length}` : items(all.length)}
-                          {hidden ? ` · ${hidden} oculto${hidden > 1 ? "s" : ""}` : ""}
+                          {term ? t(`${rows.length} de ${all.length}`, `${rows.length} of ${all.length}`) : items(all.length, t)}
+                          {hidden ? ` · ${hidden} ${t(`oculto${hidden > 1 ? "s" : ""}`, "hidden")}` : ""}
                         </span>
                       </button>
-                      <button className={s.add} aria-label={`Añadir a ${sec.title}`} onClick={() => add(sec)}>
+                      <button className={s.add} aria-label={t(`Añadir a ${sec.title}`, `Add to ${t(sec.title, sec.titleEn)}`)} onClick={() => add(sec)}>
                         <Icon name="plus" />
-                        Añadir
+                        {t("Añadir", "Add")}
                       </button>
                       {sec.cat?.id && (
                         <RowMenu
-                          label={`Opciones de la lista ${sec.title}`}
+                          label={t(`Opciones de la lista ${sec.title}`, `Options for the list ${t(sec.title, sec.titleEn)}`)}
                           actions={[
                             sec.group === "drinks"
-                              ? ["Mover a Otros", "arrowRight", () => moveList(sec.cat as CategoryRow, "others")]
-                              : ["Mover a Bebidas", "arrowRight", () => moveList(sec.cat as CategoryRow, "drinks")],
-                            ...(sec.cat.builtin ? [] : [["Eliminar lista", "trash", () => deleteList(sec.cat as CategoryRow, all.length), true] as Action]),
+                              ? [t("Mover a Otros", "Move to Others"), "arrowRight", () => moveList(sec.cat as CategoryRow, "others")]
+                              : [t("Mover a Bebidas", "Move to Drinks"), "arrowRight", () => moveList(sec.cat as CategoryRow, "drinks")],
+                            ...(sec.cat.builtin ? [] : [[t("Eliminar lista", "Delete list"), "trash", () => deleteList(sec.cat as CategoryRow, all.length), true] as Action]),
                           ]}
                         />
                       )}
                     </div>
                     {expanded &&
                       (rows.length === 0 ? (
-                        <p className={s.empty}>Nada aquí todavía.</p>
+                        <p className={s.empty}>{t("Nada aquí todavía.", "Nothing here yet.")}</p>
                       ) : (
                         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => reorder(sec, rows, e)}>
                           <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
@@ -747,14 +767,18 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                                   sortable={sortable}
                                   onEdit={() => setSheet({ sec, row: r })}
                                   actions={[
-                                    ["Editar", "pencil", () => setSheet({ sec, row: r })],
-                                    ["Duplicar", "copy", () => duplicate(sec, r, all)],
+                                    [t("Editar", "Edit"), "pencil", () => setSheet({ sec, row: r })],
+                                    [t("Duplicar", "Duplicate"), "copy", () => duplicate(sec, r, all)],
                                     // Cervesoft's toggles: the line for the current status turns into "Marcar como disponible".
                                     ...STATUSES.map(([v, label, icon]): Action =>
-                                      r.status === v ? ["Marcar como disponible", "check", () => setStatus(sec, r, "")] : [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
+                                      r.status === v
+                                        ? [t("Marcar como disponible", "Mark as available"), "check", () => setStatus(sec, r, "")]
+                                        : [t(`Marcar como ${label}`, `Mark as ${STATUS_LABELS[v][1].toLowerCase()}`), icon, () => setStatus(sec, r, v)],
                                     ),
-                                    r.available ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)] : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
-                                    ["Eliminar", "trash", () => deleteRow(sec, r), true],
+                                    r.available
+                                      ? [t("Ocultar del menú", "Hide from the menu"), "eyeOff", () => toggle(sec, r, false)]
+                                      : [t("Mostrar en el menú", "Show on the menu"), "eye", () => toggle(sec, r, true)],
+                                    [t("Eliminar", "Delete"), "trash", () => deleteRow(sec, r), true],
                                   ]}
                                 />
                               ))}
@@ -767,17 +791,21 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
               })}
               {g !== "poke" && !term && data.categories && (
                 <>
-                  {!cards.length && <p className={s.muted}>Aquí van las listas que no son bebidas, como postres. Arma tu poke no las ofrece.</p>}
+                  {!cards.length && (
+                    <p className={s.muted}>
+                      {t("Aquí van las listas que no son bebidas, como postres. Arma tu poke no las ofrece.", "Lists that aren't drinks go here, like desserts. Build your poke doesn't offer them.")}
+                    </p>
+                  )}
                   <button className={s.newList} onClick={() => addList(g)}>
                     <Icon name="plus" />
-                    Nueva lista en {label}
+                    {t(`Nueva lista en ${label}`, `New list in ${t(label)}`)}
                   </button>
                 </>
               )}
             </div>
           );
         })}
-        {view === "menu" && groups.length === 0 && <p className={s.muted}>Nada coincide con “{search}”.</p>}
+        {view === "menu" && groups.length === 0 && <p className={s.muted}>{t(`Nada coincide con “${search}”.`, `Nothing matches “${search}”.`)}</p>}
       </main>
 
       {sheet && (
@@ -793,11 +821,11 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       {undo && (
         <div className={s.undo} role="status">
           <span>{undo.label}</span>
-          <button onClick={runUndo}>Deshacer</button>
+          <button onClick={runUndo}>{t("Deshacer", "Undo")}</button>
         </div>
       )}
       {view === "menu" && (
-        <button className={s.fab} aria-label="Añadir artículo" onClick={() => add(lastSection.current)}>
+        <button className={s.fab} aria-label={t("Añadir artículo", "Add item")} onClick={() => add(lastSection.current)}>
           <Icon name="plus" />
         </button>
       )}
@@ -807,8 +835,9 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
 
 /** One row, as in Cervesoft: drag handle, picture, name and details (tap to edit), ⋮ menu. */
 function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRow; sortable: boolean; onEdit: () => void; actions: Action[] }) {
+  const t = useAdminT();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id, disabled: !sortable });
-  const sub = [sec.sub(r), statusLabel(r.status), r.available ? "" : "Oculto"].filter(Boolean).join(" · ");
+  const sub = [sec.sub(r, t), statusLabel(t, r.status), r.available ? "" : t("Oculto", "Hidden")].filter(Boolean).join(" · ");
   return (
     <li
       ref={setNodeRef}
@@ -818,7 +847,7 @@ function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRo
       data-status={r.status || undefined}
     >
       {sortable && (
-        <button className={s.handle} aria-label={`Arrastra para reordenar ${r.name}`} {...attributes} {...listeners}>
+        <button className={s.handle} aria-label={t(`Arrastra para reordenar ${r.name}`, `Drag to reorder ${r.name}`)} {...attributes} {...listeners}>
           <Icon name="grip" />
         </button>
       )}
@@ -834,7 +863,7 @@ function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRo
         </span>
         {sub && <span className={s.rowSub}>{sub}</span>}
       </button>
-      <RowMenu label={`Opciones de ${r.name}`} actions={actions} />
+      <RowMenu label={t(`Opciones de ${r.name}`, `Options for ${r.name}`)} actions={actions} />
     </li>
   );
 }
@@ -948,9 +977,10 @@ function ItemSheet({
   const [status, setStatus] = useState<Status>(row.status ?? "");
   useEffect(() => ref.current?.showModal(), []);
   const isNew = !row.id;
+  const t = useAdminT();
 
   const cancel = () => {
-    if (!dirty || confirm("¿Descartar los cambios? Se quedará como estaba.")) ref.current?.close();
+    if (!dirty || confirm(t("¿Descartar los cambios? Se quedará como estaba.", "Discard the changes? It will stay as it was."))) ref.current?.close();
   };
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -983,32 +1013,34 @@ function ItemSheet({
       <form onSubmit={submit} onInput={() => setDirty(true)} className={s.sheetBody}>
         <div className={s.sheetHead}>
           <div>
-            <h2>{isNew ? "Añadir artículo" : "Editar artículo"}</h2>
-            <p className={s.muted}>{sec.title} · Los cambios se ven al momento en el menú público.</p>
+            <h2>{isNew ? t("Añadir artículo", "Add item") : t("Editar artículo", "Edit item")}</h2>
+            <p className={s.muted}>
+              {t(sec.title, sec.titleEn)} · {t("Los cambios se ven al momento en el menú público.", "Changes show on the public menu right away.")}
+            </p>
           </div>
-          <button type="button" className={s.close} onClick={cancel} aria-label="Cerrar sin guardar">
+          <button type="button" className={s.close} onClick={cancel} aria-label={t("Cerrar sin guardar", "Close without saving")}>
             ×
           </button>
         </div>
 
         {FIELDS[sec.kind].map((fl) =>
           fl.type === "srm" ? (
-            <SrmPicker key={fl.name} name={fl.name} label={fl.label} value={Number(value(fl.name)) || 4} />
+            <SrmPicker key={fl.name} name={fl.name} label={t(fl.label)} value={Number(value(fl.name)) || 4} />
           ) : fl.type === "checkbox" ? (
             <label key={fl.name} className={s.check}>
               <input type="checkbox" name={fl.name} defaultChecked={!!value(fl.name)} />
-              <span>{fl.label}</span>
+              <span>{t(fl.label)}</span>
             </label>
           ) : (
             <label key={fl.name} className={s.field}>
-              <span>{fl.label}</span>
+              <span>{t(fl.label)}</span>
               {fl.type === "textarea" ? (
                 <textarea name={fl.name} defaultValue={String(value(fl.name) ?? "")} rows={3} maxLength={200} />
               ) : fl.type === "select" ? (
                 <select name={fl.name} defaultValue={String(value(fl.name) ?? "")}>
                   {fl.options!.map((o) => (
                     <option key={o} value={o}>
-                      {o || "Sin envase"}
+                      {o ? t(o) : t("Sin envase", "No container")}
                     </option>
                   ))}
                 </select>
@@ -1023,18 +1055,18 @@ function ItemSheet({
                   onChange={fl.type === "url" ? (e) => setImg(e.target.value) : undefined}
                 />
               )}
-              {fl.hint && <small>{fl.hint}</small>}
-              {fl.type === "url" && img && <img className={s.preview} src={img} alt="Vista previa" />}
+              {fl.hint && <small>{t(fl.hint)}</small>}
+              {fl.type === "url" && img && <img className={s.preview} src={img} alt={t("Vista previa", "Preview")} />}
             </label>
           ),
         )}
 
         {STATUSES.map(([v, , , hint]) => (
-          <SwitchRow key={v} label={STATUS_LABELS[v][0]} hint={hint}>
+          <SwitchRow key={v} label={t(...STATUS_LABELS[v])} hint={t(hint)}>
             <input type="checkbox" checked={status === v} onChange={(e) => setStatus(e.target.checked ? v : "")} />
           </SwitchRow>
         ))}
-        <SwitchRow label="Oculto" hint="Se conserva aquí pero se quita del menú público.">
+        <SwitchRow label={t("Oculto", "Hidden")} hint={t("Se conserva aquí pero se quita del menú público.", "Kept here but taken off the public menu.")}>
           <input type="checkbox" name="hidden" defaultChecked={row.available === false} />
         </SwitchRow>
 
@@ -1046,10 +1078,10 @@ function ItemSheet({
 
         <div className={s.sheetActions}>
           <button type="button" className={s.ghost} onClick={cancel} disabled={busy}>
-            Cancelar
+            {t("Cancelar", "Cancel")}
           </button>
           <button className={s.primary} disabled={busy}>
-            {busy ? "Guardando…" : isNew ? "Añadir artículo" : "Guardar cambios"}
+            {busy ? t("Guardando…", "Saving…") : isNew ? t("Añadir artículo", "Add item") : t("Guardar cambios", "Save changes")}
           </button>
         </div>
       </form>
@@ -1062,6 +1094,7 @@ function SrmPicker({ name, label, value }: { name: string; label: string; value:
   // What's typed in the number box; the slider, swatch and saved value use it clamped to 1–40.
   const [text, setText] = useState(String(value));
   const srm = Math.min(40, Math.max(1, Math.round(Number(text)) || 1));
+  const t = useAdminT();
   return (
     <fieldset className={s.srm}>
       <legend>{label}</legend>
@@ -1084,11 +1117,11 @@ function SrmPicker({ name, label, value }: { name: string; label: string; value:
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={() => setText(String(srm))}
-          aria-label="Número SRM"
+          aria-label={t("Número SRM", "SRM number")}
           inputMode="numeric"
         />
       </div>
-      <small>Como en la tabla SRM: 1 es la más clara y 40 la más oscura.</small>
+      <small>{t("Como en la tabla SRM: 1 es la más clara y 40 la más oscura.", "As on the SRM chart: 1 is the lightest and 40 the darkest.")}</small>
     </fieldset>
   );
 }

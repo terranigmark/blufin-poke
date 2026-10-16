@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { editorFetch } from "@/lib/api";
-import { Icon, RowMenu, type Action, type Undo } from "./Editor";
+import { Icon, RowMenu, useAdminT, type Action, type T, type Undo } from "./Editor";
 import s from "./editor.module.css";
 
 /*
@@ -16,7 +16,10 @@ export type UserRow = { id: number; email: string; name: string; role: "admin" |
 type Change = Partial<Omit<UserRow, "id">> & { password?: string };
 
 /** "Admin", or "Editor · menú y página de inicio". */
-const access = (u: UserRow) => (u.role === "admin" ? "Admin" : `Editor · ${[u.menu && "menú", u.landing && "página de inicio"].filter(Boolean).join(" y ")}`);
+const access = (u: UserRow, t: T) =>
+  u.role === "admin"
+    ? "Admin"
+    : `Editor · ${t([u.menu && "menú", u.landing && "página de inicio"].filter(Boolean).join(" y "), [u.menu && "menu", u.landing && "home page"].filter(Boolean).join(" and "))}`;
 
 export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<Undo>) => void }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
@@ -24,6 +27,7 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
   const [notice, setNotice] = useState("");
   // The form open above the list: a new user, or the one being edited.
   const [form, setForm] = useState<"new" | UserRow | null>(null);
+  const t = useAdminT();
 
   /** Runs a call and shows its error; undefined means it failed (a DELETE answers null). */
   const run = async <T,>(call: Promise<T>): Promise<T | undefined> => {
@@ -32,7 +36,7 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
     try {
       return await call;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar.");
+      setError(err instanceof Error ? err.message : t("No se pudo guardar.", "Couldn't save."));
     }
   };
 
@@ -50,18 +54,18 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
   const restore = (u: UserRow) => () => patch(u, { role: u.role, menu: u.menu, landing: u.landing, active: u.active, name: u.name });
 
   const setActive = async (u: UserRow, active: boolean) => {
-    if (!active && !confirm(`¿Desactivar a ${u.email}? No podrá entrar hasta que lo actives.`)) return;
-    if (await patch(u, { active })) onUndo({ label: `${active ? "Activaste" : "Desactivaste"} a ${u.email}`, run: restore(u) });
+    if (!active && !confirm(t(`¿Desactivar a ${u.email}? No podrá entrar hasta que lo actives.`, `Deactivate ${u.email}? They won't be able to sign in until you activate them.`))) return;
+    if (await patch(u, { active })) onUndo({ label: active ? t(`Activaste a ${u.email}`, `You activated ${u.email}`) : t(`Desactivaste a ${u.email}`, `You deactivated ${u.email}`), run: restore(u) });
   };
 
   const resetPassword = async (u: UserRow) => {
-    const password = prompt(`Nueva contraseña para ${u.email}. Mínimo 8 caracteres; compártela con esa persona.`);
-    if (password && (await patch(u, { password }))) setNotice(`Listo: ${u.email} ya entra con la nueva contraseña.`);
+    const password = prompt(t(`Nueva contraseña para ${u.email}. Mínimo 8 caracteres; compártela con esa persona.`, `New password for ${u.email}. At least 8 characters; share it with that person.`));
+    if (password && (await patch(u, { password }))) setNotice(t(`Listo: ${u.email} ya entra con la nueva contraseña.`, `Done: ${u.email} now signs in with the new password.`));
   };
 
   /** No Deshacer here: the password goes with the account. */
   const remove = async (u: UserRow) => {
-    if (!confirm(`¿Eliminar a ${u.email}? Ya no podrá entrar al editor. No se puede deshacer.`)) return;
+    if (!confirm(t(`¿Eliminar a ${u.email}? Ya no podrá entrar al editor. No se puede deshacer.`, `Delete ${u.email}? They won't be able to sign in to the editor. This can't be undone.`))) return;
     if ((await run(editorFetch(`editor/users/${u.id}/`, { method: "DELETE" }))) !== undefined) setUsers((us) => us!.filter((x) => x.id !== u.id));
   };
 
@@ -71,37 +75,42 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
       if (!saved) return;
       setUsers((us) => [...us!, saved]);
       setForm(null);
-      setNotice(`Comparte con ${saved.email} su correo y la contraseña temporal; puede entrar en /login.`);
+      setNotice(t(`Comparte con ${saved.email} su correo y la contraseña temporal; puede entrar en /login.`, `Share the email and temporary password with ${saved.email}; they can sign in at /login.`));
       onUndo({
-        label: `Añadiste a ${saved.email}`,
+        label: t(`Añadiste a ${saved.email}`, `You added ${saved.email}`),
         run: () => run(editorFetch(`editor/users/${saved.id}/`, { method: "DELETE" })).then((r) => r !== undefined && setUsers((us) => us!.filter((x) => x.id !== saved.id))),
       });
     } else if (form) {
       const old = form;
       const less = (old.role === "admin" && change.role === "editor") || (old.menu && !change.menu) || (old.landing && !change.landing);
-      if (less && change.role !== "admin" && !confirm(`¿Quitarle permisos a ${old.email}? Quedará como ${access({ ...old, ...change } as UserRow)}.`)) return;
+      if (less && change.role !== "admin" && !confirm(t(`¿Quitarle permisos a ${old.email}? Quedará como ${access({ ...old, ...change } as UserRow, t)}.`, `Take permissions away from ${old.email}? They'll be ${access({ ...old, ...change } as UserRow, t)}.`))) return;
       if (!(await patch(old, change))) return;
       setForm(null);
-      onUndo({ label: `Guardaste a ${old.email}`, run: restore(old) });
+      onUndo({ label: t(`Guardaste a ${old.email}`, `You saved ${old.email}`), run: restore(old) });
     }
   };
 
   const actions = (u: UserRow): Action[] =>
     u.email === me
       ? [
-          ["Editar", "pencil", () => setForm(u)],
-          ["Cambiar contraseña", "pencil", () => resetPassword(u)],
+          [t("Editar", "Edit"), "pencil", () => setForm(u)],
+          [t("Cambiar contraseña", "Change password"), "pencil", () => resetPassword(u)],
         ]
       : [
-          ["Editar permisos", "pencil", () => setForm(u)],
-          ["Cambiar contraseña", "pencil", () => resetPassword(u)],
-          u.active ? ["Desactivar", "eyeOff", () => setActive(u, false)] : ["Activar", "eye", () => setActive(u, true)],
-          ["Eliminar", "trash", () => remove(u), true],
+          [t("Editar permisos", "Edit permissions"), "pencil", () => setForm(u)],
+          [t("Cambiar contraseña", "Change password"), "pencil", () => resetPassword(u)],
+          u.active ? [t("Desactivar", "Deactivate"), "eyeOff", () => setActive(u, false)] : [t("Activar", "Activate"), "eye", () => setActive(u, true)],
+          [t("Eliminar", "Delete"), "trash", () => remove(u), true],
         ];
 
   return (
     <>
-      <p className={s.muted}>Los admins pueden cambiar todo, y además manejan los usuarios y ven la actividad. A cada editor le eliges qué puede cambiar.</p>
+      <p className={s.muted}>
+        {t(
+          "Los admins pueden cambiar todo, y además manejan los usuarios y ven la actividad. A cada editor le eliges qué puede cambiar.",
+          "Admins can change everything, and also manage users and see the activity. For each editor you choose what they can change.",
+        )}
+      </p>
       {error && (
         <p className={s.error} role="alert">
           {error}
@@ -115,18 +124,18 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
       <section className={s.card}>
         <div className={s.cardHead}>
           <span className={s.cardToggle}>
-            <span className={s.cardTitle}>Usuarios</span>
+            <span className={s.cardTitle}>{t("Usuarios", "Users")}</span>
           </span>
           {!form && (
             <button className={s.add} onClick={() => setForm("new")}>
               <Icon name="plus" />
-              Añadir
+              {t("Añadir", "Add")}
             </button>
           )}
         </div>
         {form && <UserForm key={form === "new" ? "new" : form.id} user={form === "new" ? null : form} self={form !== "new" && form.email === me} onSave={save} onCancel={() => setForm(null)} />}
         {!users ? (
-          <p className={s.empty}>Cargando…</p>
+          <p className={s.empty}>{t("Cargando…", "Loading…")}</p>
         ) : (
           <ul className={s.list}>
             {users.map((u) => (
@@ -135,9 +144,9 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
                   <span className={s.rowName}>
                     <span>{u.email}</span>
                   </span>
-                  <span className={s.rowSub}>{[access(u), u.name, u.email === me && "Tú", !u.active && "Desactivado"].filter(Boolean).join(" · ")}</span>
+                  <span className={s.rowSub}>{[access(u, t), u.name, u.email === me && t("Tú", "You"), !u.active && t("Desactivado", "Deactivated")].filter(Boolean).join(" · ")}</span>
                 </button>
-                <RowMenu label={`Opciones de ${u.email}`} actions={actions(u)} />
+                <RowMenu label={t(`Opciones de ${u.email}`, `Options for ${u.email}`)} actions={actions(u)} />
               </li>
             ))}
           </ul>
@@ -151,6 +160,7 @@ export function UsersCard({ me, onUndo }: { me: string; onUndo: (u: NonNullable<
 function UserForm({ user, self, onSave, onCancel }: { user: UserRow | null; self: boolean; onSave: (c: Change) => Promise<void>; onCancel: () => void }) {
   const [role, setRole] = useState(user?.role ?? "editor");
   const [busy, setBusy] = useState(false);
+  const t = useAdminT();
 
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -168,50 +178,50 @@ function UserForm({ user, self, onSave, onCancel }: { user: UserRow | null; self
   };
 
   return (
-    <form className={s.landingForm} onSubmit={submit} aria-label={user ? `Editar a ${user.email}` : "Nuevo usuario"}>
+    <form className={s.landingForm} onSubmit={submit} aria-label={user ? t(`Editar a ${user.email}`, `Edit ${user.email}`) : t("Nuevo usuario", "New user")}>
       <label className={s.field}>
-        <span>Correo</span>
+        <span>{t("Correo")}</span>
         <input name="email" type="email" required autoComplete="off" defaultValue={user?.email} disabled={!!user} />
       </label>
       <label className={s.field}>
-        <span>Nombre</span>
+        <span>{t("Nombre")}</span>
         <input name="name" autoComplete="off" defaultValue={user?.name} />
-        <small>Opcional.</small>
+        <small>{t("Opcional.", "Optional.")}</small>
       </label>
       {!user && (
         <label className={s.field}>
-          <span>Contraseña temporal</span>
+          <span>{t("Contraseña temporal", "Temporary password")}</span>
           <input name="password" required minLength={8} autoComplete="new-password" />
-          <small>Mínimo 8 caracteres. Compártela con esa persona; se la puedes cambiar después.</small>
+          <small>{t("Mínimo 8 caracteres. Compártela con esa persona; se la puedes cambiar después.", "At least 8 characters. Share it with that person; you can change it later.")}</small>
         </label>
       )}
       <label className={s.field}>
-        <span>Rol</span>
+        <span>{t("Rol", "Role")}</span>
         <select name="role" value={role} onChange={(e) => setRole(e.target.value as UserRow["role"])} disabled={self}>
-          <option value="editor">Editor: solo lo que elijas abajo</option>
-          <option value="admin">Admin: todo, además usuarios y actividad</option>
+          <option value="editor">{t("Editor: solo lo que elijas abajo", "Editor: only what you pick below")}</option>
+          <option value="admin">{t("Admin: todo, además usuarios y actividad", "Admin: everything, plus users and activity")}</option>
         </select>
-        {self && <small>No puedes cambiar tu propio rol.</small>}
+        {self && <small>{t("No puedes cambiar tu propio rol.", "You can't change your own role.")}</small>}
       </label>
       {role === "editor" && (
         <fieldset className={s.field}>
-          <span>Puede cambiar</span>
+          <span>{t("Puede cambiar", "Can change")}</span>
           <label className={s.check}>
             <input type="checkbox" name="menu" defaultChecked={user?.menu ?? true} />
-            <span>El menú: platillos, precios, cervezas, bebidas y su disponibilidad</span>
+            <span>{t("El menú: platillos, precios, cervezas, bebidas y su disponibilidad", "The menu: dishes, prices, beers, drinks and their availability")}</span>
           </label>
           <label className={s.check}>
             <input type="checkbox" name="landing" defaultChecked={user?.landing ?? true} />
-            <span>La página de inicio: textos, fotos, video, ubicación y redes</span>
+            <span>{t("La página de inicio: textos, fotos, video, ubicación y redes", "The home page: texts, photos, video, location and social networks")}</span>
           </label>
         </fieldset>
       )}
       <div className={s.sheetActions}>
         <button type="button" className={s.ghost} onClick={onCancel} disabled={busy}>
-          Cancelar
+          {t("Cancelar", "Cancel")}
         </button>
         <button className={s.primary} disabled={busy}>
-          {busy ? "Guardando…" : user ? "Guardar" : "Añadir usuario"}
+          {busy ? t("Guardando…", "Saving…") : user ? t("Guardar", "Save") : t("Añadir usuario", "Add user")}
         </button>
       </div>
     </form>
@@ -224,13 +234,14 @@ type Entry = { at: string; email: string; text: string };
 export function ActivityCard() {
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [error, setError] = useState("");
+  const t = useAdminT();
   useEffect(() => {
-    editorFetch<Entry[]>("editor/activity/").then(setEntries, (err) => setError(err instanceof Error ? err.message : "No se pudo cargar."));
-  }, []);
+    editorFetch<Entry[]>("editor/activity/").then(setEntries, (err) => setError(err instanceof Error ? err.message : t("No se pudo cargar.", "Couldn't load.")));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>
-      <p className={s.muted}>Quién cambió qué en los últimos 30 días. Lo más reciente va primero.</p>
+      <p className={s.muted}>{t("Quién cambió qué en los últimos 30 días. Lo más reciente va primero.", "Who changed what in the last 30 days. Newest first.")}</p>
       {error && (
         <p className={s.error} role="alert">
           {error}
@@ -238,11 +249,11 @@ export function ActivityCard() {
       )}
       <section className={s.card}>
         {!entries ? (
-          !error && <p className={s.empty}>Cargando…</p>
+          !error && <p className={s.empty}>{t("Cargando…", "Loading…")}</p>
         ) : entries.length === 0 ? (
-          <p className={s.empty}>Nadie ha cambiado nada en los últimos 30 días.</p>
+          <p className={s.empty}>{t("Nadie ha cambiado nada en los últimos 30 días.", "Nobody has changed anything in the last 30 days.")}</p>
         ) : (
-          <ul className={s.list} aria-label="Actividad">
+          <ul className={s.list} aria-label={t("Actividad", "Activity")}>
             {entries.map((a, i) => (
               <li key={i} className={s.row}>
                 <span className={s.rowMain}>
@@ -250,7 +261,7 @@ export function ActivityCard() {
                     <span>{a.text}</span>
                   </span>
                   <span className={s.rowSub}>
-                    {a.email} · {new Date(a.at).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })}
+                    {a.email} · {new Date(a.at).toLocaleString(t("es-MX", "en-US"), { dateStyle: "medium", timeStyle: "short" })}
                   </span>
                 </span>
               </li>

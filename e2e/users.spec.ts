@@ -19,11 +19,11 @@ const tabs = (page: Page) => page.getByRole("tab");
 test("an admin adds a home-page-only editor, sees what they changed, then disables them", async ({ page }) => {
   page.on("dialog", (d) => d.accept());
   await signIn(page, "gerente@blufin.mx");
-  await expect(tabs(page)).toHaveText(["Menú", "Página de inicio"]);
+  await expect(tabs(page)).toHaveText(["Menú", "Página de inicio", "Códigos QR"]);
   await signOut(page);
 
   await signIn(page, "duena@blufin.mx");
-  await expect(tabs(page)).toHaveText(["Menú", "Página de inicio", "Usuarios", "Actividad"]);
+  await expect(tabs(page)).toHaveText(["Menú", "Página de inicio", "Códigos QR", "Usuarios", "Actividad"]);
   await page.getByRole("tab", { name: "Usuarios" }).click();
   await page.getByRole("button", { name: "Añadir", exact: true }).click();
   const form = page.getByRole("form", { name: "Nuevo usuario" });
@@ -36,7 +36,7 @@ test("an admin adds a home-page-only editor, sees what they changed, then disabl
 
   // Only the home page: no menu, users or activity.
   await signIn(page, "cocina@blufin.mx", "clave-temporal-789");
-  await expect(tabs(page)).toHaveText(["Página de inicio"]);
+  await expect(tabs(page)).toHaveText(["Página de inicio", "Códigos QR"]);
   const belt = page.getByRole("form", { name: "Franja animada" });
   await belt.getByRole("textbox").first().fill("Fresco");
   await belt.getByRole("button", { name: "Guardar" }).click();

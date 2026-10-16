@@ -205,9 +205,10 @@ test("the home page's cards save to the live site, and Deshacer puts it back", a
   await expect(page.getByText("Guardaste la página de inicio")).toBeVisible();
   expect(asked).toEqual([expect.stringContaining("Publicar")]);
 
-  // The test phone reads English.
   await page.goto("/");
+  await page.getByRole("button", { name: "English" }).first().click();
   await expect(page.getByText("Waves, poke and beer")).toBeVisible();
+  await page.getByRole("button", { name: "Español" }).first().click();
 
   await page.goto("/admin/");
   await page.click("[role=tab]:has-text('Página de inicio')");
@@ -222,4 +223,21 @@ test("the home page's cards save to the live site, and Deshacer puts it back", a
   await hero.getByLabel("Frase en inglés").fill("Good food, cold beer, ocean people");
   await hero.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Guardaste la página de inicio")).toBeVisible();
+});
+
+test("the ES | EN toggle switches /admin, and Códigos QR downloads a PNG of each menu's code", async ({ page }) => {
+  await signIn(page);
+  await page.getByRole("button", { name: "English" }).click();
+  await expect(page.getByRole("tab", { name: "Home page" })).toBeVisible();
+  await page.reload();
+  await page.getByRole("tab", { name: "QR codes" }).click();
+  await expect(page.getByRole("link", { name: "https://blufinpoke.com/menu/" })).toBeVisible();
+
+  const [file] = await Promise.all([page.waitForEvent("download"), page.getByRole("region", { name: "TV menu" }).getByRole("button", { name: "Download PNG" }).click()]);
+  expect(file.suggestedFilename()).toBe("blufin-menu-tv-qr.png");
+  const png = await (await file.createReadStream()).toArray();
+  expect(Buffer.concat(png).subarray(1, 4).toString()).toBe("PNG");
+
+  await page.getByRole("button", { name: "Español" }).click();
+  await expect(page.getByRole("tab", { name: "Códigos QR" })).toBeVisible();
 });
