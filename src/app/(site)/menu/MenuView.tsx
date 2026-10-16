@@ -29,8 +29,8 @@ function PriceList({ title, items }: { title: string; items: { name: string; nam
           <span className={s.listName}>
             {t(i.name, i.nameEn)} <Badge status={i.status} />
           </span>
-          <span className={s.listPrice}>{money(i.price)}</span>
           <span className={s.listSize}>{i.size ?? ""}</span>
+          <span className={s.listPrice}>{money(i.price)}</span>
         </div>
       ))}
     </section>

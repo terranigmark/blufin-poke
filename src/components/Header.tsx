@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { mediaUrl, useLanding } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -13,6 +14,7 @@ export const BUILD_RESET_EVENT = "blufin:build-reset";
 export function Header() {
   const t = useT();
   const { marlin_logo, blufin_logo } = useLanding().header;
+  const onMenu = usePathname()?.startsWith("/menu") ? "page" : undefined;
   const [open, setOpen] = useState(false);
   // While closing, the menu stays mounted until its exit animation ends.
   const [closing, setClosing] = useState(false);
@@ -70,7 +72,9 @@ export function Header() {
         </Link>
 
         <nav className={s.desktopNav}>
-          <Link href="/menu">{t("Menú", "Menu")}</Link>
+          <Link href="/menu" aria-current={onMenu}>
+            {t("Menú", "Menu")}
+          </Link>
           <Link href="/#nosotros">{t("Nosotros", "About")}</Link>
           <Link href="/#ubicacion">{t("Ubicación", "Location")}</Link>
           <Link href="/arma-tu-poke" className={s.cta} onClick={goBuild}>
@@ -100,7 +104,7 @@ export function Header() {
           <Link href="/arma-tu-poke" onClick={goBuild}>
             {t("Arma tu poke", "Build your poke")}
           </Link>
-          <Link href="/menu" onClick={close}>
+          <Link href="/menu" onClick={close} aria-current={onMenu}>
             {t("Menú", "Menu")}
           </Link>
           <Link href="/#nosotros" onClick={close}>

@@ -104,6 +104,11 @@
     color: var(--blue);
   }
 }
+.desktopNav a[aria-current="page"] {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 6px;
+}
 .desktopNav a.cta {
   background: var(--navy);
   color: var(--cream);
@@ -185,6 +190,9 @@
 .mobileNav a:nth-child(2) { animation-delay: 0.12s; }
 .mobileNav a:nth-child(3) { animation-delay: 0.18s; }
 .mobileNav a:nth-child(4) { animation-delay: 0.24s; }
+.mobileNav a[aria-current="page"] {
+  color: var(--blue);
+}
 .mobileNav a:last-child {
   border-bottom: 0;
 }

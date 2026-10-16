@@ -118,14 +118,15 @@ const priced = (r: AnyRow) => money((r as ExtraRow).price);
 const FIXED_SECTIONS: Section[] = [
   { id: "sizes", title: "Tamaños de bowl", kind: "sizes", group: "poke", sub: priced },
   // The first three visible ones show on the home page; fewer than three and that section stays hidden.
-  { id: "bowls", title: "Bowls de la casa", kind: "bowls", group: "poke", sub: (r) => priced(r) + ((r as BowlRow).image_url ? " · Con foto" : " · Sin foto") },
+  { id: "bowls", title: "Bowls de la casa", kind: "bowls", group: "poke", sub: priced },
   ...STEPS.map((st) => ({
     id: st.key,
     title: st.short,
     kind: "ingredients" as const,
     group: "poke" as const,
     where: { step: st.key },
-    sub: (r: AnyRow) => ((r as IngredientRow).image_url ? "Con foto" : "Sin foto"),
+    // The thumbnail already shows whether it has a photo.
+    sub: () => "",
   })),
   { id: "extras", title: "Extras", kind: "extras", group: "poke", sub: (r) => priced(r) + ((r as ExtraRow).in_builder ? " · en Arma tu poke" : "") },
   {
@@ -688,6 +689,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
 /** One row, as in Cervesoft: drag handle, picture, name and details (tap to edit), ⋮ menu. */
 function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRow; sortable: boolean; onEdit: () => void; actions: Action[] }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id, disabled: !sortable });
+  const sub = [sec.sub(r), statusLabel(r.status), r.available ? "" : "Oculto"].filter(Boolean).join(" · ");
   return (
     <li
       ref={setNodeRef}
@@ -711,7 +713,7 @@ function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRo
           {!r.available && <Icon name="eyeOff" />}
           <span>{r.name}</span>
         </span>
-        <span className={s.rowSub}>{[sec.sub(r), statusLabel(r.status), r.available ? "" : "Oculto"].filter(Boolean).join(" · ")}</span>
+        {sub && <span className={s.rowSub}>{sub}</span>}
       </button>
       <RowMenu label={`Opciones de ${r.name}`} actions={actions} />
     </li>
