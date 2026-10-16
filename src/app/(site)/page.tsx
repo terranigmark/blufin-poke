@@ -24,7 +24,7 @@ export default function Home() {
           <HeroMedia />
           <div className={s.heroShade} />
           <div className={s.heroInner}>
-            <span className={s.heroScript}>Good food, cold beer, salty people</span>
+            <span className={s.heroScript}>{t("Buena comida, cerveza fría, gente de mar", "Good food, cold beer, ocean people")}</span>
             <h1 className={s.heroTitle}>
               <span>Poke • Baja</span>
               <span>Craft Beer</span>
