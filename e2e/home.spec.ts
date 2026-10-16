@@ -22,7 +22,8 @@ test("photos below the fold settle from a slight zoom as they appear", async ({ 
   await page.goto("/");
   const photo = page.getByAltText(/poke bowl/i);
   const scale = () => photo.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).a);
-  expect(await scale()).toBeCloseTo(1.06);
+  // Reveal hides the photo after hydration, and the zoom-in to 1.06 is itself a 0.9s transition.
+  await expect.poll(scale).toBeCloseTo(1.06);
   await photo.scrollIntoViewIfNeeded();
   await expect.poll(scale).toBe(1);
 });
