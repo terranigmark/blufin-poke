@@ -60,6 +60,8 @@ One-time setup; after that every push to `main` redeploys on its own.
      | `DATABASE_URL` | the Neon connection string |
      | `DJANGO_ALLOWED_HOSTS` | the Koyeb host, e.g. `blufin-api-xxxx.koyeb.app` |
      | `DJANGO_CSRF_TRUSTED_ORIGINS` | the same host with `https://` |
+     | `RESEND_API_KEY` | (secret) a Resend API key with "Sending access"; without it the "¿Olvidaste tu contraseña?" emails are only printed to the logs |
+     | `DEFAULT_FROM_EMAIL` | optional, defaults to `Blufin Poke Co <no-reply@blufinpoke.com>`; the domain must be verified in Resend |
 
    - Leave **Autodeploy** on, so pushes to `main` redeploy.
 3. On start the container applies migrations (set `RUN_MIGRATIONS=false` to skip),

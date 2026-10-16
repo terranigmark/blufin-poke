@@ -189,6 +189,21 @@ async function errorFrom(r: Response): Promise<ApiError> {
   return new ApiError(r.status, msg);
 }
 
+/** "¿Olvidaste tu contraseña?": `forgot` emails a link, `reset` sets the new password. Returns the server's message. */
+export async function passwordReset(step: "forgot" | "reset", body: Record<string, string>) {
+  const r = await fetch(`${API_URL}/api/auth/password/${step}/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const err = await errorFrom(r);
+    if (r.status === 429) err.message = "Demasiados intentos. Espera un rato e intenta de nuevo.";
+    throw err;
+  }
+  return String((await r.json()).detail);
+}
+
 export const isSignedIn = () => !!store.get(REFRESH);
 
 export function signOut() {

@@ -57,6 +57,15 @@
   text-align: center;
   color: var(--muted);
 }
+.linkButton {
+  background: none;
+  border: 0;
+  padding: 4px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--blue);
+  cursor: pointer;
+}
 
 /* ---------------------------------------------------------------- Form controls */
 

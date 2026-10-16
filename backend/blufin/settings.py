@@ -119,7 +119,10 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 20_000_000
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
     # The browser tests sign in more than 10 times a minute, so they raise it.
-    "DEFAULT_THROTTLE_RATES": {"login": os.environ.get("DJANGO_LOGIN_RATE", "10/min")},
+    "DEFAULT_THROTTLE_RATES": {
+        "login": os.environ.get("DJANGO_LOGIN_RATE", "10/min"),
+        "password_reset": os.environ.get("DJANGO_RESET_RATE", "5/hour"),
+    },
 }
 
 SIMPLE_JWT = {
@@ -142,3 +145,13 @@ if DEBUG:
     CORS_ALLOWED_ORIGINS += ["http://localhost:3000", "http://127.0.0.1:3000"]
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# --- Email: "¿Olvidaste tu contraseña?" on /login ---
+# Sent through Resend's API; RESEND_API_KEY is set in Koyeb. Without it (local, CI) emails
+# are printed to the console instead.
+SITE_URL = os.environ.get("SITE_URL", "https://blufinpoke.com").rstrip("/")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Blufin Poke Co <no-reply@blufinpoke.com>")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+EMAIL_BACKEND = "accounts.resend.ResendBackend" if RESEND_API_KEY else "django.core.mail.backends.console.EmailBackend"
+# Reset links work once (the token is tied to the password) and for one hour.
+PASSWORD_RESET_TIMEOUT = 60 * 60

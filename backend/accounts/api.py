@@ -6,13 +6,23 @@ activity log included); an editor changes the menu (`can_edit_menu`), the home p
 (`can_edit_landing`), or both.
 """
 
+import logging
+
+from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth.tokens import default_token_generator
+from django.core.exceptions import ValidationError as WeakPassword
+from django.core.mail import send_mail
 from django.utils import timezone
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.db.models import Q
 from rest_framework import permissions, serializers, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
 from .models import KEEP_ACTIVITY, Activity, User
 
@@ -124,3 +134,69 @@ class UserViewSet(viewsets.ModelViewSet):
 def activity(request):
     """The last 30 days, newest first (older entries are cleared as new ones come in)."""
     return Response([{"at": a.at, "email": a.email, "text": a.text} for a in Activity.objects.filter(at__gte=timezone.now() - KEEP_ACTIVITY)[:500]])
+
+
+# ---------------------------------------------------------------- "¿Olvidaste tu contraseña?" on /login
+
+RESET_EMAIL = """Hola{name}:
+
+Pediste cambiar tu contraseña del editor de Blufin Poke Co. Abre este enlace para elegir una nueva:
+
+{link}
+
+El enlace sirve una sola vez y vence en una hora. Si no lo pediste, ignora este correo: tu contraseña sigue igual.
+
+Blufin Poke Co
+"""
+
+
+class PasswordResetView(APIView):
+    """Signed out, so no token; throttled per IP like the login."""
+
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password_reset"
+
+
+class ForgotPasswordView(PasswordResetView):
+    """Emails a reset link. Always the same answer, so it never tells whether an account exists."""
+
+    def post(self, request):
+        email = str(request.data.get("email", "")).strip().lower()
+        user = User.objects.filter(email=email, is_active=True).first()
+        if user and user.has_editor_access:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            # In the fragment, so the token never reaches a server log or a Referer header.
+            link = f"{settings.SITE_URL}/login/restablecer/#{uid}/{default_token_generator.make_token(user)}"
+            try:
+                send_mail(
+                    "Cambia tu contraseña · Blufin Poke Co",
+                    RESET_EMAIL.format(name=f" {user.first_name}" if user.first_name else "", link=link),
+                    None,
+                    [user.email],
+                )
+            except Exception:
+                logging.getLogger(__name__).exception("Password reset email to user %s failed", user.pk)
+        return Response({"detail": "Si ese correo tiene una cuenta, te llegará un enlace para cambiar tu contraseña."})
+
+
+class ResetPasswordView(PasswordResetView):
+    """Sets the new password from the emailed link; the link stops working once it's used."""
+
+    def post(self, request):
+        try:
+            user = User.objects.get(pk=force_str(urlsafe_base64_decode(str(request.data.get("uid", "")))), is_active=True)
+        except (ValueError, TypeError, OverflowError, User.DoesNotExist):
+            user = None
+        if not user or not default_token_generator.check_token(user, str(request.data.get("token", ""))):
+            raise ValidationError({"detail": "Este enlace ya se usó o venció. Pide uno nuevo desde la página de entrar."})
+        password = str(request.data.get("password", ""))
+        try:
+            validate_password(password, user)
+        except WeakPassword as e:
+            raise ValidationError({"password": e.messages})
+        user.set_password(password)
+        user.save(update_fields=["password"])
+        Activity.objects.create(user=user, email=user.email, text=f"{user.email}: cambió su contraseña con el enlace del correo")
+        return Response({"detail": "Listo. Ya puedes entrar con tu nueva contraseña."})

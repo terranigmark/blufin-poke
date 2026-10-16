@@ -3,7 +3,7 @@ from django.urls import include, path
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
-from accounts.api import UserViewSet, activity
+from accounts.api import ForgotPasswordView, ResetPasswordView, UserViewSet, activity
 from menu import api
 from menu.admin import menu_site
 
@@ -16,6 +16,8 @@ urlpatterns = [
     path("api/menu/", api.public_menu),
     path("api/auth/login/", api.LoginView.as_view()),
     path("api/auth/refresh/", TokenRefreshView.as_view()),
+    path("api/auth/password/forgot/", ForgotPasswordView.as_view()),
+    path("api/auth/password/reset/", ResetPasswordView.as_view()),
     path("api/editor/", api.editor_menu),
     path("api/editor/settings/", api.editor_settings),
     path("api/highlights/<int:pk>/image/", api.highlight_image),
