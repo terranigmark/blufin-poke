@@ -43,7 +43,7 @@ def to_color(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("menu", "0006_house_bowls"),
+        ("menu", "0007_landing"),
     ]
 
     operations = [

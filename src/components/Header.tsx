@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { mediaUrl, useLanding } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { LangToggle } from "./LangToggle";
 import s from "./Header.module.css";
@@ -11,6 +12,7 @@ export const BUILD_RESET_EVENT = "blufin:build-reset";
 
 export function Header() {
   const t = useT();
+  const { marlin_logo, blufin_logo } = useLanding().header;
   const [open, setOpen] = useState(false);
   // While closing, the menu stays mounted until its exit animation ends.
   const [closing, setClosing] = useState(false);
@@ -42,20 +44,29 @@ export function Header() {
     <header className={s.header}>
       <div className={s.bar}>
         <Link href="/" className={s.logo} onClick={close} aria-label={t("Blufin Poke Co · Inicio", "Blufin Poke Co · Home")}>
-          <span className={s.marlin}>
-            <span>BLACK</span>
-            <span>MARLIN</span>
-            <span className={s.brewing}>BREWING</span>
-          </span>
-          <span className={s.divider} />
-          <span className={s.wordmark}>
-            <span className={s.blufin}>Blufin</span>
-            <span className={s.pokeco}>
-              <span className={s.rule} />
-              POKE CO
-              <span className={s.rule} />
+          {/* Uploaded logos replace the lettering; the link's label already names both. */}
+          {marlin_logo ? (
+            <img src={mediaUrl(marlin_logo)} alt="" className={s.logoImg} />
+          ) : (
+            <span className={s.marlin}>
+              <span>BLACK</span>
+              <span>MARLIN</span>
+              <span className={s.brewing}>BREWING</span>
             </span>
-          </span>
+          )}
+          <span className={s.divider} />
+          {blufin_logo ? (
+            <img src={mediaUrl(blufin_logo)} alt="" className={s.logoImg} />
+          ) : (
+            <span className={s.wordmark}>
+              <span className={s.blufin}>Blufin</span>
+              <span className={s.pokeco}>
+                <span className={s.rule} />
+                POKE CO
+                <span className={s.rule} />
+              </span>
+            </span>
+          )}
         </Link>
 
         <nav className={s.desktopNav}>

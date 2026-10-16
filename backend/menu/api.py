@@ -9,8 +9,11 @@ import base64
 import binascii
 import re
 
+from datetime import timedelta
+
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.text import slugify
 from rest_framework import permissions, routers, serializers, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -20,7 +23,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Beer, Category, Drink, Extra, Highlight, HouseBowl, Ingredient, Settings, Size
+from .models import Beer, Category, Drink, Extra, Highlight, HouseBowl, Ingredient, Landing, Media, Settings, Size
 
 
 class IsMenuEditor(permissions.BasePermission):
@@ -200,6 +203,7 @@ def page_extras():
         "categories": CategorySerializer(Category.objects.all(), many=True).data,
         "settings": SettingsSerializer(Settings.get()).data,
         "highlights": HighlightSerializer(Highlight.objects.all(), many=True).data,
+        "landing": Landing.get().content,
     }
 
 
@@ -244,5 +248,105 @@ def highlight_image(request, pk):
     """An uploaded highlight's picture. Highlights are never edited, only added and removed, so it caches forever."""
     highlight = get_object_or_404(Highlight, pk=pk, url="")
     response = HttpResponse(bytes(highlight.image), content_type=highlight.content_type)
+    response["Cache-Control"] = "public, max-age=31536000, immutable"
+    return response
+
+
+# ---------------------------------------------------------------- Home page (the /admin "Página de inicio" cards)
+
+MEDIA_SRC = re.compile(r"\A(/(?!/)[\w./-]*|https://\S+)\Z")
+
+
+def media_link(**kw):
+    """A picture or video: an upload (/api/media/1/), a file of the website (/video/x.mp4) or an https link."""
+    return serializers.RegexField(MEDIA_SRC, max_length=300, allow_blank=True, error_messages={"invalid": "Enlace no válido."}, **kw)
+
+
+def line(max_length=120, allow_blank=True, **kw):
+    return serializers.CharField(max_length=max_length, allow_blank=allow_blank, **kw)
+
+
+def pairs(*names, max_length=120):
+    """Spanish text plus its optional English, e.g. slogan and slogan_en."""
+    return {f"{n}{suffix}": line(max_length) for n in names for suffix in ("", "_en")}
+
+
+class Word(serializers.Serializer):
+    text = line(40, allow_blank=False)
+    text_en = line(40, required=False, default="")
+
+
+LANDING_SECTIONS = {
+    "header": type("Header", (serializers.Serializer,), {"marlin_logo": media_link(), "blufin_logo": media_link()}),
+    "hero": type(
+        "Hero",
+        (serializers.Serializer,),
+        {"image": media_link(), "video": media_link(), **pairs("slogan", "lead", "hours", "address"), **pairs("title", max_length=80)},
+    ),
+    "belt": type("Belt", (serializers.Serializer,), {"words": Word(many=True, max_length=12)}),
+}
+
+
+@api_view(["PATCH"])
+@permission_classes([IsMenuEditor])
+def editor_landing(request):
+    """Replaces the sections sent, each whole; the others stay as they were."""
+    unknown = set(request.data) - set(LANDING_SECTIONS)
+    if unknown:
+        raise ValidationError(f"Sección desconocida: {', '.join(sorted(unknown))}.")
+    landing = Landing.get()
+    for name, data in request.data.items():
+        section = LANDING_SECTIONS[name](data=data)
+        if not section.is_valid():
+            raise ValidationError({name: section.errors})
+        landing.content[name] = section.validated_data
+    landing.save()
+    # Uploads nobody links to any more; a day's grace keeps ones the editor has not saved yet, and Deshacer's.
+    used = {int(n) for n in re.findall(r"/api/media/(\d+)/", str(landing.content))}
+    Media.objects.filter(created__lt=timezone.now() - timedelta(days=1)).exclude(pk__in=used).delete()
+    return Response(landing.content)
+
+
+MEDIA_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm"}
+IMAGE_MAX_BYTES = 1_500_000  # the editor shrinks pictures before sending them
+VIDEO_MAX_BYTES = 12_000_000
+
+
+@api_view(["POST"])
+@permission_classes([IsMenuEditor])
+def editor_media(request):
+    """Upload a picture or video as a data: URL; answers with the link to put in the home page."""
+    m = re.fullmatch(r"data:([\w/]+);base64,(.+)", str(request.data.get("file", "")), re.S)
+    if not m or m[1] not in MEDIA_TYPES:
+        raise ValidationError({"file": "Usa una foto JPG, PNG, WebP o GIF, o un video MP4 o WebM."})
+    try:
+        raw = base64.b64decode(m[2], validate=True)
+    except binascii.Error:
+        raw = b""
+    limit = VIDEO_MAX_BYTES if m[1].startswith("video/") else IMAGE_MAX_BYTES
+    if not raw or len(raw) > limit:
+        raise ValidationError({"file": f"El archivo está vacío o pesa más de {limit // 1_000_000} MB."})
+    media = Media.objects.create(data=raw, content_type=m[1])
+    return Response({"src": media.src}, status=201)
+
+
+def media_file(request, pk):
+    """An upload. Never changed once stored, so it caches forever. Answers byte ranges: Safari won't play video otherwise."""
+    media = get_object_or_404(Media, pk=pk)
+    data = bytes(media.data)
+    r = re.fullmatch(r"bytes=(\d*)-(\d*)", request.headers.get("Range", ""))
+    if r and (r[1] or r[2]):
+        # "bytes=500-" from 500 to the end; "bytes=-500" the last 500.
+        start, end = (int(r[1]), int(r[2] or len(data) - 1)) if r[1] else (max(0, len(data) - int(r[2])), len(data) - 1)
+        end = min(end, len(data) - 1)
+        if start > end:
+            response = HttpResponse(status=416)
+            response["Content-Range"] = f"bytes */{len(data)}"
+            return response
+        response = HttpResponse(data[start : end + 1], status=206, content_type=media.content_type)
+        response["Content-Range"] = f"bytes {start}-{end}/{len(data)}"
+    else:
+        response = HttpResponse(data, content_type=media.content_type)
+    response["Accept-Ranges"] = "bytes"
     response["Cache-Control"] = "public, max-age=31536000, immutable"
     return response

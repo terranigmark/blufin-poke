@@ -9,7 +9,7 @@ def set_groups(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("menu", "0007_beer_srm"),
+        ("menu", "0008_beer_srm"),
     ]
 
     operations = [

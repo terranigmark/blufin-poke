@@ -188,3 +188,34 @@ test("a list added in Otros gets its own section on the menu", async ({ page }) 
   const menu = await (await page.request.get(API)).json();
   expect(menu.categories.find((c: { key: string }) => c.key === "postres").group).toBe("others");
 });
+
+test("the home page's cards save to the live site, and Deshacer puts it back", async ({ page }) => {
+  await signIn(page);
+  const asked: string[] = [];
+  page.on("dialog", (d) => (asked.push(d.message()), d.accept()));
+  await page.click("[role=tab]:has-text('Página de inicio')");
+  const hero = page.getByRole("form", { name: "Portada" });
+  await hero.getByLabel("Frase", { exact: true }).fill("Olas, poke y cerveza");
+  await hero.getByLabel("Frase en inglés").fill("Waves, poke and beer");
+  await hero.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Guardaste la página de inicio")).toBeVisible();
+  expect(asked).toEqual([expect.stringContaining("Publicar")]);
+
+  // The test phone reads English.
+  await page.goto("/");
+  await expect(page.getByText("Waves, poke and beer")).toBeVisible();
+
+  await page.goto("/admin/");
+  await page.click("[role=tab]:has-text('Página de inicio')");
+  const belt = page.getByRole("form", { name: "Franja animada" });
+  await belt.getByRole("button", { name: "Quitar texto 1" }).click();
+  await belt.getByRole("button", { name: "Guardar" }).click();
+  await page.click("button:has-text('Deshacer')");
+  await expect(belt.getByLabel("Texto 1", { exact: true })).toHaveValue("Poke");
+
+  // Leave the hero as the other tests expect it.
+  await hero.getByLabel("Frase", { exact: true }).fill("Buena comida, cerveza fría, gente de mar");
+  await hero.getByLabel("Frase en inglés").fill("Good food, cold beer, ocean people");
+  await hero.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Guardaste la página de inicio")).toBeVisible();
+});

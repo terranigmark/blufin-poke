@@ -5,9 +5,9 @@ from django.test import TestCase, override_settings
 import base64
 from importlib import import_module
 
-from .models import Beer, Category, Drink, Highlight, HouseBowl, Ingredient, Size
+from .models import Beer, Category, Drink, Highlight, HouseBowl, Ingredient, Landing, Media, Size
 
-nearest_srm = import_module("menu.migrations.0007_beer_srm").nearest_srm
+nearest_srm = import_module("menu.migrations.0008_beer_srm").nearest_srm
 
 User = get_user_model()
 PASSWORD = "una-clave-larga-123"
@@ -223,7 +223,7 @@ class MenuApiTests(TestCase):
         self.assertEqual(r.status_code, 400)
 
     def test_beer_colours_are_on_the_srm_scale(self):
-        # Migration 0007 turned the old hex colours into the nearest SRM value.
+        # Migration 0008 turned the old hex colours into the nearest SRM value.
         srm = dict(Beer.objects.values_list("name", "srm"))
         self.assertEqual((srm["American Stout"], srm["Hazy Baby IPA"], srm["American Lager"]), (40, 4, 2))
         self.assertEqual(nearest_srm("#36080A"), 40)
@@ -355,3 +355,90 @@ class PageSettingsTests(TestCase):
             self.assertEqual(self.call("post", "/api/editor/highlights/", data).status_code, 400, data)
         self.assertEqual(self.client.post("/api/editor/highlights/", {}).status_code, 401)
         self.assertEqual(Highlight.objects.count(), 2)
+
+
+class LandingTests(TestCase):
+    """The home page's cards in /admin: seeded with the old copy, saved per section, uploads served back."""
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        token = self.client.post("/api/auth/login/", {"email": "mesera@blufin.mx", "password": PASSWORD}).json()["access"]
+        self.h = {"HTTP_AUTHORIZATION": "Bearer " + token}
+
+    def call(self, method, url, data=None):
+        return getattr(self.client, method)(url, data, content_type="application/json", **self.h)
+
+    def landing(self):
+        return self.client.get("/api/menu/").json()["landing"]
+
+    def test_seeded_with_the_home_page_as_it_was(self):
+        landing = self.landing()
+        self.assertEqual(landing["hero"]["slogan"], "Buena comida, cerveza fría, gente de mar")
+        self.assertEqual(landing["hero"]["video"], "/video/hero-waves.mp4")
+        self.assertEqual([w["text"] for w in landing["belt"]["words"]], ["Poke", "Baja", "Craft Beer", "Pesca del día", "Black Marlin"])
+        self.assertEqual(landing["header"], {"marlin_logo": "", "blufin_logo": ""})
+
+    def test_saving_a_section_replaces_only_that_section(self):
+        hero = {**self.landing()["hero"], "slogan": "Nuevo eslogan", "slogan_en": ""}
+        r = self.call("patch", "/api/editor/landing/", {"hero": hero})
+        self.assertEqual(r.status_code, 200, r.content)
+        landing = self.landing()
+        self.assertEqual(landing["hero"]["slogan"], "Nuevo eslogan")
+        self.assertEqual(len(landing["belt"]["words"]), 5)
+
+        words = [{"text": "Hola"}, {"text": "Mar", "text_en": "Sea"}]
+        self.assertEqual(self.call("patch", "/api/editor/landing/", {"belt": {"words": words}}).status_code, 200)
+        self.assertEqual(self.landing()["belt"]["words"], [{"text": "Hola", "text_en": ""}, {"text": "Mar", "text_en": "Sea"}])
+
+    def test_bad_sections_are_refused(self):
+        hero = self.landing()["hero"]
+        bad = [
+            {"footer": {}},
+            {"hero": {**hero, "image": "javascript:alert(1)"}},
+            {"hero": {**hero, "image": "//evil.example/x.jpg"}},
+            {"hero": {k: v for k, v in hero.items() if k != "lead"}},
+            {"belt": {"words": [{"text": ""}]}},
+            {"header": {"marlin_logo": "http://example.com/logo.png", "blufin_logo": ""}},
+        ]
+        for data in bad:
+            self.assertEqual(self.call("patch", "/api/editor/landing/", data).status_code, 400, data)
+        self.assertEqual(self.landing()["hero"], hero)
+        self.assertEqual(self.client.patch("/api/editor/landing/", {}, content_type="application/json").status_code, 401)
+
+    def test_upload_and_serve_with_ranges(self):
+        video = b"0123456789"
+        r = self.call("post", "/api/editor/media/", {"file": "data:video/mp4;base64," + base64.b64encode(video).decode()})
+        self.assertEqual(r.status_code, 201, r.content)
+        src = r.json()["src"]
+        whole = self.client.get(src)
+        self.assertEqual((whole.status_code, whole["Content-Type"], whole.content), (200, "video/mp4", video))
+        self.assertIn("immutable", whole["Cache-Control"])
+        part = self.client.get(src, HTTP_RANGE="bytes=2-5")
+        self.assertEqual((part.status_code, part.content, part["Content-Range"]), (206, b"2345", "bytes 2-5/10"))
+        self.assertEqual(self.client.get(src, HTTP_RANGE="bytes=-3").content, b"789")
+        self.assertEqual(self.client.get(src, HTTP_RANGE="bytes=8-").content, b"89")
+        self.assertEqual(self.client.get(src, HTTP_RANGE="bytes=20-").status_code, 416)
+
+        # The link goes into a section like any other.
+        r = self.call("patch", "/api/editor/landing/", {"header": {"marlin_logo": src, "blufin_logo": ""}})
+        self.assertEqual(r.json()["header"]["marlin_logo"], src)
+
+        bad = [
+            {},
+            {"file": "data:text/html;base64,PGI+"},
+            {"file": "data:image/svg+xml;base64,PHN2Zz4="},
+            {"file": "data:image/png;base64," + base64.b64encode(b"x" * 1_500_001).decode()},
+        ]
+        for data in bad:
+            self.assertEqual(self.call("post", "/api/editor/media/", data).status_code, 400, data)
+        self.assertEqual(self.client.post("/api/editor/media/", {}).status_code, 401)
+
+    def test_saving_clears_old_unused_uploads(self):
+        used = Media.objects.create(data=b"a", content_type="image/png")
+        stale = Media.objects.create(data=b"b", content_type="image/png")
+        fresh = Media.objects.create(data=b"c", content_type="image/png")
+        Media.objects.filter(pk__in=[used.pk, stale.pk]).update(created="2020-01-01T00:00Z")
+        self.call("patch", "/api/editor/landing/", {"header": {"marlin_logo": used.src, "blufin_logo": ""}})
+        self.assertEqual(set(Media.objects.values_list("pk", flat=True)), {used.pk, fresh.pk})
+        self.assertEqual(Landing.objects.count(), 1)

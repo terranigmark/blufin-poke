@@ -717,3 +717,117 @@
   margin-top: 4px;
   padding-top: 11px;
 }
+
+/* ---------------------------------------------------------------- Menú / Página de inicio */
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  max-width: 760px;
+  margin: 10px auto 0;
+}
+.tabs button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--navy);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-weight: 700;
+  font-size: 14px;
+}
+.tabs button[aria-selected="true"] {
+  background: var(--navy);
+  color: var(--cream);
+  border-color: var(--navy);
+}
+
+.landingForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+}
+.landingPair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.mediaPreview {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--sand);
+}
+.logoPreview {
+  height: 56px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+.mediaActions {
+  display: flex;
+  gap: 8px;
+}
+.mediaActions .ghost {
+  cursor: pointer;
+}
+.landingList {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.landingList legend {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.landingList small {
+  color: var(--muted);
+  font-size: 14px;
+}
+.landingList > .add {
+  align-self: flex-start;
+}
+.landingItem {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 6px;
+  align-items: center;
+}
+.landingItem input {
+  font: inherit;
+  font-size: 16px;
+  color: var(--navy);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 10px;
+  min-width: 0;
+}
+.landingItemActions {
+  display: flex;
+  gap: 2px;
+}
+.landingItemActions button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--navy);
+  font-size: 16px;
+}
+.landingItemActions button:disabled {
+  opacity: 0.35;
+}
+@media (max-width: 520px) {
+  .landingItem {
+    grid-template-columns: 1fr;
+  }
+}
