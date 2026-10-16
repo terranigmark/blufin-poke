@@ -132,7 +132,8 @@ test("the ⋮ menu marks a status the public menu shows, duplicates and deletes"
   await page.click("button[aria-label='Opciones de Small (copia)']");
   const hit = await page.locator("[role=menuitem]:has-text('Eliminar')").evaluate((el) => {
     // Scroll the page, not the section: scrollIntoView would scroll a clipping section and hide the bug.
-    window.scrollBy(0, el.getBoundingClientRect().bottom - innerHeight + 20);
+    // Instant: the site's smooth scrolling would still be moving when the point is checked.
+    window.scrollBy({ top: el.getBoundingClientRect().bottom - innerHeight + 20, behavior: "instant" });
     const r = el.getBoundingClientRect();
     return document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)?.closest("[role=menuitem]") === el;
   });
