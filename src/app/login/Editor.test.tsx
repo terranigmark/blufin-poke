@@ -425,6 +425,34 @@ describe("/admin", () => {
       expect(lastBody(fetch).belt.words[4]).toEqual({ text: "Mar", text_en: "Sea" });
     });
 
+    it("edits Arma tu poke's steps and ¿Qué se te antoja?'s pictures", async () => {
+      signedIn();
+      const fetch = landingApi();
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+
+      const build = screen.getByRole("form", { name: "Arma tu poke" });
+      await userEvent.click(within(build).getByRole("button", { name: "Quitar paso 6" }));
+      await userEvent.click(within(build).getByRole("button", { name: "+ Añadir paso" }));
+      await userEvent.type(within(build).getByLabelText("Paso 6"), "Disfruta");
+      await userEvent.click(within(build).getByRole("button", { name: "Guardar" }));
+      await screen.findByText("Guardaste la página de inicio");
+      expect(lastBody(fetch).build.steps.at(-1)).toEqual({ text: "Disfruta", text_en: "" });
+      expect(lastBody(fetch).build.steps).toHaveLength(6);
+
+      const cravings = screen.getByRole("form", { name: "¿Qué se te antoja?" });
+      await userEvent.click(within(cravings).getByRole("button", { name: "Quitar foto 1" }));
+      const link = within(cravings).getByLabelText(/^Enlace 2/);
+      await userEvent.clear(link);
+      await userEvent.type(link, "/menu?tab=nacional");
+      await userEvent.click(within(cravings).getByRole("button", { name: "Guardar" }));
+      await waitFor(() => expect(lastBody(fetch).cravings?.tiles).toHaveLength(2));
+      expect(lastBody(fetch).cravings.tiles.map((x: { text: string; link: string }) => `${x.text} ${x.link}`)).toEqual([
+        "Bebidas /menu?tab=aguas",
+        "Cerveza craft /menu?tab=nacional",
+      ]);
+    });
+
     it("uploads a new hero video, and Quitar leaves the picture alone", async () => {
       signedIn();
       const fetch = landingApi();

@@ -257,9 +257,9 @@ def highlight_image(request, pk):
 MEDIA_SRC = re.compile(r"\A(/(?!/)[\w./-]*|https://\S+)\Z")
 
 
-def media_link(**kw):
+def media_link(allow_blank=True):
     """A picture or video: an upload (/api/media/1/), a file of the website (/video/x.mp4) or an https link."""
-    return serializers.RegexField(MEDIA_SRC, max_length=300, allow_blank=True, error_messages={"invalid": "Enlace no válido."}, **kw)
+    return serializers.RegexField(MEDIA_SRC, max_length=300, allow_blank=allow_blank, error_messages={"invalid": "Enlace no válido."})
 
 
 def line(max_length=120, allow_blank=True, **kw):
@@ -271,9 +271,17 @@ def pairs(*names, max_length=120):
     return {f"{n}{suffix}": line(max_length) for n in names for suffix in ("", "_en")}
 
 
+LINK = re.compile(r"\A(/(?!/)\S*|https://\S+)\Z")
+
+
 class Word(serializers.Serializer):
-    text = line(40, allow_blank=False)
-    text_en = line(40, required=False, default="")
+    text = line(60, allow_blank=False)
+    text_en = line(60, required=False, default="")
+
+
+class Tile(Word):
+    image = media_link(allow_blank=False)
+    link = serializers.RegexField(LINK, max_length=300, error_messages={"invalid": "Usa una página del sitio (/menu) o un enlace https://."})
 
 
 LANDING_SECTIONS = {
@@ -284,6 +292,12 @@ LANDING_SECTIONS = {
         {"image": media_link(), "video": media_link(), **pairs("slogan", "lead", "hours", "address"), **pairs("title", max_length=80)},
     ),
     "belt": type("Belt", (serializers.Serializer,), {"words": Word(many=True, max_length=12)}),
+    "build": type(
+        "Build",
+        (serializers.Serializer,),
+        {**pairs("title", "lead", "cta"), "steps": Word(many=True, max_length=10), "image": media_link()},
+    ),
+    "cravings": type("Cravings", (serializers.Serializer,), {**pairs("title"), "tiles": Tile(many=True, max_length=6)}),
 }
 
 
