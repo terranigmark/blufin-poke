@@ -25,7 +25,8 @@ test.describe("on an English device", () => {
     await expect(page).toHaveURL(/\/admin\/$/);
     await page.click("button:has-text('Kombucha')");
     await page.fill("dialog input[name=name_en]", "House kombucha");
-    await page.click("dialog button:has-text('Guardar cambios')");
+    // /admin follows the same English device setting.
+    await page.click("dialog button:has-text('Save changes')");
     await expect(page.locator("dialog")).toHaveCount(0); // closes once the server has saved it
 
     await page.goto("/menu/?tab=aguas");

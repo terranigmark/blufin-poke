@@ -860,3 +860,42 @@
 .landingItemActions button:disabled {
   opacity: 0.35;
 }
+
+/* Códigos QR: the code beside its name, link and download button; stacked on phones. */
+.qr {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+}
+.qr img {
+  width: 148px;
+  height: 148px;
+  flex: none;
+  image-rendering: pixelated;
+}
+.qr > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.qr h2,
+.qr p {
+  margin: 0;
+}
+.qrLink {
+  color: var(--navy);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 420px) {
+  .qr {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .qr img {
+    align-self: center;
+  }
+}
