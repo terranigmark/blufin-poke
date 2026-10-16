@@ -16,5 +16,7 @@ urlpatterns = [
     path("api/auth/login/", api.LoginView.as_view()),
     path("api/auth/refresh/", TokenRefreshView.as_view()),
     path("api/editor/", api.editor_menu),
+    path("api/editor/settings/", api.editor_settings),
+    path("api/highlights/<int:pk>/image/", api.highlight_image),
     path("api/", include(api.router.urls)),
 ]

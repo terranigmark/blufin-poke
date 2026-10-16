@@ -2,7 +2,9 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.test import TestCase, override_settings
 
-from .models import Beer, Drink, Ingredient, Size
+import base64
+
+from .models import Beer, Category, Drink, Highlight, Ingredient, Size
 
 User = get_user_model()
 PASSWORD = "una-clave-larga-123"
@@ -210,3 +212,86 @@ class MenuApiTests(TestCase):
         codes = [self.token("nadie@blufin.mx").status_code for _ in range(11)]
         self.assertEqual(codes[:10], [401] * 10)
         self.assertEqual(codes[10], 429)
+
+
+
+class PageSettingsTests(TestCase):
+    """Cervesoft's settings, highlights and categories cards, as the website and the editor see them."""
+
+    def setUp(self):
+        cache.clear()
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        token = self.client.post("/api/auth/login/", {"email": "mesera@blufin.mx", "password": PASSWORD}).json()["access"]
+        self.h = {"HTTP_AUTHORIZATION": "Bearer " + token}
+
+    def call(self, method, url, data=None):
+        return getattr(self.client, method)(url, data, content_type="application/json", **self.h)
+
+    def test_built_in_sections_come_seeded_in_the_editors_order(self):
+        cats = self.client.get("/api/menu/").json()["categories"]
+        self.assertEqual(
+            [c["key"] for c in cats],
+            ["sizes", "base", "protein", "mix", "salsa", "top", "crunch", "extras", "beers", "aguas", "nacional"],
+        )
+        self.assertTrue(all(c["builtin"] for c in cats))
+
+    def test_a_new_price_list_takes_drinks_and_deleting_it_takes_them_too(self):
+        r = self.call("post", "/api/editor/categories/", {"name": "Cócteles", "name_en": "Cocktails", "order": 11, "kind": "beers"})
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual((r.json()["key"], r.json()["kind"], r.json()["builtin"]), ("cocteles", "drinks", False))
+        cat = r.json()["id"]
+        r = self.call("post", "/api/editor/drinks/", {"category": "cocteles", "name": "Mezcalita", "price": 120, "size": "300 ml", "pack": "Botella"})
+        self.assertEqual(r.status_code, 201, r.content)
+        # Drinks only go into price lists that exist.
+        r = self.call("post", "/api/editor/drinks/", {"category": "beers", "name": "X", "price": 1, "size": "1", "pack": "Lata"})
+        self.assertIn("category", r.json())
+
+        self.assertEqual(self.call("delete", f"/api/editor/categories/{cat}/").status_code, 204)
+        self.assertFalse(Drink.objects.filter(category="cocteles").exists())
+
+    def test_built_in_sections_rename_and_reorder_but_never_go_away(self):
+        base = Category.objects.get(key="base")
+        r = self.call("patch", f"/api/editor/categories/{base.pk}/", {"name": "Bases", "order": 3, "key": "otra"})
+        self.assertEqual(r.status_code, 200)
+        base.refresh_from_db()
+        self.assertEqual((base.name, base.order, base.key), ("Bases", 3, "base"))
+        # Arma tu poke needs its sections; the beer list can be hidden.
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{base.pk}/", {"available": False}).status_code, 400)
+        beers = Category.objects.get(key="beers")
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{beers.pk}/", {"available": False}).status_code, 200)
+        self.assertEqual(self.call("delete", f"/api/editor/categories/{beers.pk}/").status_code, 400)
+        self.assertTrue(Category.objects.filter(key="beers").exists())
+
+    def test_settings_save_within_their_limits(self):
+        self.assertEqual(self.client.get("/api/menu/").json()["settings"]["tv_seconds"], 10)
+        r = self.call("patch", "/api/editor/settings/", {"tv_seconds": 15, "tv_poke_right": True})
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(self.client.get("/api/menu/").json()["settings"]["tv_seconds"], 15)
+        self.assertEqual(self.call("patch", "/api/editor/settings/", {"tv_seconds": 1}).status_code, 400)
+        self.assertEqual(self.client.patch("/api/editor/settings/", {"tv_seconds": 20}, content_type="application/json").status_code, 401)
+
+    def test_highlights_upload_link_and_serve(self):
+        png = base64.b64encode(b"\x89PNG fake bytes").decode()
+        r = self.call("post", "/api/editor/highlights/", {"image": f"data:image/png;base64,{png}", "order": 0})
+        self.assertEqual(r.status_code, 201, r.content)
+        src = r.json()["src"]
+        self.assertNotIn("image", r.json())
+        img = self.client.get(src)
+        self.assertEqual((img.status_code, img["Content-Type"], img.content), (200, "image/png", b"\x89PNG fake bytes"))
+        self.assertIn("immutable", img["Cache-Control"])
+
+        r = self.call("post", "/api/editor/highlights/", {"url": "https://example.com/promo.jpg", "order": 1})
+        self.assertEqual(r.json()["src"], "https://example.com/promo.jpg")
+        self.assertEqual([h["order"] for h in self.client.get("/api/menu/").json()["highlights"]], [0, 1])
+
+        # Refused: nothing, both, http links, non-images and oversized files.
+        bad = [
+            {},
+            {"url": "http://example.com/x.jpg"},
+            {"image": "data:text/html;base64,PGI+"},
+            {"image": "data:image/png;base64," + base64.b64encode(b"x" * 1_500_001).decode()},
+        ]
+        for data in bad:
+            self.assertEqual(self.call("post", "/api/editor/highlights/", data).status_code, 400, data)
+        self.assertEqual(self.client.post("/api/editor/highlights/", {}).status_code, 401)
+        self.assertEqual(Highlight.objects.count(), 2)
