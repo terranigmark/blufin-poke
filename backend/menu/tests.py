@@ -261,7 +261,7 @@ class PageSettingsTests(TestCase):
 
     def setUp(self):
         cache.clear()
-        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True, can_edit_landing=True)
         token = self.client.post("/api/auth/login/", {"email": "mesera@blufin.mx", "password": PASSWORD}).json()["access"]
         self.h = {"HTTP_AUTHORIZATION": "Bearer " + token}
 
@@ -362,7 +362,7 @@ class LandingTests(TestCase):
 
     def setUp(self):
         cache.clear()
-        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True, can_edit_landing=True)
         token = self.client.post("/api/auth/login/", {"email": "mesera@blufin.mx", "password": PASSWORD}).json()["access"]
         self.h = {"HTTP_AUTHORIZATION": "Bearer " + token}
 

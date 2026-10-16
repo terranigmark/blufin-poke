@@ -7,10 +7,16 @@
 | `/api/menu/` | Anyone | The live menu the website shows (available items only) |
 | `/api/auth/login/`, `/api/auth/refresh/` | Menu editors | Email + password → JWT pair (30 min access, 7 day refresh), like Cervesoft |
 | `/api/editor/`, `/api/editor/<sizes\|ingredients\|extras\|beers\|drinks>/` | Menu editors | Everything incl. hidden items; create, edit, delete |
+| `/api/editor/users/` | Admins | The "Usuarios" tab at blufinpoke.com/admin: add, set role and permissions, reset password, disable, delete |
+| `/api/editor/activity/` | Admins | The "Actividad" tab: who changed what, last 30 days |
 
-Everyone signs in with email and password. To give an employee menu access, open
-`/admin/` → Usuarios → Añadir, enter their email and a password, and tick
-**Puede editar el menú**. Leave "Es staff" off so they only see the menu.
+Everyone signs in with email and password. Two roles: an **admin** is a superuser
+(everything, plus the Usuarios and Actividad tabs at blufinpoke.com/admin); an **editor**
+changes the menu (**Puede editar el menú**), the home page (**Puede editar la página de
+inicio**), or both. Admins add people, choose what each may change, and remove them from
+the **Usuarios** tab; the API won't let an admin demote, disable or delete their own
+account, so there is always one admin left. **Actividad** lists who changed what in the
+last 30 days. The very first admin is created as in step 4 below.
 
 The menu starts with the items the website ships today (`src/data/menu.ts`). The
 website's editor at `blufinpoke.com/admin` (sign in at `/login`) edits it through `/api/`, and the menu,

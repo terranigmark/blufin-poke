@@ -208,6 +208,9 @@ class Highlight(models.Model):
         verbose_name = "destacado"
         verbose_name_plural = "destacados"
 
+    def __str__(self):
+        return f"n.º {self.order + 1}"
+
 
 class Landing(models.Model):
     """The home page's editable content: one row, a JSON object per section (LANDING_SECTIONS in api.py).

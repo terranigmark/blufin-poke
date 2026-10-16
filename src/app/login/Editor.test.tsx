@@ -523,3 +523,91 @@ describe("/admin", () => {
     });
   });
 });
+
+describe("/admin Usuarios y Actividad", () => {
+  const USERS = [
+    { id: 1, email: "ruth@blufin.mx", name: "Ruth", role: "admin", active: true, menu: true, landing: true },
+    { id: 2, email: "mesera@blufin.mx", name: "", role: "editor", active: true, menu: true, landing: true },
+  ];
+  const ADMIN = { email: "ruth@blufin.mx", admin: true, menu: true, landing: true };
+  /** The editor API as `me`, with the users list, the activity log, and echoing writes. */
+  const usersApi = (me: object = ADMIN) =>
+    api((url, init) => {
+      if (url === `${API_URL}/api/editor/`) return json({ ...ROWS, me });
+      if (url === `${API_URL}/api/editor/activity/`) return json([{ at: "2026-10-16T18:00:00Z", email: "mesera@blufin.mx", text: "Cambió tamaño de bowl “Small”: precio (MXN): 165 → 170" }]);
+      if (url === `${API_URL}/api/editor/users/`)
+        return init?.method === "POST" ? json({ id: 3, active: true, ...JSON.parse(String(init.body)) }, 201) : json(USERS);
+      const m = url.match(/editor\/users\/(\d+)\/$/);
+      if (m && init?.method === "DELETE") return new Response(null, { status: 204 });
+      if (m) return json({ ...USERS.find((u) => u.id === Number(m[1])), ...JSON.parse(String(init!.body)) });
+    });
+  const tabs = () => screen.getAllByRole("tab").map((t) => t.textContent);
+
+  it("shows each account only the tabs it may use", async () => {
+    signedIn();
+    usersApi({ email: "mesera@blufin.mx", admin: false, menu: false, landing: true });
+    render(<AdminPage />);
+    await waitFor(() => expect(tabs()).toEqual(["Página de inicio"]));
+    // Starts on the one tab it has, not on the menu.
+    expect(screen.getByRole("form", { name: "Portada" })).toBeInTheDocument();
+    expect(screen.queryByText("American Stout")).not.toBeInTheDocument();
+  });
+
+  it("shows admins Usuarios and Actividad, with who changed what", async () => {
+    signedIn();
+    usersApi();
+    render(<AdminPage />);
+    await waitFor(() => expect(tabs()).toEqual(["Menú", "Página de inicio", "Usuarios", "Actividad"]));
+    await userEvent.click(screen.getByRole("tab", { name: "Actividad" }));
+    expect(await screen.findByText("Cambió tamaño de bowl “Small”: precio (MXN): 165 → 170")).toBeInTheDocument();
+    expect(screen.getByText(/^mesera@blufin\.mx · /)).toBeInTheDocument();
+  });
+
+  it("adds an editor for the menu only, and narrows another's permissions after asking, with Deshacer", async () => {
+    signedIn();
+    const fetch = usersApi();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: "Usuarios" }));
+    expect(await screen.findByText("Admin · Ruth · Tú")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Añadir" }));
+    const form = screen.getByRole("form", { name: "Nuevo usuario" });
+    await userEvent.type(within(form).getByLabelText("Correo"), "cocina@blufin.mx");
+    await userEvent.type(within(form).getByLabelText(/^Contraseña temporal/), "una-clave-larga-123");
+    await userEvent.click(within(form).getByLabelText(/^La página de inicio/));
+    await userEvent.click(within(form).getByRole("button", { name: "Añadir usuario" }));
+    expect(await screen.findByText("Editor · menú")).toBeInTheDocument();
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toEqual({
+      email: "cocina@blufin.mx",
+      name: "",
+      password: "una-clave-larga-123",
+      role: "editor",
+      menu: true,
+      landing: false,
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de mesera@blufin.mx" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Editar permisos" }));
+    const edit = screen.getByRole("form", { name: "Editar a mesera@blufin.mx" });
+    await userEvent.click(within(edit).getByLabelText(/^El menú/));
+    await userEvent.click(within(edit).getByRole("button", { name: "Guardar" }));
+    expect(confirm).toHaveBeenLastCalledWith(expect.stringContaining("Editor · página de inicio"));
+    expect(await screen.findByText("Editor · página de inicio")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+    await waitFor(() => expect(screen.getAllByText("Editor · menú y página de inicio")).toHaveLength(1));
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toMatchObject({ role: "editor", menu: true, landing: true });
+    confirm.mockRestore();
+  });
+
+  it("lets admins only edit their own name and password", async () => {
+    signedIn();
+    usersApi();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: "Usuarios" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de ruth@blufin.mx" }));
+    expect(screen.getAllByRole("menuitem").map((b) => b.textContent)).toEqual(["Editar", "Cambiar contraseña"]);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Editar" }));
+    expect(screen.getByRole("combobox", { name: /^Rol/ })).toBeDisabled();
+  });
+});

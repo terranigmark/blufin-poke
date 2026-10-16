@@ -49,8 +49,10 @@ export type MenuRows = {
   categories?: CategoryRow[];
   /** Missing on a backend from before the home page was editable, or sections it doesn't have yet. */
   landing?: Partial<Landing>;
+  /** The signed-in account (editor API only): what it may change, and whether it's an admin (users, activity). */
+  me?: { email: string; admin: boolean; menu: boolean; landing: boolean };
 };
-export type Kind = Exclude<keyof MenuRows, "categories" | "landing">;
+export type Kind = Exclude<keyof MenuRows, "categories" | "landing" | "me">;
 
 /** API rows → the shapes src/data/menu.ts exports, so pages need no other change. */
 // English left blank in the editor (or a backend without it yet) falls back to the bundled

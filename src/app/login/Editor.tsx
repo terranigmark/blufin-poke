@@ -34,6 +34,7 @@ import {
 } from "@/lib/api";
 import s from "./editor.module.css";
 import { LandingCards, type LandingSection } from "./LandingCards";
+import { ActivityCard, UsersCard } from "./UsersCard";
 
 /*
  * The manager's menu editor, a copy of Cervesoft's /taplist-admin (cervesoft-frontend
@@ -278,15 +279,15 @@ function LoginForm({ onDone }: { onDone: () => void }) {
 type Save = "idle" | "saving" | "saved" | { error: string };
 type Sheet = { sec: Section; row: Partial<AnyRow> } | null;
 /** The last change, and how to put things back as they were. */
-type Undo = { label: string; run: () => Promise<unknown> } | null;
+export type Undo = { label: string; run: () => Promise<unknown> } | null;
 
 function Panel({ onSignOut }: { onSignOut: () => void }) {
   const [data, setData] = useState<MenuRows | null>(null);
   const [loadError, setLoadError] = useState("");
   const [save, setSave] = useState<Save>("idle");
   const [search, setSearch] = useState("");
-  // "Menú" or the home page's cards ("Página de inicio").
-  const [view, setView] = useState<"menu" | "inicio">("menu");
+  // "Menú", the home page's cards ("Página de inicio"), and for admins "Usuarios" and "Actividad".
+  const [picked, setView] = useState<"menu" | "inicio" | "usuarios" | "actividad">("menu");
   // Sections start open, as in Cervesoft; this remembers the ones folded away.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // The round + button adds to the section used last.
@@ -514,6 +515,17 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     );
 
   const landing = { ...LANDING, ...data.landing };
+  // Only the tabs this account may use; a backend from before permissions sends no `me` and gets the first two.
+  const me = data.me ?? { email: "", admin: false, menu: true, landing: true };
+  const tabs = (
+    [
+      ["menu", "Menú", me.menu],
+      ["inicio", "Página de inicio", me.landing],
+      ["usuarios", "Usuarios", me.admin],
+      ["actividad", "Actividad", me.admin],
+    ] as const
+  ).filter(([, , ok]) => ok);
+  const view = tabs.some(([v]) => v === picked) ? picked : tabs[0][0];
   const total = sections.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
   // Lists in Otros aren't drinks, so their items start without a bottle or can.
   const add = (sec: Section) =>
@@ -538,12 +550,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           </div>
         </div>
         <div className={s.tabs} role="tablist">
-          {(
-            [
-              ["menu", "Menú"],
-              ["inicio", "Página de inicio"],
-            ] as const
-          ).map(([v, label]) => (
+          {tabs.map(([v, label]) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}>
               {label}
             </button>
@@ -573,6 +580,8 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
             <LandingCards landing={landing} onSave={saveLanding} />
           </>
         )}
+        {view === "usuarios" && <UsersCard me={me.email} onUndo={setUndo} />}
+        {view === "actividad" && <ActivityCard />}
         {view === "menu" && GROUPS.map(([g, label]) => {
           const cards = groups.filter((x) => x.sec.group === g);
           if (term && !cards.length) return null;
@@ -753,18 +762,18 @@ const ICONS = {
   more: <><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></>,
   grip: <><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></>,
 };
-type IconName = keyof typeof ICONS;
+export type IconName = keyof typeof ICONS;
 
-const Icon = ({ name }: { name: IconName }) => (
+export const Icon = ({ name }: { name: IconName }) => (
   <svg className={s.icon} viewBox="0 0 24 24" aria-hidden>
     {ICONS[name]}
   </svg>
 );
 
 /** Label, icon, what it does, and whether it's the red one at the bottom. */
-type Action = [string, IconName, () => unknown, danger?: boolean];
+export type Action = [string, IconName, () => unknown, danger?: boolean];
 
-function RowMenu({ label, actions }: { label: string; actions: Action[] }) {
+export function RowMenu({ label, actions }: { label: string; actions: Action[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {

@@ -3,6 +3,7 @@ from django.urls import include, path
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from accounts.api import UserViewSet, activity
 from menu import api
 from menu.admin import menu_site
 
@@ -21,5 +22,8 @@ urlpatterns = [
     path("api/editor/landing/", api.editor_landing),
     path("api/editor/media/", api.editor_media),
     path("api/media/<int:pk>/", api.media_file),
+    path("api/editor/users/", UserViewSet.as_view({"get": "list", "post": "create"})),
+    path("api/editor/users/<int:pk>/", UserViewSet.as_view({"patch": "partial_update", "delete": "destroy"})),
+    path("api/editor/activity/", activity),
     path("api/", include(api.router.urls)),
 ]
