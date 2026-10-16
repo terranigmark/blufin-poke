@@ -7,7 +7,7 @@ import s from "./editor.module.css";
 
 /*
  * /admin's "Página de inicio": one card per section of the home page. Each card is a
- * form saved whole with Guardar (Panel adds Deshacer). Pictures and videos upload as
+ * form saved whole with Guardar, after a confirmation (Panel adds Deshacer). Pictures and videos upload as
  * soon as they're picked and go live with the rest of the card.
  */
 
@@ -117,6 +117,8 @@ function CardForm({ card, value, onSave }: { card: (typeof CARDS)[number]; value
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // These are the first thing every visitor sees, so a stray tap shouldn't publish them.
+    if (!confirm(`¿Publicar los cambios de “${card.title}” en la página de inicio?`)) return;
     setBusy(true);
     await onSave(draft as Landing[LandingSection]);
     setBusy(false);

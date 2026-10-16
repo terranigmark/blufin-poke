@@ -299,6 +299,28 @@ describe("/admin", () => {
       });
     };
     const lastBody = (fetch: ReturnType<typeof api>) => JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body));
+    // Every Guardar asks first; these tests say yes unless they say otherwise.
+    const confirm = vi.fn(() => true);
+    beforeEach(() => {
+      confirm.mockClear();
+      vi.stubGlobal("confirm", confirm);
+    });
+
+    it("asks before publishing, and saying no saves nothing", async () => {
+      signedIn();
+      const fetch = landingApi();
+      confirm.mockReturnValueOnce(false);
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      const hero = screen.getByRole("form", { name: "Portada" });
+      await userEvent.type(within(hero).getByLabelText("Frase"), "!");
+      const calls = fetch.mock.calls.length;
+      await userEvent.click(within(hero).getByRole("button", { name: "Guardar" }));
+
+      expect(confirm).toHaveBeenCalledWith("¿Publicar los cambios de “Portada” en la página de inicio?");
+      expect(fetch.mock.calls).toHaveLength(calls);
+      expect(within(hero).getByLabelText("Frase")).toHaveValue(LANDING.hero.slogan + "!"); // the edit stays in the form
+    });
 
     it("saves the hero's texts, and Deshacer puts the old ones back", async () => {
       signedIn();

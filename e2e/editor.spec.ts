@@ -163,12 +163,15 @@ test("three house bowls added in the editor show on the home page and the menu",
 
 test("the home page's cards save to the live site, and Deshacer puts it back", async ({ page }) => {
   await signIn(page);
+  const asked: string[] = [];
+  page.on("dialog", (d) => (asked.push(d.message()), d.accept()));
   await page.click("[role=tab]:has-text('Página de inicio')");
   const hero = page.getByRole("form", { name: "Portada" });
   await hero.getByLabel("Frase", { exact: true }).fill("Olas, poke y cerveza");
   await hero.getByLabel("Frase en inglés").fill("Waves, poke and beer");
   await hero.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Guardaste la página de inicio")).toBeVisible();
+  expect(asked).toEqual([expect.stringContaining("Publicar")]);
 
   // The test phone reads English.
   await page.goto("/");
