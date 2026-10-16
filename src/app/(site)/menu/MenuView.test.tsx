@@ -10,6 +10,8 @@ describe("Menú page", () => {
     render(<MenuView />);
     expect(screen.getByText("Pacífico")).toBeInTheDocument();
     expect(screen.getByText("Kombucha")).toBeInTheDocument();
+    // Each tap's dot is its beer's SRM colour: the stout is SRM 40.
+    expect(screen.getByText("Tap 01").nextElementSibling).toHaveStyle({ background: "#36080A" });
 
     await userEvent.click(screen.getByRole("button", { name: "Cerveza nacional" }));
     expect(screen.queryByText("Kombucha")).not.toBeInTheDocument();

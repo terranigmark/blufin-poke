@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { STATUS_LABELS, STEPS, money, type Status } from "@/data/menu";
+import { SRM, STATUS_LABELS, STEPS, money, srmColor, type Status } from "@/data/menu";
 import {
   ApiError,
   editorFetch,
@@ -43,7 +43,7 @@ type AnyRow = MenuRows[Kind][number];
 type Field = {
   name: string;
   label: string;
-  type?: "text" | "number" | "url" | "color" | "textarea" | "checkbox" | "select";
+  type?: "text" | "number" | "url" | "srm" | "textarea" | "checkbox" | "select";
   options?: string[];
   hint?: string;
   optional?: boolean;
@@ -66,7 +66,7 @@ const FIELDS: Record<Kind, Field[]> = {
     { name: "abv", label: "ABV", hint: "Ej. 5.2%" },
     { name: "price_12", label: "Precio 12 oz", type: "number" },
     { name: "price_16", label: "Precio 16 oz", type: "number" },
-    { name: "color", label: "Color en el menú", type: "color" },
+    { name: "srm", label: "Color en el menú", type: "srm" },
     { name: "description", label: "Descripción", type: "textarea" },
     { name: "description_en", label: "Descripción en inglés", type: "textarea", hint: "Opcional. Si la dejas vacía, se usa la descripción en español." },
   ],
@@ -541,7 +541,7 @@ function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRo
         </button>
       )}
       {sec.kind === "beers" ? (
-        <span className={s.dot} style={{ background: (r as BeerRow).color }} />
+        <span className={s.dot} style={{ background: srmColor((r as BeerRow).srm) }} />
       ) : sec.kind === "ingredients" || sec.kind === "bowls" ? (
         (r as IngredientRow).image_url ? <img className={s.thumb} src={(r as IngredientRow).image_url} alt="" /> : <span className={s.thumb} />
       ) : null}
@@ -562,7 +562,7 @@ function blank(kind: Kind, rows: AnyRow[]): Partial<AnyRow> {
   const order = rows.length ? Math.max(...rows.map((r) => r.order)) + 1 : 0;
   if (kind === "beers") {
     const tap = String(Math.max(0, ...rows.map((r) => Number((r as BeerRow).tap) || 0)) + 1).padStart(2, "0");
-    return { name: "", available: true, order, tap, color: "#E8B84A" } as Partial<BeerRow>;
+    return { name: "", available: true, order, tap, srm: 4 } as Partial<BeerRow>;
   }
   if (kind === "drinks") return { name: "", available: true, order, pack: "Botella" } as Partial<DrinkRow>;
   return { name: "", available: true, order };
@@ -677,7 +677,7 @@ function ItemSheet({
     if (isNew) out.order = row.order;
     for (const fl of FIELDS[sec.kind]) {
       const v = f.get(fl.name);
-      out[fl.name] = fl.type === "checkbox" ? v === "on" : fl.type === "number" ? Number(v) : String(v ?? "").trim();
+      out[fl.name] = fl.type === "checkbox" ? v === "on" : fl.type === "number" || fl.type === "srm" ? Number(v) : String(v ?? "").trim();
     }
     setBusy(true);
     await onSave(out as Partial<AnyRow>);
@@ -709,7 +709,9 @@ function ItemSheet({
         </div>
 
         {FIELDS[sec.kind].map((fl) =>
-          fl.type === "checkbox" ? (
+          fl.type === "srm" ? (
+            <SrmPicker key={fl.name} name={fl.name} label={fl.label} value={Number(value(fl.name)) || 4} />
+          ) : fl.type === "checkbox" ? (
             <label key={fl.name} className={s.check}>
               <input type="checkbox" name={fl.name} defaultChecked={!!value(fl.name)} />
               <span>{fl.label}</span>
@@ -767,6 +769,27 @@ function ItemSheet({
         </div>
       </form>
     </dialog>
+  );
+}
+
+/** A beer's colour as a value on the SRM chart: 40 swatches, from pale straw to black. */
+function SrmPicker({ name, label, value }: { name: string; label: string; value: number }) {
+  const [srm, setSrm] = useState(value);
+  return (
+    <fieldset className={s.srm}>
+      <legend>
+        {label} · SRM {srm}
+      </legend>
+      <div className={s.srmGrid}>
+        {SRM.map((hex, i) => (
+          <label key={i} title={`SRM ${i + 1}`}>
+            <input type="radio" name={name} value={i + 1} checked={srm === i + 1} onChange={() => setSrm(i + 1)} aria-label={`SRM ${i + 1}`} />
+            <span style={{ background: hex, color: i < 12 ? "var(--navy)" : "#fff" }}>{i + 1}</span>
+          </label>
+        ))}
+      </div>
+      <small>Como en la tabla SRM: 1 es la más clara y 40 la más oscura.</small>
+    </fieldset>
   );
 }
 

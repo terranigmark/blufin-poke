@@ -80,9 +80,55 @@
   padding: 11px 12px;
   width: 100%;
 }
-.field input[type="color"] {
-  height: 46px;
-  padding: 4px;
+.srm {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.srm legend {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+  margin-bottom: 6px;
+}
+.srm small {
+  font-size: 14px;
+  color: var(--muted);
+}
+.srmGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 4px;
+}
+.srmGrid label {
+  position: relative;
+}
+.srmGrid input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+}
+.srmGrid span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+.srmGrid input:checked + span {
+  outline: 3px solid var(--navy);
+  outline-offset: 1px;
+}
+.srmGrid input:focus-visible + span {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
 }
 .field input:focus-visible,
 .field textarea:focus-visible,

@@ -281,23 +281,32 @@ export type Beer = {
   /** PLACEHOLDER: 12 oz prices were guessed as $20 below the 16 oz price. */
   price12: number;
   price16: number;
-  /** Dot colour on the menu tap list. */
-  color: string;
+  /** Colour on the SRM scale (1–40), drawn as the dot on the menu tap list. */
+  srm: number;
   desc: string;
   nameEn?: string;
   descEn?: string;
   status?: Status;
 };
 
+/** The standard SRM beer colours, SRM 1 to 40, as on the AIH SRM chart; the editor's picker shows these. */
+export const SRM = (
+  "#FFE699 #FFD878 #FFCA5A #FFBF42 #FBB123 #F8A600 #F39C00 #EA8F00 #E58500 #DE7C00 " +
+  "#D77200 #CF6900 #CB6200 #C35900 #BB5100 #B54C00 #B04500 #A63E00 #A13700 #9B3200 " +
+  "#952D00 #8E2900 #882300 #821E00 #7B1A00 #771900 #701400 #6A0E00 #660D00 #5E0B00 " +
+  "#5A0A02 #600903 #520907 #4C0505 #470606 #440607 #3F0708 #3B0607 #3A070B #36080A"
+).split(" ");
+export const srmColor = (srm: number) => SRM[Math.min(40, Math.max(1, Math.round(srm) || 1)) - 1];
+
 export const BEERS: Beer[] = [
-  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, color: "#2A1810", desc: "Café tostado, cacao amargo y cuerpo sedoso.", descEn: "Roasted coffee, bitter cocoa and a silky body." },
-  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, color: "#3B2216", desc: "Vainilla, chocolate y un final dulce de postre.", descEn: "Vanilla, chocolate and a sweet, dessert-like finish." },
-  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, color: "#E8B84A", desc: "Jugosa y turbia, con notas de mango y durazno.", descEn: "Juicy and hazy, with notes of mango and peach." },
-  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, color: "#D99A2B", desc: "Cítrica y resinosa, como brisa de costa.", descEn: "Citrusy and resinous, like a coastal breeze." },
-  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, color: "#E0A93A", desc: "Ligera y aromática, para toda la tarde.", descEn: "Light and aromatic, for the whole afternoon." },
-  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, color: "#C8822B", desc: "Levadura belga, especiada y frutal.", descEn: "Belgian yeast, spicy and fruity." },
-  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, color: "#F0CF6A", desc: "Limpia y refrescante, hecha para el calor.", descEn: "Clean and refreshing, made for the heat." },
-  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, color: "#EBC150", desc: "Crujiente, con lúpulo estilo costa oeste.", descEn: "Crisp, with West Coast-style hops." },
+  { tap: "01", name: "American Stout", style: "Stout", abv: "5.2%", price12: 100, price16: 120, srm: 40, desc: "Café tostado, cacao amargo y cuerpo sedoso.", descEn: "Roasted coffee, bitter cocoa and a silky body." },
+  { tap: "02", name: "Pastry Porter", style: "Porter", abv: "6.2%", price12: 70, price16: 90, srm: 40, desc: "Vainilla, chocolate y un final dulce de postre.", descEn: "Vanilla, chocolate and a sweet, dessert-like finish." },
+  { tap: "03", name: "Hazy Baby IPA", style: "Hazy IPA", abv: "7.12%", price12: 70, price16: 90, srm: 4, desc: "Jugosa y turbia, con notas de mango y durazno.", descEn: "Juicy and hazy, with notes of mango and peach." },
+  { tap: "04", name: "Coastal Dream IPA", style: "IPA", abv: "6.9%", price12: 70, price16: 90, srm: 5, desc: "Cítrica y resinosa, como brisa de costa.", descEn: "Citrusy and resinous, like a coastal breeze." },
+  { tap: "05", name: "Baby IPA", style: "Session IPA", abv: "5.4%", price12: 70, price16: 90, srm: 5, desc: "Ligera y aromática, para toda la tarde.", descEn: "Light and aromatic, for the whole afternoon." },
+  { tap: "06", name: "Angry Belga", style: "Belgian Ale", abv: "4.9%", price12: 70, price16: 90, srm: 11, desc: "Levadura belga, especiada y frutal.", descEn: "Belgian yeast, spicy and fruity." },
+  { tap: "07", name: "American Lager", style: "Lager", abv: "3.4%", price12: 70, price16: 90, srm: 2, desc: "Limpia y refrescante, hecha para el calor.", descEn: "Clean and refreshing, made for the heat." },
+  { tap: "08", name: "West Coast Mexican Lager", style: "Lager", abv: "5.4%", price12: 70, price16: 90, srm: 3, desc: "Crujiente, con lúpulo estilo costa oeste.", descEn: "Crisp, with West Coast-style hops." },
 ];
 
 // PLACEHOLDER: "Botella" vs "Lata" was guessed.

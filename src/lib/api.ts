@@ -19,7 +19,7 @@ export type BeerRow = Row & {
   abv: string;
   price_12: number;
   price_16: number;
-  color: string;
+  srm: number;
   description: string;
   description_en: string;
 };
@@ -54,7 +54,7 @@ export function toMenu(m: MenuRows): Menu {
     abv: b.abv,
     price12: b.price_12,
     price16: b.price_16,
-    color: b.color,
+    srm: b.srm,
     desc: b.description,
     descEn: b.description_en || BUNDLED_BEERS.find((x) => x.desc === b.description)?.descEn,
     status: b.status,

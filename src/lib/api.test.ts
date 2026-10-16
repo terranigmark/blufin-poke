@@ -14,7 +14,7 @@ const ROWS: MenuRows = {
     { id: 4, key: "xagu", name: "Aguacate", name_en: "", price: 20, in_builder: true, available: true, order: 0 },
     { id: 5, key: "", name: "Salsa", name_en: "", price: 10, in_builder: false, available: true, order: 1 },
   ],
-  beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, color: "#000", description: "Rica", description_en: "", available: true, order: 0 }],
+  beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, srm: 40, description: "Rica", description_en: "", available: true, order: 0 }],
   bowls: [],
   drinks: [
     { id: 7, category: "aguas", name: "Agua", name_en: "", price: 15, size: "500 ml", pack: "Botella", available: true, order: 0 },

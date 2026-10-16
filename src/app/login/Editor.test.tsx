@@ -17,7 +17,7 @@ const ROWS: MenuRows = {
   sizes: [{ id: 1, key: "small", name: "Small", name_en: "", price: 165, available: true, order: 0 }],
   ingredients: [],
   extras: [],
-  beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, color: "#2A1810", description: "", description_en: "", available: true, order: 0 }],
+  beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, srm: 40, description: "", description_en: "", available: true, order: 0 }],
   drinks: [],
   bowls: [],
 };
@@ -196,6 +196,24 @@ describe("/admin", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const [, init] = fetch.mock.calls.at(-1)!;
     expect(JSON.parse(String(init!.body))).toMatchObject({ id: 2, name_en: "", description_en: "Roasted coffee." });
+  });
+
+  it("picks a beer's colour on the SRM chart instead of a colour picker", async () => {
+    signedIn();
+    const fetch = api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^American Stout/ }));
+
+    const sheet = screen.getByRole("dialog");
+    expect(sheet.querySelector('input[type="color"]')).toBeNull();
+    expect(within(sheet).getAllByRole("radio")).toHaveLength(40);
+    expect(within(sheet).getByRole("radio", { name: "SRM 40" })).toBeChecked();
+    await userEvent.click(within(sheet).getByRole("radio", { name: "SRM 12" }));
+    expect(within(sheet).getByText("Color en el menú · SRM 12")).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toMatchObject({ id: 2, srm: 12 });
   });
 
   it("lists Cervesoft's actions in the ⋮ menu and closes it with Esc", async () => {

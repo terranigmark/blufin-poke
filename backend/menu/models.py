@@ -94,7 +94,10 @@ class Beer(MenuItem):
     abv = models.CharField("ABV", max_length=10, help_text="Ej. 5.2%")
     price_12 = models.PositiveIntegerField("precio 12 oz (MXN)")
     price_16 = models.PositiveIntegerField("precio 16 oz (MXN)")
-    color = models.CharField("color", max_length=7, default="#E8B84A", help_text="Hex, ej. #E8B84A")
+    # The beer's colour on the SRM scale; the website draws it with the standard SRM colours (src/data/menu.ts).
+    srm = models.PositiveSmallIntegerField(
+        "color (SRM)", default=4, validators=[MinValueValidator(1), MaxValueValidator(40)], help_text="1 = muy clara, 40 = negra."
+    )
     description = models.CharField("descripción", max_length=200, blank=True)
     description_en = models.CharField("descripción en inglés", max_length=200, blank=True)
 

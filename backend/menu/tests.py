@@ -3,8 +3,11 @@ from django.core.cache import cache
 from django.test import TestCase, override_settings
 
 import base64
+from importlib import import_module
 
 from .models import Beer, Category, Drink, Highlight, HouseBowl, Ingredient, Size
+
+nearest_srm = import_module("menu.migrations.0007_beer_srm").nearest_srm
 
 User = get_user_model()
 PASSWORD = "una-clave-larga-123"
@@ -218,6 +221,24 @@ class MenuApiTests(TestCase):
         self.assertIn("price", r.json())
         r = self.client.post("/api/editor/ingredients/", {"step": "nope", "name": "X"}, content_type="application/json", **h)
         self.assertEqual(r.status_code, 400)
+
+    def test_beer_colours_are_on_the_srm_scale(self):
+        # Migration 0007 turned the old hex colours into the nearest SRM value.
+        srm = dict(Beer.objects.values_list("name", "srm"))
+        self.assertEqual((srm["American Stout"], srm["Hazy Baby IPA"], srm["American Lager"]), (40, 4, 2))
+        self.assertEqual(nearest_srm("#36080A"), 40)
+        self.assertEqual(nearest_srm("#fff"), 1)
+        self.assertEqual(nearest_srm("no es color"), 4)
+
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        beer = Beer.objects.get(tap="01")
+        url = f"/api/editor/beers/{beer.pk}/"
+        self.assertEqual(self.client.patch(url, {"srm": 12}, content_type="application/json", **h).json()["srm"], 12)
+        for bad in (0, 41):
+            r = self.client.patch(url, {"srm": bad}, content_type="application/json", **h)
+            self.assertEqual(r.status_code, 400)
+            self.assertIn("srm", r.json())
 
     def test_refresh_token_gives_a_new_access_token(self):
         User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)

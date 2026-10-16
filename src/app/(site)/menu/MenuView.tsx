@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PHOTOS, STATUS_LABELS, money, type Status } from "@/data/menu";
+import { PHOTOS, STATUS_LABELS, money, srmColor, type Status } from "@/data/menu";
 import { useMenu } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import s from "./menu.module.css";
@@ -133,7 +133,7 @@ export function MenuView() {
               <div key={b.tap} className={s.beer} data-status={b.status || undefined}>
                 <div className={s.tap}>
                   <span className={s.tapLabel}>Tap {b.tap}</span>
-                  <span className={s.tapDot} style={{ background: b.color }} />
+                  <span className={s.tapDot} style={{ background: srmColor(b.srm) }} />
                 </div>
                 <div className={s.beerInfo}>
                   <span className={s.beerName}>
