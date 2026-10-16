@@ -138,3 +138,25 @@ test("the ⋮ menu marks a status the public menu shows, duplicates and deletes"
   await action("Small (copia)", "Eliminar");
   await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235");
 });
+
+test("three house bowls added in the editor show on the home page and the menu", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: /Bowls de la casa|House bowls/ })).toHaveCount(0);
+
+  await page.goto("/admin/");
+  for (const [name, price] of [["Clásico", "215"], ["Picante", "225"], ["Verde", "205"]]) {
+    await page.click("button[aria-label='Añadir a Bowls de la casa']");
+    await page.fill("dialog input[name=name]", name);
+    await page.fill("dialog input[name=price]", price);
+    await page.fill("dialog textarea[name=description]", `${name} con atún y aguacate`);
+    await page.click("dialog button:has-text('Añadir artículo')");
+    await expect(page.locator("dialog")).toHaveCount(0);
+  }
+
+  await page.goto("/");
+  const section = page.locator("section", { has: page.getByRole("heading", { name: /Bowls de la casa|House bowls/ }) });
+  await expect(section.getByRole("heading", { level: 3 })).toHaveText(["Clásico", "Picante", "Verde"]);
+  await page.goto("/menu/?tab=poke");
+  await expect(page.getByText("Picante con atún y aguacate")).toBeVisible();
+});

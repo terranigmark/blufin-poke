@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { TextBand } from "@/components/TextBand";
-import { BUSINESS, PHOTOS, STEPS } from "@/data/menu";
+import { BUSINESS, PHOTOS, STEPS, money, orderable } from "@/data/menu";
+import { useMenu } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 import { HeroMedia } from "./HeroMedia";
 import s from "./home.module.css";
@@ -18,6 +19,8 @@ const TILES = [
 export default function Home() {
   const t = useT();
   const english = useLang().lang === "en";
+  // Shown only once the manager has added three; sold-out or coming-soon bowls stay off the home page.
+  const bowls = useMenu().HOUSE_BOWLS.filter(orderable).slice(0, 3);
   return (
     <>
       <main>
@@ -49,6 +52,35 @@ export default function Home() {
         </section>
 
         <TextBand />
+
+        {bowls.length === 3 && (
+          <section className={s.casa} aria-labelledby="casa-title">
+            <div className={s.casaInner}>
+              <h2 id="casa-title" className={s.antojoTitle} data-reveal>
+                {t("Bowls de la casa", "House bowls")}
+              </h2>
+              <div className={s.casaGrid} data-reveal>
+                {bowls.map((b) => (
+                  <article key={b.id} className={s.casaCard}>
+                    <div className={s.casaPhoto}>
+                      <img src={b.img ?? PHOTOS.bowl(800)} alt="" loading="lazy" />
+                    </div>
+                    <div className={s.casaText}>
+                      <h3>{t(b.name, b.nameEn)}</h3>
+                      <span className={s.casaPrice}>{money(b.price)}</span>
+                    </div>
+                    {b.desc && <p>{t(b.desc, b.descEn)}</p>}
+                  </article>
+                ))}
+              </div>
+              <div className={s.casaCta}>
+                <Link href="/menu?tab=poke" className={s.navyPill}>
+                  {t("Ver el menú", "See the menu")} →
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className={s.build}>
           <div className={s.buildGrid}>

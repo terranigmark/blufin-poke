@@ -391,8 +391,12 @@ export const DRINK_TABS: [DrinkCat, string, string][] = [
   ["aguas", "Aguas y refrescos", "Water & soft drinks"],
 ];
 
+/** Ready-made bowls the manager adds in the editor; none ship with the site. */
+export type HouseBowl = { id: number; name: string; nameEn?: string; desc: string; descEn?: string; price: number; img: string | null; status?: Status };
+export const HOUSE_BOWLS: HouseBowl[] = [];
+
 export const money = (n: number) => "$" + n;
 
 /** The editable part of the menu. The website starts from these and swaps in the live menu from the API (src/lib/api.ts). */
-export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, BEERS, AGUAS, NACIONAL, DRINKS };
+export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, BEERS, AGUAS, NACIONAL, DRINKS, HOUSE_BOWLS };
 export type Menu = typeof MENU;

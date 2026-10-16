@@ -9,7 +9,7 @@ from django.contrib import admin
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
-from .models import Beer, Drink, Extra, Ingredient, Size
+from .models import Beer, Drink, Extra, HouseBowl, Ingredient, Size
 
 
 def is_editor(request):
@@ -69,6 +69,12 @@ class IngredientAdmin(MenuAdmin):
 class ExtraAdmin(MenuAdmin):
     list_display = ("name", "price", "in_builder", "available", "order")
     list_editable = ("price", "in_builder", "available", "order")
+
+
+@admin.register(HouseBowl, site=menu_site)
+class HouseBowlAdmin(MenuAdmin):
+    list_display = ("name", "price", "available", "order")
+    list_editable = ("price", "available", "order")
 
 
 @admin.register(Beer, site=menu_site)

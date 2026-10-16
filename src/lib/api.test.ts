@@ -15,6 +15,7 @@ const ROWS: MenuRows = {
     { id: 5, key: "", name: "Salsa", name_en: "", price: 10, in_builder: false, available: true, order: 1 },
   ],
   beers: [{ id: 6, tap: "01", name: "Stout", name_en: "", style: "Stout", abv: "5%", price_12: 70, price_16: 90, color: "#000", description: "Rica", description_en: "", available: true, order: 0 }],
+  bowls: [],
   drinks: [
     { id: 7, category: "aguas", name: "Agua", name_en: "", price: 15, size: "500 ml", pack: "Botella", available: true, order: 0 },
     { id: 8, category: "nacional", name: "Modelo", name_en: "", price: 50, size: "355 ml", pack: "Lata", available: true, order: 0 },
@@ -146,4 +147,15 @@ it("falls back to the bundled English when the API has none (blank, or a backend
   expect(m.STEPS[3].opts[0].nameEn).toBe("Secret Shoyu");
   expect(m.BEERS[0].descEn).toBe("Roasted coffee, bitter cocoa and a silky body.");
   expect(m.BOWL_EXTRAS[0].nameEn).toBe("Avocado"); // "Aguacate" with name_en ""
+});
+
+describe("toMenu house bowls", () => {
+  it("maps bowls with English and photo fallbacks, and tolerates a backend without them", () => {
+    const bowl = { id: 9, name: "Clásico", name_en: "", price: 215, description: "Atún y ponzu", description_en: "Tuna and ponzu", image_url: "", available: true, order: 0 };
+    expect(toMenu({ ...ROWS, bowls: [bowl] }).HOUSE_BOWLS).toEqual([
+      { id: 9, name: "Clásico", desc: "Atún y ponzu", descEn: "Tuna and ponzu", price: 215, img: null },
+    ]);
+    const { bowls: _, ...old } = ROWS;
+    expect(toMenu(old as MenuRows).HOUSE_BOWLS).toEqual([]);
+  });
 });

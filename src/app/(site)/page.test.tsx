@@ -26,6 +26,11 @@ describe("Home hero", () => {
     expect(await screen.findByText("Good food, cold beer, ocean people")).toBeInTheDocument();
   });
 
+  it("leaves Bowls de la casa out until the editor has three", () => {
+    render(<Home />);
+    expect(screen.queryByText("Bowls de la casa")).not.toBeInTheDocument();
+  });
+
   it("has a text band after the hero and another before the footer", () => {
     render(<Home />);
     expect(screen.getAllByTestId("text-band")).toHaveLength(2);
