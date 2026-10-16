@@ -15,7 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SRM, STATUS_LABELS, STEPS, money, srmColor, type Status } from "@/data/menu";
+import { LISTS, SRM, STATUS_LABELS, STEPS, money, srmColor, type Status } from "@/data/menu";
 import {
   ApiError,
   editorFetch,
@@ -24,6 +24,7 @@ import {
   signOut,
   type BeerRow,
   type BowlRow,
+  type CategoryRow,
   type DrinkRow,
   type ExtraRow,
   type IngredientRow,
@@ -78,13 +79,33 @@ const FIELDS: Record<Kind, Field[]> = {
     { name: "description_en", label: "Descripción en inglés", type: "textarea", optional: true, hint: "Opcional. Si la dejas vacía, se usa la descripción en español." },
     { name: "image_url", label: "Foto (URL)", type: "url", optional: true, hint: "Opcional. Enlace a una imagen." },
   ],
-  drinks: [NAME, NAME_EN, PRICE, { name: "size", label: "Tamaño", hint: "Ej. 355 ml" }, { name: "pack", label: "Envase", type: "select", options: ["Botella", "Lata"] }],
+  drinks: [
+    NAME,
+    NAME_EN,
+    PRICE,
+    { name: "size", label: "Tamaño", hint: "Ej. 355 ml. Opcional.", optional: true },
+    { name: "pack", label: "Envase", type: "select", options: ["Botella", "Lata", ""] },
+  ],
 };
+
+type Group = CategoryRow["group"];
+/** Every section belongs to one of these; Arma tu poke's "Agrega una bebida" offers the lists in Bebidas. */
+const GROUPS: [Group, string][] = [
+  ["poke", "Elementos del poke"],
+  ["drinks", "Bebidas"],
+  ["others", "Otros"],
+];
+const groupName = (g: Group) => GROUPS.find(([id]) => id === g)![1];
+
+/** A price list's section: the category it comes from (without an id when the backend sends none). */
+type ListCat = Pick<CategoryRow, "key" | "name" | "group" | "order"> & Partial<CategoryRow>;
 
 type Section = {
   id: string;
   title: string;
   kind: Kind;
+  group: Group;
+  cat?: ListCat;
   /** Which rows of `kind` belong here, and the values a new one starts with. */
   where?: Record<string, string>;
   sub: (r: AnyRow) => string;
@@ -92,37 +113,48 @@ type Section = {
 
 const priced = (r: AnyRow) => money((r as ExtraRow).price);
 
-const SECTIONS: Section[] = [
-  { id: "sizes", title: "Tamaños de bowl", kind: "sizes", sub: priced },
+const FIXED_SECTIONS: Section[] = [
+  { id: "sizes", title: "Tamaños de bowl", kind: "sizes", group: "poke", sub: priced },
   // The first three visible ones show on the home page; fewer than three and that section stays hidden.
-  { id: "bowls", title: "Bowls de la casa", kind: "bowls", sub: (r) => priced(r) + ((r as BowlRow).image_url ? " · Con foto" : " · Sin foto") },
+  { id: "bowls", title: "Bowls de la casa", kind: "bowls", group: "poke", sub: (r) => priced(r) + ((r as BowlRow).image_url ? " · Con foto" : " · Sin foto") },
   ...STEPS.map((st) => ({
     id: st.key,
     title: st.short,
     kind: "ingredients" as const,
+    group: "poke" as const,
     where: { step: st.key },
     sub: (r: AnyRow) => ((r as IngredientRow).image_url ? "Con foto" : "Sin foto"),
   })),
-  { id: "extras", title: "Extras", kind: "extras", sub: (r) => priced(r) + ((r as ExtraRow).in_builder ? " · en Arma tu poke" : "") },
+  { id: "extras", title: "Extras", kind: "extras", group: "poke", sub: (r) => priced(r) + ((r as ExtraRow).in_builder ? " · en Arma tu poke" : "") },
   {
     id: "beers",
     title: "Cerveza de barril",
     kind: "beers",
+    group: "drinks",
     sub: (r) => {
       const b = r as BeerRow;
       return `Grifo ${b.tap} · ${b.style} · ${b.abv} · ${money(b.price_12)} / ${money(b.price_16)}`;
     },
   },
-  ...(["aguas", "nacional"] as const).map((category) => ({
-    id: category,
-    title: category === "aguas" ? "Aguas y refrescos" : "Cerveza nacional",
-    kind: "drinks" as const,
-    where: { category },
-    sub: (r: AnyRow) => {
-      const d = r as DrinkRow;
-      return `${money(d.price)} · ${d.pack} · ${d.size}`;
-    },
-  })),
+];
+
+/** The fixed sections, then one per price list: the manager's lists from the API, or the two the menu ships with. */
+const sectionsOf = (data: MenuRows): Section[] => [
+  ...FIXED_SECTIONS,
+  ...(data.categories?.filter((c) => c.kind === "drinks") ?? LISTS.map((l, order): ListCat => ({ key: l.key, name: l.name, group: l.group, order })))
+    .sort((a, b) => a.order - b.order || (a.id ?? 0) - (b.id ?? 0))
+    .map((cat) => ({
+      id: cat.key,
+      title: cat.name,
+      kind: "drinks" as const,
+      group: cat.group,
+      cat,
+      where: { category: cat.key },
+      sub: (r: AnyRow) => {
+        const d = r as DrinkRow;
+        return [money(d.price), d.pack, d.size].filter(Boolean).join(" · ");
+      },
+    })),
 ];
 
 /** The statuses in Cervesoft's order: "Marcar como…" label, icon, and the hint under its switch in the sheet. */
@@ -253,7 +285,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   // Sections start open, as in Cervesoft; this remembers the ones folded away.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // The round + button adds to the section used last.
-  const lastSection = useRef(SECTIONS[0]);
+  const lastSection = useRef(FIXED_SECTIONS[0]);
   const [sheet, setSheetState] = useState<Sheet>(null);
   const setSheet = (next: Sheet) => {
     if (typeof save === "object") setSave("idle"); // don't greet a new sheet with an old error
@@ -381,16 +413,63 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     if (await remove(sec.kind, r.id)) setUndo({ label: `Eliminaste “${r.name}”`, run: () => persist(sec.kind, { ...r, id: undefined }) });
   };
 
+  /** Saves a price list (new, renamed or moved) and puts the server's copy in place. */
+  const saveList = async (c: Partial<CategoryRow>) => {
+    setSave("saving");
+    try {
+      const saved = await editorFetch<CategoryRow>(c.id ? `editor/categories/${c.id}/` : "editor/categories/", {
+        method: c.id ? "PATCH" : "POST",
+        body: JSON.stringify(c),
+      });
+      setData((d) => {
+        const cats = d?.categories ?? [];
+        return d && { ...d, categories: cats.some((x) => x.id === saved.id) ? cats.map((x) => (x.id === saved.id ? saved : x)) : [...cats, saved] };
+      });
+      setSave("saved");
+      return saved;
+    } catch (err) {
+      fail(err);
+      return null;
+    }
+  };
+
+  const addList = async (group: Group) => {
+    const name = prompt(`Nombre de la nueva lista en ${groupName(group)}`)?.trim();
+    if (!name) return;
+    const order = Math.max(0, ...(data?.categories ?? []).map((c) => c.order)) + 1;
+    const saved = await saveList({ name, group, order });
+    if (saved) setUndo({ label: `Añadiste la lista “${saved.name}”`, run: () => deleteList(saved, 0) });
+  };
+
+  const moveList = async (c: CategoryRow, group: Group) => {
+    if (await saveList({ id: c.id, group }))
+      setUndo({ label: `Moviste “${c.name}” a ${groupName(group)}`, run: () => saveList({ id: c.id, group: c.group }) });
+  };
+
+  /** A list goes with its items, so one that has any asks first; this one can't be undone. */
+  const deleteList = async (c: CategoryRow, count: number) => {
+    if (count && !confirm(`¿Eliminar la lista “${c.name}” y sus ${items(count)}? No se puede deshacer.`)) return;
+    setSave("saving");
+    try {
+      await editorFetch(`editor/categories/${c.id}/`, { method: "DELETE" });
+      setData((d) => d && { ...d, categories: d.categories?.filter((x) => x.id !== c.id), drinks: d.drinks.filter((x) => x.category !== c.key) });
+      setSave("saved");
+    } catch (err) {
+      fail(err);
+    }
+  };
+
   const term = search.trim().toLowerCase();
+  const sections = useMemo(() => (data ? sectionsOf(data) : FIXED_SECTIONS), [data]);
   const groups = useMemo(
     () =>
       data
-        ? SECTIONS.map((sec) => {
+        ? sections.map((sec) => {
             const all = rowsOf(data, sec);
             return { sec, all, rows: term ? all.filter((r) => r.name.toLowerCase().includes(term)) : all };
           }).filter((g) => !term || g.rows.length)
         : [],
-    [data, term],
+    [data, sections, term],
   );
 
   if (!data)
@@ -409,8 +488,10 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       </main>
     );
 
-  const total = SECTIONS.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
-  const add = (sec: Section) => setSheet({ sec, row: { ...blank(sec.kind, rowsOf(data, sec)), ...sec.where } });
+  const total = sections.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
+  // Lists in Otros aren't drinks, so their items start without a bottle or can.
+  const add = (sec: Section) =>
+    setSheet({ sec, row: { ...blank(sec.kind, rowsOf(data, sec)), ...sec.where, ...(sec.group === "others" && { pack: "" }) } as Partial<AnyRow> });
 
   return (
     <div className={s.page}>
@@ -419,7 +500,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <div>
             <Brand />
             <p className={s.saveState} aria-live="polite">
-              {items(total)} · {SECTIONS.length} secciones ·{" "}
+              {items(total)} · {sections.length} secciones ·{" "}
               {save === "saving" ? "Guardando…" : typeof save === "object" ? <span className={s.errorText}>{save.error}</span> : "Guardado"}
             </p>
           </div>
@@ -442,60 +523,89 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       </header>
 
       <main className={s.main}>
-        {groups.map(({ sec, all, rows }) => {
-          const expanded = !!term || !collapsed[sec.id];
-          const hidden = all.filter((r) => !r.available).length;
-          // Beers stay in tap order, and a filtered list has gaps, so neither can be dragged.
-          const sortable = sec.kind !== "beers" && !term;
+        {GROUPS.map(([g, label]) => {
+          const cards = groups.filter((x) => x.sec.group === g);
+          if (term && !cards.length) return null;
           return (
-            <section key={sec.id} className={s.card}>
-              <div className={s.cardHead}>
-                <button className={s.cardToggle} onClick={() => setCollapsed((c) => ({ ...c, [sec.id]: !c[sec.id] }))} aria-expanded={expanded}>
-                  <span className={s.chevron} data-open={expanded} aria-hidden>
-                    ›
-                  </span>
-                  <span className={s.cardTitle}>{sec.title}</span>
-                  <span className={s.count}>
-                    {term ? `${rows.length} de ${all.length}` : items(all.length)}
-                    {hidden ? ` · ${hidden} oculto${hidden > 1 ? "s" : ""}` : ""}
-                  </span>
-                </button>
-                <button className={s.add} aria-label={`Añadir a ${sec.title}`} onClick={() => add(sec)}>
-                  <Icon name="plus" />
-                  Añadir
-                </button>
-              </div>
-              {expanded &&
-                (rows.length === 0 ? (
-                  <p className={s.empty}>Nada aquí todavía.</p>
-                ) : (
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => reorder(sec, rows, e)}>
-                    <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
-                      <ul className={s.list}>
-                        {rows.map((r) => (
-                          <ItemRow
-                            key={r.id}
-                            sec={sec}
-                            r={r}
-                            sortable={sortable}
-                            onEdit={() => setSheet({ sec, row: r })}
-                            actions={[
-                              ["Editar", "pencil", () => setSheet({ sec, row: r })],
-                              ["Duplicar", "copy", () => duplicate(sec, r, all)],
-                              // Cervesoft's toggles: the line for the current status turns into "Marcar como disponible".
-                              ...STATUSES.map(([v, label, icon]): Action =>
-                                r.status === v ? ["Marcar como disponible", "check", () => setStatus(sec, r, "")] : [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
-                              ),
-                              r.available ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)] : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
-                              ["Eliminar", "trash", () => deleteRow(sec, r), true],
-                            ]}
-                          />
-                        ))}
-                      </ul>
-                    </SortableContext>
-                  </DndContext>
-                ))}
-            </section>
+            <div key={g} className={s.group}>
+              <h2 className={s.groupTitle}>{label}</h2>
+              {cards.map(({ sec, all, rows }) => {
+                const expanded = !!term || !collapsed[sec.id];
+                const hidden = all.filter((r) => !r.available).length;
+                // Beers stay in tap order, and a filtered list has gaps, so neither can be dragged.
+                const sortable = sec.kind !== "beers" && !term;
+                return (
+                  <section key={sec.id} className={s.card}>
+                    <div className={s.cardHead}>
+                      <button className={s.cardToggle} onClick={() => setCollapsed((c) => ({ ...c, [sec.id]: !c[sec.id] }))} aria-expanded={expanded}>
+                        <span className={s.chevron} data-open={expanded} aria-hidden>
+                          ›
+                        </span>
+                        <span className={s.cardTitle}>{sec.title}</span>
+                        <span className={s.count}>
+                          {term ? `${rows.length} de ${all.length}` : items(all.length)}
+                          {hidden ? ` · ${hidden} oculto${hidden > 1 ? "s" : ""}` : ""}
+                        </span>
+                      </button>
+                      <button className={s.add} aria-label={`Añadir a ${sec.title}`} onClick={() => add(sec)}>
+                        <Icon name="plus" />
+                        Añadir
+                      </button>
+                      {sec.cat?.id && (
+                        <RowMenu
+                          label={`Opciones de la lista ${sec.title}`}
+                          actions={[
+                            sec.group === "drinks"
+                              ? ["Mover a Otros", "arrowRight", () => moveList(sec.cat as CategoryRow, "others")]
+                              : ["Mover a Bebidas", "arrowRight", () => moveList(sec.cat as CategoryRow, "drinks")],
+                            ...(sec.cat.builtin ? [] : [["Eliminar lista", "trash", () => deleteList(sec.cat as CategoryRow, all.length), true] as Action]),
+                          ]}
+                        />
+                      )}
+                    </div>
+                    {expanded &&
+                      (rows.length === 0 ? (
+                        <p className={s.empty}>Nada aquí todavía.</p>
+                      ) : (
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => reorder(sec, rows, e)}>
+                          <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                            <ul className={s.list}>
+                              {rows.map((r) => (
+                                <ItemRow
+                                  key={r.id}
+                                  sec={sec}
+                                  r={r}
+                                  sortable={sortable}
+                                  onEdit={() => setSheet({ sec, row: r })}
+                                  actions={[
+                                    ["Editar", "pencil", () => setSheet({ sec, row: r })],
+                                    ["Duplicar", "copy", () => duplicate(sec, r, all)],
+                                    // Cervesoft's toggles: the line for the current status turns into "Marcar como disponible".
+                                    ...STATUSES.map(([v, label, icon]): Action =>
+                                      r.status === v ? ["Marcar como disponible", "check", () => setStatus(sec, r, "")] : [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
+                                    ),
+                                    r.available ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)] : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
+                                    ["Eliminar", "trash", () => deleteRow(sec, r), true],
+                                  ]}
+                                />
+                              ))}
+                            </ul>
+                          </SortableContext>
+                        </DndContext>
+                      ))}
+                  </section>
+                );
+              })}
+              {g !== "poke" && !term && data.categories && (
+                <>
+                  {!cards.length && <p className={s.muted}>Aquí van las listas que no son bebidas, como postres. Arma tu poke no las ofrece.</p>}
+                  <button className={s.newList} onClick={() => addList(g)}>
+                    <Icon name="plus" />
+                    Nueva lista en {label}
+                  </button>
+                </>
+              )}
+            </div>
           );
         })}
         {groups.length === 0 && <p className={s.muted}>Nada coincide con “{search}”.</p>}
@@ -582,6 +692,7 @@ const ICONS = {
   eye: <><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" /><circle cx="12" cy="12" r="3" /></>,
   trash: <><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></>,
   x: <path d="M18 6 6 18M6 6l12 12" />,
+  arrowRight: <path d="M5 12h14M12 5l7 7-7 7" />,
   plus: <path d="M5 12h14M12 5v14" />,
   search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
   externalLink: <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />,
@@ -724,7 +835,9 @@ function ItemSheet({
               ) : fl.type === "select" ? (
                 <select name={fl.name} defaultValue={String(value(fl.name) ?? "")}>
                   {fl.options!.map((o) => (
-                    <option key={o}>{o}</option>
+                    <option key={o} value={o}>
+                      {o || "Sin envase"}
+                    </option>
                   ))}
                 </select>
               ) : (

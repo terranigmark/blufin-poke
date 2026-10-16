@@ -7,16 +7,8 @@ import { useMenu } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import s from "./menu.module.css";
 
-const TABS = [
-  ["all", "Todo", "All"],
-  ["poke", "Poke", "Poke"],
-  ["beer", "Black Marlin", "Black Marlin"],
-  ["aguas", "Aguas y refrescos", "Water & soft drinks"],
-  ["nac", "Cerveza nacional", "Mexican beer"],
-  ["extras", "Extras", "Extras"],
-] as const;
-type Tab = (typeof TABS)[number][0];
-const isTab = (v: string | null): v is Tab => TABS.some(([id]) => id === v);
+// Each price list from the editor gets its own tab, by its key, between the beers and the extras.
+type Tab = string;
 
 /** The editor's "Marcar como…" badge; sold-out items also get their name struck through (see the CSS). */
 function Badge({ status }: { status?: Status }) {
@@ -46,14 +38,23 @@ function PriceList({ title, items }: { title: string; items: { name: string; nam
 }
 
 export function MenuView() {
-  const { AGUAS, BEERS, HOUSE_BOWLS, MENU_EXTRAS, NACIONAL, SIZES } = useMenu();
-  const [tab, setTab] = useState<Tab>("all");
+  const { BEERS, HOUSE_BOWLS, LISTS, MENU_EXTRAS, SIZES } = useMenu();
+  const [picked, setTab] = useState<Tab>("all");
+  const tabs: [Tab, string, string?][] = [
+    ["all", "Todo", "All"],
+    ["poke", "Poke", "Poke"],
+    ["beer", "Black Marlin", "Black Marlin"],
+    ...LISTS.map((l): [Tab, string, string?] => [l.key, l.name, l.nameEn]),
+    ["extras", "Extras", "Extras"],
+  ];
+  // A deep link to a list that isn't (or isn't yet) on the menu shows everything.
+  const tab = tabs.some(([id]) => id === picked) ? picked : "all";
   const t = useT();
 
   // ?tab=beer etc. lets other pages deep-link into a filtered menu.
   useEffect(() => {
     const t = new URLSearchParams(location.search).get("tab");
-    if (isTab(t)) setTab(t);
+    if (t) setTab(t);
   }, []);
 
   const select = (t: Tab) => {
@@ -78,7 +79,7 @@ export function MenuView() {
 
       <div className={s.tabsBar}>
         <div className={s.tabs}>
-          {TABS.map(([id, label, en]) => (
+          {tabs.map(([id, label, en]) => (
             <button key={id} className={s.tab} aria-pressed={tab === id} onClick={() => select(id)}>
               {t(label, en)}
             </button>
@@ -161,8 +162,7 @@ export function MenuView() {
         )}
 
         <div className={s.lists}>
-          {has("aguas") && <PriceList title={t("Aguas y refrescos", "Water & soft drinks")} items={AGUAS} />}
-          {has("nac") && <PriceList title={t("Cerveza nacional", "Mexican beer")} items={NACIONAL} />}
+          {LISTS.map((l) => has(l.key) && <PriceList key={l.key} title={t(l.name, l.nameEn)} items={l.items} />)}
           {has("extras") && <PriceList title="Extras" items={MENU_EXTRAS} />}
         </div>
       </div>

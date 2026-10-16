@@ -113,8 +113,9 @@ class Drink(MenuItem):
     # The key of a "drinks" Category: aguas, nacional, or a list the manager added.
     category = models.CharField("categoría", max_length=50)
     price = models.PositiveIntegerField("precio (MXN)")
-    size = models.CharField("tamaño", max_length=20, help_text="Ej. 355 ml")
-    pack = models.CharField("envase", max_length=10, choices=PACKS)
+    # Size and pack can be blank in lists that aren't drinks (Category.group "others"), e.g. desserts.
+    size = models.CharField("tamaño", max_length=20, blank=True, help_text="Ej. 355 ml")
+    pack = models.CharField("envase", max_length=10, choices=PACKS, blank=True)
 
     class Meta(MenuItem.Meta):
         verbose_name = "bebida"
@@ -139,8 +140,12 @@ class Category(models.Model):
         ("drinks", "Lista de precios"),
     ]
 
+    # Where the section sits in the editor. Arma tu poke's "Agrega una bebida" offers every list in "drinks".
+    GROUPS = [("poke", "Elementos del poke"), ("drinks", "Bebidas"), ("others", "Otros")]
+
     key = models.SlugField("clave", max_length=50, unique=True)
     kind = models.CharField("tipo", max_length=12, choices=KINDS, default="drinks")
+    group = models.CharField("grupo", max_length=10, choices=GROUPS, default="drinks")
     name = models.CharField("nombre", max_length=60)
     name_en = models.CharField("nombre en inglés", max_length=60, blank=True)
     # Hidden lists leave the public menu and the TV; Arma tu poke's sections can't be hidden.

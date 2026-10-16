@@ -6,7 +6,6 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { BUILD_RESET_EVENT } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import {
-  DRINK_TABS,
   PHOTOS,
   PROTEIN_NOTE,
   PROTEIN_NOTE_EN,
@@ -78,13 +77,13 @@ function gridClass(n: number) {
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export function Builder() {
-  const { SIZES, STEPS, BOWL_EXTRAS, DRINKS, SECOND_PROTEIN_PRICE } = useMenu();
+  const { SIZES, STEPS, BOWL_EXTRAS, DRINKS, DRINK_TABS, SECOND_PROTEIN_PRICE } = useMenu();
   const [step, setStepState] = useState(0);
   const [sel, setSel] = useState<Selection>(emptySelection);
   const [size, setSize] = useState<SizeId | null>(null);
   const [extras, setExtras] = useState<string[]>([]);
   const [drinks, setDrinks] = useState<Record<string, number>>({});
-  const [drinkTab, setDrinkTab] = useState<DrinkCat>("beer");
+  const [tabPicked, setDrinkTab] = useState<DrinkCat>("beer");
   const [order, setOrder] = useState<{ data: OrderData; url: string } | null>(null);
   const { lang } = useLang();
   const t = pick(lang);
@@ -139,6 +138,9 @@ export function Builder() {
   const sizeOf = SIZES.find((z) => z.id === size);
   const sizeName = sizeOf && t(sizeOf.name, sizeOf.nameEn);
   const dsel = drinkLines(t, DRINKS, drinks);
+  // The same drinks as the menu's drinks lists; a list with nothing to order gets no tab.
+  const drinkTabs = DRINK_TABS.filter(([id]) => DRINKS.some((d) => d.cat === id));
+  const drinkTab = drinkTabs.some(([id]) => id === tabPicked) ? tabPicked : drinkTabs[0]?.[0];
   const drinkTotal = Object.values(drinks).reduce((a, b) => a + b, 0);
   const drinkCount = drinkTotal ? t(`${drinkTotal} ${drinkTotal === 1 ? "bebida" : "bebidas"}`, `${drinkTotal} ${drinkTotal === 1 ? "drink" : "drinks"}`) : "";
 
@@ -408,7 +410,7 @@ export function Builder() {
               <h1 className={s.screenTitle}>{t("Agrega una bebida", "Add a drink")}</h1>
               {drinkCount && <span className={`${s.count} ${s.mobileOnly}`}>{drinkCount}</span>}
               <div className={s.drinkTabs}>
-                {DRINK_TABS.map(([id, label, en]) => (
+                {drinkTabs.map(([id, label, en]) => (
                   <button key={id} aria-pressed={drinkTab === id} onClick={() => setDrinkTab(id)}>
                     {t(label, en)}
                   </button>

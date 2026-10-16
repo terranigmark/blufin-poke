@@ -307,6 +307,32 @@
   gap: 12px;
 }
 
+/* Elementos del poke · Bebidas · Otros */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.group + .group {
+  margin-top: 12px;
+}
+.groupTitle {
+  margin: 4px 4px 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.newList {
+  composes: ghost;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-style: dashed;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);

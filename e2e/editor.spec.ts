@@ -160,3 +160,31 @@ test("three house bowls added in the editor show on the home page and the menu",
   await page.goto("/menu/?tab=poke");
   await expect(page.getByText("Picante con atún y aguacate")).toBeVisible();
 });
+
+test("a beer's SRM colour from the editor shows as its tap dot on the menu", async ({ page }) => {
+  await signIn(page);
+  await page.click("button:has-text('American Stout')");
+  await page.getByRole("dialog").getByRole("radio", { name: "SRM 12" }).check({ force: true });
+  await page.click("dialog button:has-text('Guardar cambios')");
+  await expect(page.locator("dialog")).toHaveCount(0);
+
+  await page.goto("/menu/?tab=beer");
+  await expect(page.getByText("Tap 01").locator("+ span")).toHaveCSS("background-color", "rgb(207, 105, 0)");
+});
+
+test("a list added in Otros gets its own section on the menu", async ({ page }) => {
+  await signIn(page);
+  page.on("dialog", (d) => d.accept("Postres"));
+  await page.click("button:has-text('Nueva lista en Otros')");
+  await page.click("button[aria-label='Añadir a Postres']");
+  await page.fill("dialog input[name=name]", "Brownie");
+  await page.fill("dialog input[name=price]", "60");
+  await page.click("dialog button:has-text('Añadir artículo')");
+  await expect(page.locator("dialog")).toHaveCount(0);
+
+  await page.goto("/menu/?tab=postres");
+  await expect(page.getByRole("heading", { name: "Postres" })).toBeVisible();
+  await expect(page.getByText("Brownie")).toBeVisible();
+  const menu = await (await page.request.get(API)).json();
+  expect(menu.categories.find((c: { key: string }) => c.key === "postres").group).toBe("others");
+});

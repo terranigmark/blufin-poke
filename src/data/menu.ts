@@ -312,7 +312,7 @@ export const BEERS: Beer[] = [
 ];
 
 // PLACEHOLDER: "Botella" vs "Lata" was guessed.
-export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata"; status?: Status };
+export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata" | ""; status?: Status };
 
 export const AGUAS: Packaged[] = (
   [
@@ -347,8 +347,18 @@ export const MENU_EXTRAS: { name: string; nameEn?: string; price: number; status
   { name: "Arroz / ensalada / totopos", price: 50 },
 ].map(en);
 
-// Drinks as orderable items in the "Agrega una bebida" step.
-export type DrinkCat = "beer" | "nac" | "aguas";
+/**
+ * A price list, as the editor groups them: "drinks" lists are also offered in Arma tu poke's
+ * "Agrega una bebida"; "others" (desserts, say) only show on the menu.
+ */
+export type PriceList = { key: string; name: string; nameEn?: string; group: "drinks" | "others"; items: Packaged[] };
+export const LISTS: PriceList[] = [
+  { key: "aguas", name: "Aguas y refrescos", nameEn: "Water & soft drinks", group: "drinks", items: AGUAS },
+  { key: "nacional", name: "Cerveza nacional", nameEn: "Mexican beer", group: "drinks", items: NACIONAL },
+];
+
+// Drinks as orderable items in the "Agrega una bebida" step: the tap beers ("beer") and the items of each drinks list (its key).
+export type DrinkCat = string;
 export type Drink = {
   id: string;
   cat: DrinkCat;
@@ -359,9 +369,9 @@ export type Drink = {
   sizes: { k: string; label: string; price: number }[];
 };
 
-export const PACK_EN = { Botella: "Bottle", Lata: "Can" } as const;
+export const PACK_EN = { Botella: "Bottle", Lata: "Can", "": "" } as const;
 
-export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[]): Drink[] => [
+export const drinksFrom = (beers: Beer[], lists: PriceList[]): Drink[] => [
   ...beers.map((b) => ({
     id: "b" + b.tap,
     cat: "beer" as const,
@@ -374,32 +384,27 @@ export const drinksFrom = (beers: Beer[], nacional: Packaged[], aguas: Packaged[
       { k: "16", label: "16 oz", price: b.price16 },
     ],
   })),
-  ...nacional.map((a, i) => ({
-    id: "n" + i,
-    cat: "nac" as const,
-    name: a.name,
-    nameEn: a.nameEn,
-    meta: `${a.pack} · ${a.size}`,
-    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
-    sizes: [{ k: "u", label: "", price: a.price }],
-  })),
-  ...aguas.map((a, i) => ({
-    id: "a" + i,
-    cat: "aguas" as const,
-    name: a.name,
-    nameEn: a.nameEn,
-    meta: `${a.pack} · ${a.size}`,
-    metaEn: `${PACK_EN[a.pack]} · ${a.size}`,
-    sizes: [{ k: "u", label: "", price: a.price }],
-  })),
+  ...lists
+    .filter((l) => l.group === "drinks")
+    .flatMap((l) =>
+      l.items.map((a, i) => ({
+        id: `${l.key}-${i}`,
+        cat: l.key,
+        name: a.name,
+        nameEn: a.nameEn,
+        meta: [a.pack, a.size].filter(Boolean).join(" · "),
+        metaEn: [PACK_EN[a.pack], a.size].filter(Boolean).join(" · "),
+        sizes: [{ k: "u", label: "", price: a.price }],
+      })),
+    ),
 ];
 
-export const DRINKS = drinksFrom(BEERS, NACIONAL, AGUAS);
+export const DRINKS = drinksFrom(BEERS, LISTS);
 
-export const DRINK_TABS: [DrinkCat, string, string][] = [
+/** Arma tu poke's drink tabs: [id, Spanish, English], the tap beers first and then the drinks lists in the menu's order. */
+export const drinkTabs = (lists: PriceList[]): [DrinkCat, string, string][] => [
   ["beer", "Cerveza artesanal", "Craft beer"],
-  ["nac", "Cerveza nacional", "Mexican beer"],
-  ["aguas", "Aguas y refrescos", "Water & soft drinks"],
+  ...lists.filter((l) => l.group === "drinks").map((l): [DrinkCat, string, string] => [l.key, l.name, l.nameEn || l.name]),
 ];
 
 /** Ready-made bowls the manager adds in the editor; none ship with the site. */
@@ -409,5 +414,18 @@ export const HOUSE_BOWLS: HouseBowl[] = [];
 export const money = (n: number) => "$" + n;
 
 /** The editable part of the menu. The website starts from these and swaps in the live menu from the API (src/lib/api.ts). */
-export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, SECOND_PROTEIN_PRICE: secondProteinPrice(MENU_EXTRAS), BEERS, AGUAS, NACIONAL, DRINKS, HOUSE_BOWLS };
+export const MENU = {
+  SIZES,
+  STEPS,
+  BOWL_EXTRAS,
+  MENU_EXTRAS,
+  SECOND_PROTEIN_PRICE: secondProteinPrice(MENU_EXTRAS),
+  BEERS,
+  AGUAS,
+  NACIONAL,
+  LISTS,
+  DRINKS,
+  DRINK_TABS: drinkTabs(LISTS),
+  HOUSE_BOWLS,
+};
 export type Menu = typeof MENU;

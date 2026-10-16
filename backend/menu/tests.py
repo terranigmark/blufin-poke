@@ -290,6 +290,25 @@ class PageSettingsTests(TestCase):
         self.assertEqual(self.call("delete", f"/api/editor/categories/{cat}/").status_code, 204)
         self.assertFalse(Drink.objects.filter(category="cocteles").exists())
 
+    def test_sections_belong_to_poke_drinks_or_others(self):
+        groups = {c["key"]: c["group"] for c in self.client.get("/api/menu/").json()["categories"]}
+        self.assertEqual({k for k, g in groups.items() if g == "poke"}, {"sizes", "base", "protein", "mix", "salsa", "top", "crunch", "extras"})
+        self.assertEqual({k for k, g in groups.items() if g == "drinks"}, {"beers", "aguas", "nacional"})
+
+        # A new list goes in Bebidas or Otros, and its items need no bottle or can.
+        r = self.call("post", "/api/editor/categories/", {"name": "Postres", "group": "others"})
+        self.assertEqual((r.status_code, r.json()["group"]), (201, "others"))
+        r = self.call("post", "/api/editor/drinks/", {"category": "postres", "name": "Brownie", "price": 60, "size": "", "pack": ""})
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(self.call("post", "/api/editor/categories/", {"name": "X", "group": "poke"}).status_code, 400)
+        aguas = Category.objects.get(key="aguas")
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{aguas.pk}/", {"group": "others"}).json()["group"], "others")
+        # Arma tu poke's sections and the beer list stay in their group.
+        base, beers = Category.objects.get(key="base"), Category.objects.get(key="beers")
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{base.pk}/", {"group": "drinks"}).status_code, 400)
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{beers.pk}/", {"group": "others"}).status_code, 400)
+        self.assertEqual(self.call("patch", f"/api/editor/categories/{beers.pk}/", {"group": "drinks", "name": "Black Marlin"}).status_code, 200)
+
     def test_built_in_sections_rename_and_reorder_but_never_go_away(self):
         base = Category.objects.get(key="base")
         r = self.call("patch", f"/api/editor/categories/{base.pk}/", {"name": "Bases", "order": 3, "key": "otra"})
