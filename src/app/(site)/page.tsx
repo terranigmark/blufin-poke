@@ -25,11 +25,13 @@ export default function Home() {
           <div className={s.heroShade} />
           <div className={s.heroInner}>
             <span className={s.heroScript}>{t("Buena comida, cerveza fría, gente de mar", "Good food, cold beer, ocean people")}</span>
-            <h1 className={s.heroTitle}>
-              <span>Poke • Baja</span>
-              <span>Craft Beer</span>
-            </h1>
-            <p className={s.heroLead}>{t("Pesca del día, cerveza de la casa y nada de prisa.", "Catch of the day, house beer and no rush.")}</p>
+            <div className={s.heroHead}>
+              <h1 className={s.heroTitle}>
+                <span>Poke • Baja</span>
+                <span>Craft Beer</span>
+              </h1>
+              <p className={s.heroLead}>{t("Pesca del día, cerveza de la casa y nada de prisa.", "Catch of the day, house beer and no rush.")}</p>
+            </div>
             <div className={s.heroCtas}>
               <Link href="/arma-tu-poke" className={`${s.heroCta} ${s.heroCtaSolid}`}>
                 {t("Arma tu poke", "Build your poke")}<span className={s.arrow}>→</span>
