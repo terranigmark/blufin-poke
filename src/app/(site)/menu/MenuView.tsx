@@ -46,7 +46,7 @@ function PriceList({ title, items }: { title: string; items: { name: string; nam
 }
 
 export function MenuView() {
-  const { AGUAS, BEERS, MENU_EXTRAS, NACIONAL, SIZES } = useMenu();
+  const { AGUAS, BEERS, HOUSE_BOWLS, MENU_EXTRAS, NACIONAL, SIZES } = useMenu();
   const [tab, setTab] = useState<Tab>("all");
   const t = useT();
 
@@ -105,6 +105,22 @@ export function MenuView() {
             <Link href="/arma-tu-poke" className={s.pokeCta}>
               {t("Arma tu poke", "Build your poke")} →
             </Link>
+            {HOUSE_BOWLS.length > 0 && (
+              <div className={s.sizes}>
+                <h3 className={s.casaHead}>{t("Bowls de la casa", "House bowls")}</h3>
+                {HOUSE_BOWLS.map((b) => (
+                  <div key={b.id} className={s.sizeRow} data-status={b.status || undefined}>
+                    <span>
+                      <span className={s.sizeName}>
+                        {t(b.name, b.nameEn)} <Badge status={b.status} />
+                      </span>
+                      {b.desc && <span className={s.casaDesc}>{t(b.desc, b.descEn)}</span>}
+                    </span>
+                    <span className={s.sizePrice}>{money(b.price)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         )}
 

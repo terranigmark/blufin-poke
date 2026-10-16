@@ -1,5 +1,6 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { BUSINESS } from "@/data/menu";
 import { LanguageProvider } from "@/lib/i18n";
 import Home from "./page";
 
@@ -23,5 +24,23 @@ describe("Home hero", () => {
       </LanguageProvider>,
     );
     expect(await screen.findByText("Good food, cold beer, ocean people")).toBeInTheDocument();
+  });
+
+  it("leaves Bowls de la casa out until the editor has three", () => {
+    render(<Home />);
+    expect(screen.queryByText("Bowls de la casa")).not.toBeInTheDocument();
+  });
+
+  it("has a text band after the hero and another before the footer", () => {
+    render(<Home />);
+    expect(screen.getAllByTestId("text-band")).toHaveLength(2);
+  });
+
+  it("ends the visit section with one button and the email as a plain link", () => {
+    render(<Home />);
+    const visit = screen.getByRole("heading", { name: "Ven a vernos" }).parentElement!;
+    const email = within(visit).getByRole("link", { name: BUSINESS.email });
+    expect(email).toHaveAttribute("href", `mailto:${BUSINESS.email}`);
+    expect(email.className).toMatch(/visitEmail/);
   });
 });

@@ -23,6 +23,7 @@ export type BeerRow = Row & {
   description: string;
   description_en: string;
 };
+export type BowlRow = Row & { price: number; description: string; description_en: string; image_url: string };
 export type DrinkRow = Row & { category: "aguas" | "nacional"; price: number; size: string; pack: "Botella" | "Lata" };
 
 export type MenuRows = {
@@ -31,6 +32,7 @@ export type MenuRows = {
   extras: ExtraRow[];
   beers: BeerRow[];
   drinks: DrinkRow[];
+  bowls: BowlRow[];
 };
 export type Kind = keyof MenuRows;
 
@@ -74,6 +76,17 @@ export function toMenu(m: MenuRows): Menu {
     AGUAS,
     NACIONAL,
     DRINKS: drinksFrom(BEERS.filter(orderable), NACIONAL.filter(orderable), AGUAS.filter(orderable)),
+    // `?? []`: a backend from before house bowls simply has none.
+    HOUSE_BOWLS: (m.bowls ?? []).map((b) => ({
+      id: b.id,
+      name: b.name,
+      nameEn: b.name_en || undefined,
+      desc: b.description,
+      descEn: b.description_en || undefined,
+      price: b.price,
+      img: b.image_url || null,
+      status: b.status,
+    })),
   };
 }
 

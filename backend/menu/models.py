@@ -75,6 +75,19 @@ class Extra(MenuItem):
         verbose_name_plural = "extras"
 
 
+class HouseBowl(MenuItem):
+    """A ready-made bowl. The first three on the menu show on the home page as "Bowls de la casa"."""
+
+    price = models.PositiveIntegerField("precio (MXN)")
+    description = models.CharField("descripción", max_length=200, blank=True)
+    description_en = models.CharField("descripción en inglés", max_length=200, blank=True)
+    image_url = models.URLField("foto (URL)", blank=True)
+
+    class Meta(MenuItem.Meta):
+        verbose_name = "bowl de la casa"
+        verbose_name_plural = "bowls de la casa"
+
+
 class Beer(MenuItem):
     tap = models.CharField("grifo", max_length=4, unique=True)
     style = models.CharField("estilo", max_length=60)

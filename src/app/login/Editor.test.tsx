@@ -19,6 +19,7 @@ const ROWS: MenuRows = {
   extras: [],
   beers: [{ id: 2, tap: "01", name: "American Stout", name_en: "", style: "Stout", abv: "5.2%", price_12: 100, price_16: 120, color: "#2A1810", description: "", description_en: "", available: true, order: 0 }],
   drinks: [],
+  bowls: [],
 };
 
 /** A fake API: GET editor/ returns ROWS, PATCH echoes the row back merged. */

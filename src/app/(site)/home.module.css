@@ -302,6 +302,77 @@
   letter-spacing: 0.03em;
 }
 
+/* ---------- Bowls de la casa (only with three bowls in the editor) */
+.casa {
+  padding: clamp(40px, 7vw, 96px) clamp(16px, 4vw, 40px) clamp(56px, 9vw, 112px);
+}
+.casaInner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(28px, 4vw, 48px);
+}
+.casaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: clamp(20px, 3vw, 32px);
+}
+.casaCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.casaPhoto {
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--navy-2);
+}
+.casaPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .casaPhoto img {
+    transition: transform 0.5s var(--ease-out);
+  }
+  .casaCard:hover .casaPhoto img {
+    transform: scale(1.04);
+  }
+}
+.casaText {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+.casaText h3 {
+  margin: 0;
+  font-family: var(--bebas);
+  font-weight: 400;
+  font-size: clamp(30px, 3vw, 38px);
+  line-height: 1;
+}
+.casaPrice {
+  font-family: var(--bebas);
+  font-size: 26px;
+  color: var(--blue);
+}
+.casaCard p {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.casaCta {
+  display: flex;
+  justify-content: center;
+}
+
 /* ---------- Esencia + Ubicación */
 .esencia,
 .ubicacion {
@@ -361,8 +432,7 @@
   line-height: 0.9;
 }
 .navyPill,
-.navyPillSm,
-.outlinePillSm {
+.navyPillSm {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
@@ -392,11 +462,10 @@
   color: var(--cream);
   font-size: 22px;
 }
-.outlinePillSm {
-  min-height: 52px;
-  padding: 12px 26px 10px;
-  border: 2px solid var(--navy);
-  font-size: 22px;
+/* One button per section: the email is a plain link beside "Cómo llegar". */
+.visitEmail {
+  font-size: 17px;
+  font-weight: 600;
 }
 .map {
   border-radius: 20px;
@@ -438,7 +507,8 @@
 .visitCtas {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  align-items: center;
+  gap: 12px 24px;
 }
 
 /* Press feedback on the link-styled buttons (real <button>s get it from globals.css). */

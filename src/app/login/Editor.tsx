@@ -23,6 +23,7 @@ import {
   signIn,
   signOut,
   type BeerRow,
+  type BowlRow,
   type DrinkRow,
   type ExtraRow,
   type IngredientRow,
@@ -69,6 +70,14 @@ const FIELDS: Record<Kind, Field[]> = {
     { name: "description", label: "Descripción", type: "textarea" },
     { name: "description_en", label: "Descripción en inglés", type: "textarea", hint: "Opcional. Si la dejas vacía, se usa la descripción en español." },
   ],
+  bowls: [
+    NAME,
+    NAME_EN,
+    PRICE,
+    { name: "description", label: "Descripción", type: "textarea", hint: "Ej. Atún, aguacate, pepino y salsa ponzu." },
+    { name: "description_en", label: "Descripción en inglés", type: "textarea", optional: true, hint: "Opcional. Si la dejas vacía, se usa la descripción en español." },
+    { name: "image_url", label: "Foto (URL)", type: "url", optional: true, hint: "Opcional. Enlace a una imagen." },
+  ],
   drinks: [NAME, NAME_EN, PRICE, { name: "size", label: "Tamaño", hint: "Ej. 355 ml" }, { name: "pack", label: "Envase", type: "select", options: ["Botella", "Lata"] }],
 };
 
@@ -85,6 +94,8 @@ const priced = (r: AnyRow) => money((r as ExtraRow).price);
 
 const SECTIONS: Section[] = [
   { id: "sizes", title: "Tamaños de bowl", kind: "sizes", sub: priced },
+  // The first three visible ones show on the home page; fewer than three and that section stays hidden.
+  { id: "bowls", title: "Bowls de la casa", kind: "bowls", sub: (r) => priced(r) + ((r as BowlRow).image_url ? " · Con foto" : " · Sin foto") },
   ...STEPS.map((st) => ({
     id: st.key,
     title: st.short,
@@ -531,7 +542,7 @@ function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRo
       )}
       {sec.kind === "beers" ? (
         <span className={s.dot} style={{ background: (r as BeerRow).color }} />
-      ) : sec.kind === "ingredients" ? (
+      ) : sec.kind === "ingredients" || sec.kind === "bowls" ? (
         (r as IngredientRow).image_url ? <img className={s.thumb} src={(r as IngredientRow).image_url} alt="" /> : <span className={s.thumb} />
       ) : null}
       <button className={s.rowMain} onClick={onEdit}>

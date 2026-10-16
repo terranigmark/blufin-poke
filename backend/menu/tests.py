@@ -4,7 +4,7 @@ from django.test import TestCase, override_settings
 
 import base64
 
-from .models import Beer, Category, Drink, Highlight, Ingredient, Size
+from .models import Beer, Category, Drink, Highlight, HouseBowl, Ingredient, Size
 
 User = get_user_model()
 PASSWORD = "una-clave-larga-123"
@@ -99,6 +99,26 @@ class MenuApiTests(TestCase):
         stout = next(b for b in data["beers"] if b["tap"] == "01")
         self.assertEqual(stout["description_en"], "Roasted coffee, bitter cocoa and a silky body.")
         self.assertTrue(all(d["name_en"] for d in data["drinks"] if d["category"] == "aguas" and d["name"].startswith("Agua")))
+
+    def test_editor_adds_house_bowls_and_the_public_menu_lists_visible_ones(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        self.assertEqual(self.client.get("/api/menu/").json()["bowls"], [])
+        response = self.client.post(
+            "/api/editor/bowls/",
+            {"name": "Clásico", "name_en": "Classic", "price": 215, "description": "Atún, aguacate y ponzu", "order": 0},
+            content_type="application/json",
+            **self.auth("mesera@blufin.mx"),
+        )
+        self.assertEqual(response.status_code, 201)
+        HouseBowl.objects.create(name="Oculto", price=200, available=False, order=1)
+        bowls = self.client.get("/api/menu/").json()["bowls"]
+        self.assertEqual([(b["name"], b["name_en"], b["price"]) for b in bowls], [("Clásico", "Classic", 215)])
+        self.assertEqual(len(self.client.get("/api/editor/", **self.auth("mesera@blufin.mx")).json()["bowls"]), 2)
+
+    def test_only_editors_add_house_bowls(self):
+        response = self.client.post("/api/editor/bowls/", {"name": "X", "price": 1}, content_type="application/json")
+        self.assertIn(response.status_code, (401, 403))
+        self.assertFalse(HouseBowl.objects.exists())
 
     def test_editor_saves_english_name(self):
         User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)

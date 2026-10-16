@@ -20,7 +20,7 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
-from .models import Beer, Category, Drink, Extra, Highlight, Ingredient, Settings, Size
+from .models import Beer, Category, Drink, Extra, Highlight, HouseBowl, Ingredient, Settings, Size
 
 
 class IsMenuEditor(permissions.BasePermission):
@@ -79,7 +79,7 @@ def serializer_for(model):
     return type(f"{model.__name__}Serializer", (MenuItemSerializer,), attrs)
 
 
-MODELS = {"sizes": Size, "ingredients": Ingredient, "extras": Extra, "beers": Beer, "drinks": Drink}
+MODELS = {"sizes": Size, "ingredients": Ingredient, "extras": Extra, "beers": Beer, "drinks": Drink, "bowls": HouseBowl}
 SERIALIZERS = {name: serializer_for(model) for name, model in MODELS.items()}
 
 
