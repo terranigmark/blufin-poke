@@ -41,7 +41,7 @@ test.describe("with reduced motion", () => {
 
 test("on a phone, the odd last craving tile spans the row instead of leaving a hole", async ({ page }) => {
   await page.goto("/");
-  const tiles = page.locator("a[href]").filter({ has: page.locator("img") }).filter({ hasText: /Extras|Bebidas|Cerveza/ });
+  const tiles = page.locator("a[href]").filter({ has: page.locator("img") }).filter({ hasText: /Extras|Bebidas|Drinks|Cerveza|Craft/ });
   await expect(tiles).toHaveCount(3);
   const [a, b, c] = await Promise.all([0, 1, 2].map(async (i) => (await tiles.nth(i).boundingBox())!));
   expect(Math.round(c.width)).toBe(Math.round(b.x + b.width - a.x));
