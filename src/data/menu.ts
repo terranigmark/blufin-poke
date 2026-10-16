@@ -237,8 +237,6 @@ export const STEPS: Step[] = [
   },
 ];
 
-/** Shown when a second protein is picked. */
-export const SECOND_PROTEIN_PRICE = 25;
 /** From this many salsas on, a "we recommend up to 2" note appears. */
 export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
@@ -270,6 +268,10 @@ export const BOWL_EXTRAS: Extra[] = [
   { id: "xwak", name: "Wakame", price: 20 },
   { id: "xcan", name: "Cangrejo", price: 20 },
 ].map(en);
+
+/** Shown when a second protein is picked: the price of the "Proteína" extra on the menu, or none when it isn't there. */
+export const secondProteinPrice = (extras: { id?: string; name: string; price: number }[]): number | null =>
+  extras.find((e) => e.id === "xprot" || e.name === "Proteína")?.price ?? null;
 
 // ---------------------------------------------------------------- Drinks
 
@@ -407,5 +409,5 @@ export const HOUSE_BOWLS: HouseBowl[] = [];
 export const money = (n: number) => "$" + n;
 
 /** The editable part of the menu. The website starts from these and swaps in the live menu from the API (src/lib/api.ts). */
-export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, BEERS, AGUAS, NACIONAL, DRINKS, HOUSE_BOWLS };
+export const MENU = { SIZES, STEPS, BOWL_EXTRAS, MENU_EXTRAS, SECOND_PROTEIN_PRICE: secondProteinPrice(MENU_EXTRAS), BEERS, AGUAS, NACIONAL, DRINKS, HOUSE_BOWLS };
 export type Menu = typeof MENU;

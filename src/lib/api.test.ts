@@ -37,6 +37,13 @@ describe("toMenu", () => {
     expect(m.NACIONAL[0].name).toBe("Modelo");
     expect(m.DRINKS.map((d) => d.id)).toEqual(["b01", "n0", "a0"]);
   });
+
+  it("prices the second protein like the menu's Proteína extra, and leaves the price out without one", () => {
+    expect(toMenu(ROWS).SECOND_PROTEIN_PRICE).toBeNull();
+    const prot = { id: 9, key: "xprot", name: "Proteína", name_en: "", price: 30, in_builder: true, available: true, order: 2 };
+    expect(toMenu({ ...ROWS, extras: [...ROWS.extras, prot] }).SECOND_PROTEIN_PRICE).toBe(30);
+    expect(MENU.SECOND_PROTEIN_PRICE).toBe(25);
+  });
 });
 
 describe("toMenu statuses", () => {

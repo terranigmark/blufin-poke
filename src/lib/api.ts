@@ -3,7 +3,7 @@
 // The Django backend (backend/): the live menu the site shows, and the editor at /login.
 
 import { useEffect, useState } from "react";
-import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, orderable, type Menu, type Status, type StepKey } from "@/data/menu";
+import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, orderable, secondProteinPrice, type Menu, type Status, type StepKey } from "@/data/menu";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.blufinpoke.com").replace(/\/$/, "");
 
@@ -71,6 +71,7 @@ export function toMenu(m: MenuRows): Menu {
     })),
     // Arma tu poke only offers what can be ordered now; /menu lists everything with its badge.
     BOWL_EXTRAS: m.extras.filter((e) => e.in_builder && orderable(e)).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, nameEn: en(e.name, e.name_en), price: e.price })),
+    SECOND_PROTEIN_PRICE: secondProteinPrice(m.extras.map((e) => ({ ...e, id: e.key }))),
     MENU_EXTRAS: m.extras.map(({ name, name_en, price, status }) => ({ name, nameEn: en(name, name_en), price, status })),
     BEERS,
     AGUAS,

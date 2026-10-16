@@ -11,7 +11,6 @@ import {
   PROTEIN_NOTE,
   PROTEIN_NOTE_EN,
   SALSA_RECOMMENDED_MAX,
-  SECOND_PROTEIN_PRICE,
   money,
   orderable,
   type Drink,
@@ -79,7 +78,7 @@ function gridClass(n: number) {
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 export function Builder() {
-  const { SIZES, STEPS, BOWL_EXTRAS, DRINKS } = useMenu();
+  const { SIZES, STEPS, BOWL_EXTRAS, DRINKS, SECOND_PROTEIN_PRICE } = useMenu();
   const [step, setStepState] = useState(0);
   const [sel, setSel] = useState<Selection>(emptySelection);
   const [size, setSize] = useState<SizeId | null>(null);
@@ -274,7 +273,8 @@ export function Builder() {
                   {st.key === "protein" && sel.protein.length > 1 && (
                     <span className={s.notice}>
                       <span>+</span>
-                      {t("La segunda proteína tiene costo extra", "The second protein costs extra")}: +{money(SECOND_PROTEIN_PRICE)}
+                      {t("La segunda proteína tiene costo extra", "The second protein costs extra")}
+                      {SECOND_PROTEIN_PRICE !== null && `: +${money(SECOND_PROTEIN_PRICE)}`}
                     </span>
                   )}
                   {st.key === "salsa" && sel.salsa.length > SALSA_RECOMMENDED_MAX && (
