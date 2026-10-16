@@ -47,6 +47,13 @@
   font-size: 7px;
   letter-spacing: 0.12em;
 }
+/* An uploaded logo, at the lettering's height. */
+.logoImg {
+  height: 46px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
 .divider {
   width: 1px;
   height: 34px;

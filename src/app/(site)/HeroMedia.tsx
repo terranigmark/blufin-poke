@@ -1,16 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { mediaUrl } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import s from "./home.module.css";
 
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
-const VIDEO = `${BASE}/video/hero-waves.mp4`;
-const POSTER = `${BASE}/video/hero-waves-poster.jpg`;
-
-// Muted, looping background clip with a parallax drift. The poster (the clip's first
-// frame) shows while it loads, and is all that shows under prefers-reduced-motion.
-export function HeroMedia() {
+// Muted, looping background clip with a parallax drift. The picture shows while it
+// loads, and is all that shows under prefers-reduced-motion. Either can be left empty in /admin.
+export function HeroMedia({ image, video }: { image: string; video: string }) {
   const wrap = useRef<HTMLDivElement>(null);
   const [motion, setMotion] = useState(false);
   const t = useT();
@@ -38,9 +35,9 @@ export function HeroMedia() {
 
   return (
     <div ref={wrap} className={s.heroMedia}>
-      <img src={POSTER} alt={t("Olas al atardecer en la playa", "Waves at sunset on the beach")} className={s.heroImg} fetchPriority="high" />
-      {motion && (
-        <video className={s.heroImg} src={VIDEO} poster={POSTER} autoPlay muted loop playsInline aria-hidden="true" />
+      {image && <img src={mediaUrl(image)} alt={t("Olas al atardecer en la playa", "Waves at sunset on the beach")} className={s.heroImg} fetchPriority="high" />}
+      {motion && video && (
+        <video key={video} className={s.heroImg} src={mediaUrl(video)} poster={image ? mediaUrl(image) : undefined} autoPlay muted loop playsInline aria-hidden="true" />
       )}
     </div>
   );

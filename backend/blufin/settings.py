@@ -113,6 +113,9 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
 
 # --- API (same stack as Cervesoft: DRF + Simple JWT) ---
+# Home page videos arrive as data: URLs of up to 12 MB (16 MB once base64-encoded).
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20_000_000
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ("rest_framework_simplejwt.authentication.JWTAuthentication",),
     "DEFAULT_THROTTLE_RATES": {"login": "10/min"},

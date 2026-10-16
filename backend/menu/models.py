@@ -199,3 +199,37 @@ class Highlight(models.Model):
         ordering = ("order", "id")
         verbose_name = "destacado"
         verbose_name_plural = "destacados"
+
+
+class Landing(models.Model):
+    """The home page's editable content: one row, a JSON object per section ("header", "hero", "belt").
+
+    Texts come in pairs, `x` in Spanish and `x_en` in English (empty shows the Spanish).
+    Pictures and videos are links: uploads (`/api/media/<id>/`), site files (`/video/…`) or https.
+    The shape of each section is checked by its serializer in api.py.
+    """
+
+    content = models.JSONField("contenido", default=dict)
+
+    class Meta:
+        verbose_name = verbose_name_plural = "página de inicio"
+
+    @classmethod
+    def get(cls):
+        return cls.objects.get_or_create(pk=1)[0]
+
+
+class Media(models.Model):
+    """A picture or video uploaded for the home page, stored here like highlights (Koyeb's disk doesn't survive a deploy)."""
+
+    data = models.BinaryField()
+    content_type = models.CharField(max_length=20)
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "archivo"
+        verbose_name_plural = "archivos"
+
+    @property
+    def src(self):
+        return f"/api/media/{self.pk}/"

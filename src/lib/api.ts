@@ -3,6 +3,7 @@
 // The Django backend (backend/): the live menu the site shows, and the editor at /login.
 
 import { useEffect, useState } from "react";
+import { LANDING, type Landing } from "@/data/landing";
 import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, orderable, type Menu, type Status, type StepKey } from "@/data/menu";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.blufinpoke.com").replace(/\/$/, "");
@@ -33,8 +34,10 @@ export type MenuRows = {
   beers: BeerRow[];
   drinks: DrinkRow[];
   bowls: BowlRow[];
+  /** Missing on a backend from before the home page was editable, or sections it doesn't have yet. */
+  landing?: Partial<Landing>;
 };
-export type Kind = keyof MenuRows;
+export type Kind = Exclude<keyof MenuRows, "landing">;
 
 /** API rows → the shapes src/data/menu.ts exports, so pages need no other change. */
 // English left blank in the editor (or a backend without it yet) falls back to the bundled
@@ -91,22 +94,33 @@ export function toMenu(m: MenuRows): Menu {
 }
 
 // One request per page load, shared by every component that asks.
-let live: Promise<Menu> | null = null;
-let liveMenu: Menu | null = null;
+type Live = { menu: Menu; landing: Landing };
+let live: Promise<Live> | null = null;
+let cached: Live | null = null;
 
-/** The live menu; shows the bundled one until the API answers, and keeps it if the API is down. */
-export function useMenu(): Menu {
-  const [menu, setMenu] = useState<Menu>(liveMenu ?? MENU);
+function useLive(): Live | null {
+  const [value, setValue] = useState(cached);
   useEffect(() => {
     live ??= fetch(`${API_URL}/api/menu/`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((rows: MenuRows) => (liveMenu = toMenu(rows)));
-    live.then(setMenu, () => {
+      .then((rows: MenuRows) => (cached = { menu: toMenu(rows), landing: { ...LANDING, ...rows.landing } }));
+    live.then(setValue, () => {
       live = null; // try again on the next page
     });
   }, []);
-  return menu;
+  return value;
 }
+
+/** The live menu; shows the bundled one until the API answers, and keeps it if the API is down. */
+export const useMenu = (): Menu => useLive()?.menu ?? MENU;
+
+/** The home page as edited in /admin, the same way. */
+export const useLanding = (): Landing => useLive()?.landing ?? LANDING;
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+/** Where a home page picture or video loads from: uploads live on the API, "/video/…" ships with the site. */
+export const mediaUrl = (src: string) => (src.startsWith("/api/") ? API_URL + src : src.startsWith("/") ? BASE + src : src);
 
 // ---------------------------------------------------------------- Editor auth (same scheme as Cervesoft's taplist-admin)
 

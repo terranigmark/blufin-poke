@@ -15,6 +15,7 @@ import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { LANDING, type Landing } from "@/data/landing";
 import { STATUS_LABELS, STEPS, money, type Status } from "@/data/menu";
 import {
   ApiError,
@@ -31,6 +32,7 @@ import {
   type MenuRows,
 } from "@/lib/api";
 import s from "./editor.module.css";
+import { LandingCards, type LandingSection } from "./LandingCards";
 
 /*
  * The manager's menu editor, a copy of Cervesoft's /taplist-admin (cervesoft-frontend
@@ -250,6 +252,8 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const [loadError, setLoadError] = useState("");
   const [save, setSave] = useState<Save>("idle");
   const [search, setSearch] = useState("");
+  // "Menú" or the home page's cards ("Página de inicio").
+  const [view, setView] = useState<"menu" | "inicio">("menu");
   // Sections start open, as in Cervesoft; this remembers the ones folded away.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // The round + button adds to the section used last.
@@ -323,6 +327,26 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       fail(err);
       return false;
     }
+  };
+
+  /** One home page card, saved whole; Deshacer puts back the version before it. */
+  const putLanding = async (id: LandingSection, value: Landing[LandingSection]) => {
+    setSave("saving");
+    try {
+      const landing = await editorFetch<Landing>("editor/landing/", { method: "PATCH", body: JSON.stringify({ [id]: value }) });
+      setData((d) => d && { ...d, landing });
+      setSave("saved");
+      return true;
+    } catch (err) {
+      fail(err);
+      return false;
+    }
+  };
+  const saveLanding = async (id: LandingSection, value: Landing[LandingSection]) => {
+    const old = landing[id];
+    const ok = await putLanding(id, value);
+    if (ok) setUndo({ label: "Guardaste la página de inicio", run: () => putLanding(id, old) });
+    return ok;
   };
 
   /** A dropped row: renumber the section so every item has its own position. */
@@ -409,6 +433,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       </main>
     );
 
+  const landing = { ...LANDING, ...data.landing };
   const total = SECTIONS.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
   const add = (sec: Section) => setSheet({ sec, row: { ...blank(sec.kind, rowsOf(data, sec)), ...sec.where } });
 
@@ -430,19 +455,43 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
             <RowMenu label="Más" actions={[["Salir", "logOut", onSignOut]]} />
           </div>
         </div>
-        <div className={s.searchBox}>
-          <Icon name="search" />
-          <input type="search" placeholder="Buscar artículos" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar artículos" />
-          {search && (
-            <button onClick={() => setSearch("")} aria-label="Borrar búsqueda">
-              <Icon name="x" />
+        <div className={s.tabs} role="tablist">
+          {(
+            [
+              ["menu", "Menú"],
+              ["inicio", "Página de inicio"],
+            ] as const
+          ).map(([v, label]) => (
+            <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}>
+              {label}
             </button>
-          )}
+          ))}
         </div>
+        {view === "menu" && (
+          <div className={s.searchBox}>
+            <Icon name="search" />
+            <input type="search" placeholder="Buscar artículos" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar artículos" />
+            {search && (
+              <button onClick={() => setSearch("")} aria-label="Borrar búsqueda">
+                <Icon name="x" />
+              </button>
+            )}
+          </div>
+        )}
       </header>
 
       <main className={s.main}>
-        {groups.map(({ sec, all, rows }) => {
+        {view === "inicio" && (
+          <>
+            {typeof save === "object" && (
+              <p className={s.error} role="alert">
+                {save.error}
+              </p>
+            )}
+            <LandingCards landing={landing} onSave={saveLanding} />
+          </>
+        )}
+        {view === "menu" && groups.map(({ sec, all, rows }) => {
           const expanded = !!term || !collapsed[sec.id];
           const hidden = all.filter((r) => !r.available).length;
           // Beers stay in tap order, and a filtered list has gaps, so neither can be dragged.
@@ -498,7 +547,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
             </section>
           );
         })}
-        {groups.length === 0 && <p className={s.muted}>Nada coincide con “{search}”.</p>}
+        {view === "menu" && groups.length === 0 && <p className={s.muted}>Nada coincide con “{search}”.</p>}
       </main>
 
       {sheet && (
@@ -517,9 +566,11 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <button onClick={runUndo}>Deshacer</button>
         </div>
       )}
-      <button className={s.fab} aria-label="Añadir artículo" onClick={() => add(lastSection.current)}>
-        <Icon name="plus" />
-      </button>
+      {view === "menu" && (
+        <button className={s.fab} aria-label="Añadir artículo" onClick={() => add(lastSection.current)}>
+          <Icon name="plus" />
+        </button>
+      )}
     </div>
   );
 }

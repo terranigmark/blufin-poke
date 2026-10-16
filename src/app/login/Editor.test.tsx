@@ -1,6 +1,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { LANDING, type Landing } from "@/data/landing";
 import { API_URL, type MenuRows } from "@/lib/api";
 import { AdminPage, LoginPage } from "./Editor";
 
@@ -285,5 +286,109 @@ describe("/admin", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Ocultar del menú" }));
     expect(await screen.findByText("El servidor no respondió. Intenta de nuevo en un momento.")).toBeInTheDocument();
     expect(screen.queryByText(/· Oculto$/)).not.toBeInTheDocument();
+  });
+
+  describe("Página de inicio", () => {
+    /** The API's answer to a landing PATCH: the stored content with the sent sections replaced. */
+    const landingApi = () => {
+      let stored: Landing = LANDING;
+      return api((url, init) => {
+        if (url !== `${API_URL}/api/editor/landing/`) return undefined;
+        stored = { ...stored, ...JSON.parse(String(init!.body)) };
+        return json(stored);
+      });
+    };
+    const lastBody = (fetch: ReturnType<typeof api>) => JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body));
+    // Every Guardar asks first; these tests say yes unless they say otherwise.
+    const confirm = vi.fn(() => true);
+    beforeEach(() => {
+      confirm.mockClear();
+      vi.stubGlobal("confirm", confirm);
+    });
+
+    it("asks before publishing, and saying no saves nothing", async () => {
+      signedIn();
+      const fetch = landingApi();
+      confirm.mockReturnValueOnce(false);
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      const hero = screen.getByRole("form", { name: "Portada" });
+      await userEvent.type(within(hero).getByLabelText("Frase"), "!");
+      const calls = fetch.mock.calls.length;
+      await userEvent.click(within(hero).getByRole("button", { name: "Guardar" }));
+
+      expect(confirm).toHaveBeenCalledWith("¿Publicar los cambios de “Portada” en la página de inicio?");
+      expect(fetch.mock.calls).toHaveLength(calls);
+      expect(within(hero).getByLabelText("Frase")).toHaveValue(LANDING.hero.slogan + "!"); // the edit stays in the form
+    });
+
+    it("saves the hero's texts, and Deshacer puts the old ones back", async () => {
+      signedIn();
+      const fetch = landingApi();
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+
+      const hero = screen.getByRole("form", { name: "Portada" });
+      const save = within(hero).getByRole("button", { name: "Guardar" });
+      expect(save).toBeDisabled(); // nothing changed yet
+      const slogan = within(hero).getByLabelText("Frase");
+      expect(slogan).toHaveValue(LANDING.hero.slogan);
+      await userEvent.clear(slogan);
+      await userEvent.type(slogan, "Olas y poke");
+      await userEvent.click(save);
+
+      await screen.findByText("Guardaste la página de inicio");
+      expect(lastBody(fetch)).toEqual({ hero: { ...LANDING.hero, slogan: "Olas y poke" } });
+      expect(within(screen.getByRole("form", { name: "Portada" })).getByLabelText("Frase")).toHaveValue("Olas y poke");
+
+      await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+      await waitFor(() => expect(within(screen.getByRole("form", { name: "Portada" })).getByLabelText("Frase")).toHaveValue(LANDING.hero.slogan));
+      expect(lastBody(fetch)).toEqual({ hero: LANDING.hero });
+    });
+
+    it("adds, moves and removes the belt's texts", async () => {
+      signedIn();
+      const fetch = landingApi();
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      const belt = screen.getByRole("form", { name: "Franja animada" });
+
+      await userEvent.click(within(belt).getByRole("button", { name: "Quitar texto 1" })); // Poke
+      await userEvent.click(within(belt).getByRole("button", { name: "Bajar texto 1" })); // Baja below Craft Beer
+      await userEvent.click(within(belt).getByRole("button", { name: "+ Añadir texto" }));
+      await userEvent.type(within(belt).getByLabelText("Texto 5"), "Mar");
+      await userEvent.type(within(belt).getByLabelText("Texto 5 en inglés"), "Sea");
+      await userEvent.click(within(belt).getByRole("button", { name: "Guardar" }));
+
+      await screen.findByText("Guardaste la página de inicio");
+      expect(lastBody(fetch).belt.words.map((w: { text: string }) => w.text)).toEqual(["Craft Beer", "Baja", "Pesca del día", "Black Marlin", "Mar"]);
+      expect(lastBody(fetch).belt.words[4]).toEqual({ text: "Mar", text_en: "Sea" });
+    });
+
+    it("uploads a new hero video, and Quitar leaves the picture alone", async () => {
+      signedIn();
+      const fetch = landingApi();
+      render(<AdminPage />);
+      await userEvent.click(await screen.findByRole("tab", { name: "Página de inicio" }));
+      const hero = screen.getByRole("form", { name: "Portada" });
+
+      fetch.mockImplementationOnce(async () => json({ src: "/api/media/7/" }, 201));
+      await userEvent.upload(within(hero).getByLabelText("Video: subir archivo"), new File(["mp4"], "olas.mp4", { type: "video/mp4" }));
+      await waitFor(() => expect(hero.querySelector("video")).toHaveAttribute("src", `${API_URL}/api/media/7/`));
+      const [url, init] = fetch.mock.calls.at(-1)!;
+      expect(url).toBe(`${API_URL}/api/editor/media/`);
+      expect(JSON.parse(String(init!.body)).file).toMatch(/^data:video\/mp4;base64,/);
+
+      await userEvent.click(within(hero).getByRole("button", { name: "Guardar" }));
+      await screen.findByText("Guardaste la página de inicio");
+      expect(lastBody(fetch).hero).toMatchObject({ video: "/api/media/7/", image: LANDING.hero.image });
+
+      // Quitar the video: the picture shows alone.
+      const saved = screen.getByRole("form", { name: "Portada" });
+      await userEvent.click(within(saved).getAllByRole("button", { name: "Quitar" })[1]);
+      await userEvent.click(within(saved).getByRole("button", { name: "Guardar" }));
+      await waitFor(() => expect(lastBody(fetch).hero).toMatchObject({ video: "", image: LANDING.hero.image }));
+    });
   });
 });
