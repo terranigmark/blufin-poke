@@ -150,6 +150,8 @@ describe("/admin", () => {
       "Ocultar del menú",
       "Eliminar",
     ]);
+    // Every option carries an icon, as in Cervesoft.
+    expect(within(screen.getByRole("menu")).getAllByRole("menuitem").every((b) => b.querySelector("svg"))).toBe(true);
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("menu")).not.toBeInTheDocument();
 

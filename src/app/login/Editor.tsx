@@ -102,12 +102,12 @@ const SECTIONS: Section[] = [
 ];
 
 /** "Marcar como…" in the ⋮ menu, Cervesoft's order; "" is plain available. */
-const STATUSES: [Status, string][] = [
-  ["", "disponible"],
-  ["agotado", "agotado"],
-  ["proximamente", "próximamente"],
-  ["por_agotarse", "por agotarse"],
-  ["novedad", "novedad"],
+const STATUSES: [Status, string, IconName][] = [
+  ["", "disponible", "check"],
+  ["agotado", "agotado", "ban"],
+  ["proximamente", "próximamente", "hourglass"],
+  ["por_agotarse", "por agotarse", "flame"],
+  ["novedad", "novedad", "sparkles"],
 ];
 const statusLabel = (st?: Status) => (st ? STATUS_LABELS[st][0] : "");
 const DELETE_ASK = (name: string) => `¿Borrar “${name}” del menú? Si solo se acabó, mejor márcalo como agotado u ocúltalo.`;
@@ -470,13 +470,15 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                       <RowMenu
                         name={r.name}
                         actions={[
-                          ["Editar", () => setSheet({ sec, row: r })],
-                          ["Duplicar", () => duplicate(sec, r, all)],
+                          ["Editar", "pencil", () => setSheet({ sec, row: r })],
+                          ["Duplicar", "copy", () => duplicate(sec, r, all)],
                           ...STATUSES.filter(([v]) => v !== (r.status ?? "")).map(
-                            ([v, label]): Action => [`Marcar como ${label}`, () => setStatus(sec, r, v)],
+                            ([v, label, icon]): Action => [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
                           ),
-                          [r.available ? "Ocultar del menú" : "Mostrar en el menú", () => toggle(sec, r, !r.available)],
-                          ["Eliminar", () => confirm(DELETE_ASK(r.name)) && deleteSheet(sec, r.id), true],
+                          r.available
+                            ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)]
+                            : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
+                          ["Eliminar", "trash", () => confirm(DELETE_ASK(r.name)) && deleteSheet(sec, r.id), true],
                         ]}
                       />
                     </li>
@@ -523,8 +525,23 @@ function blank(kind: Kind, rows: AnyRow[]): Partial<AnyRow> {
 
 // ---------------------------------------------------------------- Row ⋮ menu (Cervesoft's kebab menu)
 
-/** Label, what it does, and whether it's the red one at the bottom. */
-type Action = [string, () => unknown, danger?: boolean];
+// Outline icons drawn like Cervesoft's (Lucide, ISC licence), inlined to avoid adding an icon package.
+const ICONS = {
+  pencil: <><path d="M21.17 6.81a1 1 0 0 0-3.98-3.98L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z" /><path d="m15 5 4 4" /></>,
+  copy: <><rect width="14" height="14" x="8" y="8" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>,
+  check: <><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></>,
+  ban: <><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></>,
+  hourglass: <><path d="M5 22h14M5 2h14" /><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22" /><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2" /></>,
+  flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
+  sparkles: <><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z" /><path d="M20 3v4M22 5h-4" /></>,
+  eyeOff: <><path d="M10.73 5.08a10.74 10.74 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-1.44 2.49" /><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24" /><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14" /><path d="m2 2 20 20" /></>,
+  eye: <><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" /><circle cx="12" cy="12" r="3" /></>,
+  trash: <><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></>,
+};
+type IconName = keyof typeof ICONS;
+
+/** Label, icon, what it does, and whether it's the red one at the bottom. */
+type Action = [string, IconName, () => unknown, danger?: boolean];
 
 function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
   const [open, setOpen] = useState(false);
@@ -549,7 +566,7 @@ function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
       </button>
       {open && (
         <div className={s.kebabMenu} role="menu" aria-label={`Opciones de ${name}`}>
-          {actions.map(([label, run, danger]) => (
+          {actions.map(([label, icon, run, danger]) => (
             <button
               key={label}
               role="menuitem"
@@ -559,6 +576,9 @@ function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
                 run();
               }}
             >
+              <svg viewBox="0 0 24 24" aria-hidden>
+                {ICONS[icon]}
+              </svg>
               {label}
             </button>
           ))}
