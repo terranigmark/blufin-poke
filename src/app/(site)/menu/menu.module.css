@@ -21,7 +21,7 @@
   position: relative;
   max-width: 1200px;
   margin: 0 auto;
-  padding: clamp(40px, 7vw, 88px) clamp(16px, 4vw, 40px);
+  padding: clamp(28px, 4vw, 48px) clamp(16px, 4vw, 40px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -34,7 +34,7 @@
 .heroTitle {
   margin: 0;
   font-family: var(--bebas);
-  font-size: clamp(72px, 11vw, 150px);
+  font-size: clamp(64px, 8vw, 104px);
   line-height: 0.85;
 }
 
