@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useLanding } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import s from "./TextBand.module.css";
 
@@ -35,7 +36,8 @@ export function TextBand() {
     };
   }, []);
 
-  const words = ["Poke", "Baja", "Craft Beer", t("Pesca del día", "Catch of the day"), "Black Marlin"];
+  const words = useLanding().belt.words.map((w) => t(w.text, w.text_en));
+  if (!words.length) return null;
   const row = Array(4).fill(words).flat().join("  •  ");
   return (
     <div ref={ref} className={s.band} aria-hidden="true" data-testid="text-band">

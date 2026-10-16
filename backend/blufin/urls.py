@@ -18,5 +18,8 @@ urlpatterns = [
     path("api/editor/", api.editor_menu),
     path("api/editor/settings/", api.editor_settings),
     path("api/highlights/<int:pk>/image/", api.highlight_image),
+    path("api/editor/landing/", api.editor_landing),
+    path("api/editor/media/", api.editor_media),
+    path("api/media/<int:pk>/", api.media_file),
     path("api/", include(api.router.urls)),
 ]

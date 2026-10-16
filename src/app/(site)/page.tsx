@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { TextBand } from "@/components/TextBand";
 import { BUSINESS, PHOTOS, STEPS, money, orderable } from "@/data/menu";
-import { useMenu } from "@/lib/api";
+import { useLanding, useMenu } from "@/lib/api";
 import { useLang, useT } from "@/lib/i18n";
 import { HeroMedia } from "./HeroMedia";
 import s from "./home.module.css";
@@ -21,20 +21,24 @@ export default function Home() {
   const english = useLang().lang === "en";
   // Shown only once the manager has added three; sold-out or coming-soon bowls stay off the home page.
   const bowls = useMenu().HOUSE_BOWLS.filter(orderable).slice(0, 3);
+  const { hero } = useLanding();
   return (
     <>
       <main>
         <section className={s.hero}>
-          <HeroMedia />
+          <HeroMedia image={hero.image} video={hero.video} />
           <div className={s.heroShade} />
           <div className={s.heroInner}>
-            <span className={s.heroScript}>{t("Buena comida, cerveza fría, gente de mar", "Good food, cold beer, ocean people")}</span>
+            <span className={s.heroScript}>{t(hero.slogan, hero.slogan_en)}</span>
             <div className={s.heroHead}>
               <h1 className={s.heroTitle}>
-                <span>Poke • Baja</span>
-                <span>Craft Beer</span>
+                {t(hero.title, hero.title_en)
+                  .split("\n")
+                  .map((row, i) => (
+                    <span key={i}>{row}</span>
+                  ))}
               </h1>
-              <p className={s.heroLead}>{t("Pesca del día, cerveza de la casa y nada de prisa.", "Catch of the day, house beer and no rush.")}</p>
+              <p className={s.heroLead}>{t(hero.lead, hero.lead_en)}</p>
             </div>
             <div className={s.heroCtas}>
               <Link href="/arma-tu-poke" className={`${s.heroCta} ${s.heroCtaSolid}`}>
@@ -45,8 +49,8 @@ export default function Home() {
               </Link>
             </div>
             <div className={s.heroInfo}>
-              <span>{english ? BUSINESS.hoursShortEn : BUSINESS.hoursShort}</span>
-              <span>{BUSINESS.addressShort}</span>
+              <span>{t(hero.hours, hero.hours_en)}</span>
+              <span>{t(hero.address, hero.address_en)}</span>
             </div>
           </div>
         </section>
