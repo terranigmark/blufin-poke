@@ -34,7 +34,7 @@ import {
 } from "@/lib/api";
 import s from "./editor.module.css";
 import { LandingCards, type LandingSection } from "./LandingCards";
-import { UsersCard } from "./UsersCard";
+import { ActivityCard, UsersCard } from "./UsersCard";
 
 /*
  * The manager's menu editor, a copy of Cervesoft's /taplist-admin (cervesoft-frontend
@@ -286,8 +286,8 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const [loadError, setLoadError] = useState("");
   const [save, setSave] = useState<Save>("idle");
   const [search, setSearch] = useState("");
-  // "Menú", the home page's cards ("Página de inicio"), or "Usuarios" for owners.
-  const [view, setView] = useState<"menu" | "inicio" | "usuarios">("menu");
+  // "Menú", the home page's cards ("Página de inicio"), and for admins "Usuarios" and "Actividad".
+  const [picked, setView] = useState<"menu" | "inicio" | "usuarios" | "actividad">("menu");
   // Sections start open, as in Cervesoft; this remembers the ones folded away.
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   // The round + button adds to the section used last.
@@ -515,6 +515,17 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     );
 
   const landing = { ...LANDING, ...data.landing };
+  // Only the tabs this account may use; a backend from before permissions sends no `me` and gets the first two.
+  const me = data.me ?? { email: "", admin: false, menu: true, landing: true };
+  const tabs = (
+    [
+      ["menu", "Menú", me.menu],
+      ["inicio", "Página de inicio", me.landing],
+      ["usuarios", "Usuarios", me.admin],
+      ["actividad", "Actividad", me.admin],
+    ] as const
+  ).filter(([, , ok]) => ok);
+  const view = tabs.some(([v]) => v === picked) ? picked : tabs[0][0];
   const total = sections.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
   // Lists in Otros aren't drinks, so their items start without a bottle or can.
   const add = (sec: Section) =>
@@ -539,13 +550,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           </div>
         </div>
         <div className={s.tabs} role="tablist">
-          {(
-            [
-              ["menu", "Menú"],
-              ["inicio", "Página de inicio"],
-              ...(data.me?.owner ? [["usuarios", "Usuarios"] as const] : []),
-            ] as const
-          ).map(([v, label]) => (
+          {tabs.map(([v, label]) => (
             <button key={v} role="tab" aria-selected={view === v} onClick={() => setView(v)}>
               {label}
             </button>
@@ -575,7 +580,8 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
             <LandingCards landing={landing} onSave={saveLanding} />
           </>
         )}
-        {view === "usuarios" && <UsersCard me={data.me!.email} onUndo={setUndo} />}
+        {view === "usuarios" && <UsersCard me={me.email} onUndo={setUndo} />}
+        {view === "actividad" && <ActivityCard />}
         {view === "menu" && GROUPS.map(([g, label]) => {
           const cards = groups.filter((x) => x.sec.group === g);
           if (term && !cards.length) return null;

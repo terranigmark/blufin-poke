@@ -23,6 +23,8 @@ from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 
+from accounts.models import Activity
+
 from .models import Beer, Category, Drink, Extra, Highlight, HouseBowl, Ingredient, Landing, Media, Settings, Size
 
 
@@ -32,10 +34,62 @@ class IsMenuEditor(permissions.BasePermission):
         return getattr(request.user, "is_menu_editor", False)
 
 
+class IsLandingEditor(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return getattr(request.user, "is_landing_editor", False)
+
+
+class HasEditorAccess(permissions.BasePermission):
+    """Signed in to /admin: may change the menu, the home page, or both."""
+
+    def has_permission(self, request, view):
+        return getattr(request.user, "has_editor_access", False)
+
+
+def shown(value):
+    """A value as the activity log shows it."""
+    if isinstance(value, (bytes, memoryview)):
+        return "(imagen nueva)"
+    if isinstance(value, bool):
+        return "sí" if value else "no"
+    text = str(value) if value not in ("", None) else "(vacío)"
+    return text if len(text) <= 60 else text[:59] + "…"
+
+
+def changes(obj, old):
+    """"precio (MXN): 235 → 250; disponible: sí → no" for the fields that changed."""
+    return "; ".join(
+        f"{obj._meta.get_field(f).verbose_name}: {shown(v)} → {shown(getattr(obj, f))}"
+        for f, v in old.items()
+        if v != getattr(obj, f) and f != "content_type"
+    )
+
+
+class LoggedViewSet(viewsets.ModelViewSet):
+    """Every add, change and delete goes in the admins' activity log, with the item's name."""
+
+    def label(self, obj):
+        return f"{obj._meta.verbose_name} “{obj}”"
+
+    def perform_create(self, serializer):
+        obj = serializer.save()
+        Activity.record(self.request, f"Añadió {self.label(obj)}")
+
+    def perform_update(self, serializer):
+        old = {f: getattr(serializer.instance, f) for f in serializer.validated_data}
+        obj = serializer.save()
+        if diff := changes(obj, old):
+            Activity.record(self.request, f"Cambió {self.label(obj)}: {diff}")
+
+    def perform_destroy(self, obj):
+        Activity.record(self.request, f"Eliminó {self.label(obj)}")
+        obj.delete()
+
+
 class LoginSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        if not self.user.is_menu_editor:
+        if not self.user.has_editor_access:
             raise PermissionDenied("Esta cuenta no tiene acceso al editor del menú.")
         data["user"] = {"email": self.user.email, "name": self.user.get_full_name()}
         return data
@@ -158,7 +212,7 @@ class HighlightSerializer(serializers.ModelSerializer):
             attrs.update(image=raw, content_type=m[1])
         return attrs
 
-class CategoryViewSet(viewsets.ModelViewSet):
+class CategoryViewSet(LoggedViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsMenuEditor]
@@ -167,7 +221,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if category.builtin:
             raise ValidationError("Esta sección viene con el menú y no se puede eliminar.")
         Drink.objects.filter(category=category.key).delete()
-        category.delete()
+        super().perform_destroy(category)
 
 
 router = routers.SimpleRouter(trailing_slash=True)
@@ -176,7 +230,7 @@ router.register(
     "editor/highlights",
     type(
         "HighlightViewSet",
-        (viewsets.ModelViewSet,),
+        (LoggedViewSet,),
         {"queryset": Highlight.objects.all(), "serializer_class": HighlightSerializer, "permission_classes": [IsMenuEditor]},
     ),
     basename="highlights",
@@ -186,7 +240,7 @@ for name, model in MODELS.items():
         f"editor/{name}",
         type(
             f"{model.__name__}ViewSet",
-            (viewsets.ModelViewSet,),
+            (LoggedViewSet,),
             {
                 "queryset": model.objects.all(),
                 "serializer_class": SERIALIZERS[name],
@@ -223,15 +277,20 @@ def public_menu(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsMenuEditor])
+@permission_classes([HasEditorAccess])
 def editor_menu(request):
     """Everything, hidden items included, in one request for the editor's first load."""
     return Response(
         {
             **{name: SERIALIZERS[name](model.objects.all(), many=True).data for name, model in MODELS.items()},
             **page_extras(),
-            # Owners also get the "Usuarios" tab.
-            "me": {"email": request.user.email, "owner": request.user.is_superuser},
+            # Which tabs to show: Menú, Página de inicio, and for admins Usuarios and Actividad.
+            "me": {
+                "email": request.user.email,
+                "admin": request.user.is_superuser,
+                "menu": request.user.is_menu_editor,
+                "landing": request.user.is_landing_editor,
+            },
         }
     )
 
@@ -242,7 +301,9 @@ def editor_settings(request):
     serializer = SettingsSerializer(Settings.get(), data=request.data, partial=True)
     if request.method == "PATCH":
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        old = {f: getattr(serializer.instance, f) for f in serializer.validated_data}
+        if diff := changes(serializer.save(), old):
+            Activity.record(request, f"Cambió los ajustes: {diff}")
     return Response(SettingsSerializer(serializer.instance).data)
 
 
@@ -295,6 +356,18 @@ def email():
     return serializers.EmailField(allow_blank=True, max_length=120)
 
 
+# As the cards in /admin's "Página de inicio" call them, for the activity log.
+LANDING_TITLES = {
+    "header": "Encabezado",
+    "hero": "Portada",
+    "belt": "Franja animada",
+    "build": "Arma tu poke",
+    "cravings": "¿Qué se te antoja?",
+    "esencia": "Nuestra esencia es Baja",
+    "visit": "Ubicación",
+    "footer": "Pie de página",
+}
+
 LANDING_SECTIONS = {
     "header": type("Header", (serializers.Serializer,), {"marlin_logo": media_link(), "blufin_logo": media_link()}),
     "hero": type(
@@ -334,7 +407,7 @@ LANDING_SECTIONS = {
 
 
 @api_view(["PATCH"])
-@permission_classes([IsMenuEditor])
+@permission_classes([IsLandingEditor])
 def editor_landing(request):
     """Replaces the sections sent, each whole; the others stay as they were."""
     unknown = set(request.data) - set(LANDING_SECTIONS)
@@ -347,6 +420,7 @@ def editor_landing(request):
             raise ValidationError({name: section.errors})
         landing.content[name] = section.validated_data
     landing.save()
+    Activity.record(request, "Cambió la página de inicio: " + ", ".join(LANDING_TITLES.get(n, n) for n in request.data))
     # Uploads nobody links to any more; a day's grace keeps ones the editor has not saved yet, and Deshacer's.
     used = {int(n) for n in re.findall(r"/api/media/(\d+)/", str(landing.content))}
     Media.objects.filter(created__lt=timezone.now() - timedelta(days=1)).exclude(pk__in=used).delete()
@@ -359,7 +433,7 @@ VIDEO_MAX_BYTES = 12_000_000
 
 
 @api_view(["POST"])
-@permission_classes([IsMenuEditor])
+@permission_classes([IsLandingEditor])
 def editor_media(request):
     """Upload a picture or video as a data: URL; answers with the link to put in the home page."""
     m = re.fullmatch(r"data:([\w/]+);base64,(.+)", str(request.data.get("file", "")), re.S)
