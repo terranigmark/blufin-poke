@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BUSINESS } from "@/data/menu";
+import { LANDING } from "@/data/landing";
 import { LanguageProvider } from "@/lib/i18n";
 import Home from "./page";
 
@@ -39,8 +39,8 @@ describe("Home hero", () => {
   it("ends the visit section with one button and the email as a plain link", () => {
     render(<Home />);
     const visit = screen.getByRole("heading", { name: "Ven a vernos" }).parentElement!;
-    const email = within(visit).getByRole("link", { name: BUSINESS.email });
-    expect(email).toHaveAttribute("href", `mailto:${BUSINESS.email}`);
+    const email = within(visit).getByRole("link", { name: LANDING.visit.email });
+    expect(email).toHaveAttribute("href", `mailto:${LANDING.visit.email}`);
     expect(email.className).toMatch(/visitEmail/);
   });
 });

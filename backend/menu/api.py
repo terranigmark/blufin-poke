@@ -284,6 +284,15 @@ class Tile(Word):
     link = serializers.RegexField(LINK, max_length=300, error_messages={"invalid": "Usa una página del sitio (/menu) o un enlace https://."})
 
 
+class Social(serializers.Serializer):
+    network = serializers.ChoiceField(["instagram", "facebook", "tiktok", "x", "youtube", "whatsapp"])
+    url = serializers.RegexField(r"\Ahttps://\S+\Z", max_length=300, error_messages={"invalid": "El enlace debe empezar con https://."})
+
+
+def email():
+    return serializers.EmailField(allow_blank=True, max_length=120)
+
+
 LANDING_SECTIONS = {
     "header": type("Header", (serializers.Serializer,), {"marlin_logo": media_link(), "blufin_logo": media_link()}),
     "hero": type(
@@ -298,6 +307,27 @@ LANDING_SECTIONS = {
         {**pairs("title", "lead", "cta"), "steps": Word(many=True, max_length=10), "image": media_link()},
     ),
     "cravings": type("Cravings", (serializers.Serializer,), {**pairs("title"), "tiles": Tile(many=True, max_length=6)}),
+    "esencia": type(
+        "Esencia",
+        (serializers.Serializer,),
+        {**pairs("title", "cta"), **pairs("lead", max_length=300), "image_a": media_link(), "image_b": media_link()},
+    ),
+    "visit": type(
+        "Visit",
+        (serializers.Serializer,),
+        {**pairs("title", "cta"), **pairs("hours", max_length=200), "address": line(200, allow_blank=False), "email": email()},
+    ),
+    "footer": type(
+        "Footer",
+        (serializers.Serializer,),
+        {
+            **pairs("tagline", "copyright"),
+            "brand": line(60),
+            "city": line(),
+            "social": Social(many=True, max_length=6),
+            "email": email(),
+        },
+    ),
 }
 
 

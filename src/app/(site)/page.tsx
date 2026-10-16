@@ -1,21 +1,31 @@
 "use client";
 
 import Link from "next/link";
+import { Fragment } from "react";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { TextBand } from "@/components/TextBand";
-import { BUSINESS, PHOTOS, money, orderable } from "@/data/menu";
+import { mapsFor } from "@/data/landing";
+import { PHOTOS, money, orderable } from "@/data/menu";
 import { mediaUrl, useLanding, useMenu } from "@/lib/api";
-import { useLang, useT } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 import { HeroMedia } from "./HeroMedia";
 import s from "./home.module.css";
 
 export default function Home() {
   const t = useT();
-  const english = useLang().lang === "en";
   // Shown only once the manager has added three; sold-out or coming-soon bowls stay off the home page.
   const bowls = useMenu().HOUSE_BOWLS.filter(orderable).slice(0, 3);
-  const { hero, build, cravings } = useLanding();
+  const { hero, build, cravings, esencia, visit } = useLanding();
+  const maps = mapsFor(visit.address);
+  // Multi-line fields from /admin: one row each.
+  const rows = (text: string) =>
+    text.split("\n").map((row, i) => (
+      <Fragment key={i}>
+        {i > 0 && <br />}
+        {row}
+      </Fragment>
+    ));
   return (
     <>
       <main>
@@ -123,15 +133,15 @@ export default function Home() {
         <section id="nosotros" className={s.esencia}>
           <div className={s.twoCol}>
             <div className={s.esenciaPhotos} data-reveal>
-              <img src={PHOTOS.esenciaBowl} alt={t("Bowl fresco", "Fresh bowl")} className={s.esenciaA} loading="lazy" />
-              <img src={PHOTOS.esenciaBeer} alt={t("Cerveza artesanal servida del grifo", "Craft beer poured from the tap")} className={s.esenciaB} loading="lazy" />
+              {esencia.image_a && <img src={mediaUrl(esencia.image_a)} alt={t("Bowl fresco", "Fresh bowl")} className={s.esenciaA} loading="lazy" />}
+              {esencia.image_b && <img src={mediaUrl(esencia.image_b)} alt={t("Cerveza artesanal servida del grifo", "Craft beer poured from the tap")} className={s.esenciaB} loading="lazy" />}
             </div>
             <div className={s.esenciaCopy} data-reveal>
-              <h2 className={s.sectionTitle}>{t("Nuestra esencia es Baja", "Baja is who we are")}</h2>
-              <p>{t("Pesca local, poke hecho al momento y cerveza de Black Marlin, nuestra cervecería. Así de simple.", "Local fish, poke made to order and beer from Black Marlin, our own brewery. Simple as that.")}</p>
+              <h2 className={s.sectionTitle}>{t(esencia.title, esencia.title_en)}</h2>
+              <p>{t(esencia.lead, esencia.lead_en)}</p>
               <div>
                 <Link href="/menu?tab=beer" className={s.navyPill}>
-                  {t("Conoce nuestras cervezas", "Meet our beers")} →
+                  {t(esencia.cta, esencia.cta_en)} →
                 </Link>
               </div>
             </div>
@@ -141,33 +151,27 @@ export default function Home() {
         <section id="ubicacion" className={s.ubicacion}>
           <div className={`${s.twoCol} ${s.stretch}`}>
             <div className={s.map} data-reveal>
-              <iframe title={t("Mapa Blufin Poke Co", "Blufin Poke Co map")} src={BUSINESS.mapsEmbed} loading="lazy" />
+              <iframe title={t("Mapa Blufin Poke Co", "Blufin Poke Co map")} src={maps.embed} loading="lazy" />
             </div>
             <div className={s.visit} data-reveal>
-              <h2 className={s.sectionTitle}>{t("Ven a vernos", "Come see us")}</h2>
+              <h2 className={s.sectionTitle}>{t(visit.title, visit.title_en)}</h2>
               <div className={s.fact}>
                 <span className={s.factLabel}>{t("Ubicación", "Location")}</span>
-                <span className={s.factValue}>
-                  {BUSINESS.addressLines[0]}
-                  <br />
-                  {BUSINESS.addressLines[1]}
-                </span>
+                <span className={s.factValue}>{rows(visit.address)}</span>
               </div>
               <div className={s.fact}>
                 <span className={s.factLabel}>{t("Horarios", "Hours")}</span>
-                <span className={s.factValue}>
-                  {(english ? BUSINESS.hoursLinesEn : BUSINESS.hoursLines)[0]}
-                  <br />
-                  {(english ? BUSINESS.hoursLinesEn : BUSINESS.hoursLines)[1]}
-                </span>
+                <span className={s.factValue}>{rows(t(visit.hours, visit.hours_en))}</span>
               </div>
               <div className={s.visitCtas}>
-                <a href={BUSINESS.mapsLink} target="_blank" rel="noreferrer" className={s.navyPillSm}>
-                  {t("Cómo llegar", "Get directions")} →
+                <a href={maps.link} target="_blank" rel="noreferrer" className={s.navyPillSm}>
+                  {t(visit.cta, visit.cta_en)} →
                 </a>
-                <a href={`mailto:${BUSINESS.email}`} className={s.visitEmail}>
-                  {BUSINESS.email}
-                </a>
+                {visit.email && (
+                  <a href={`mailto:${visit.email}`} className={s.visitEmail}>
+                    {visit.email}
+                  </a>
+                )}
               </div>
             </div>
           </div>

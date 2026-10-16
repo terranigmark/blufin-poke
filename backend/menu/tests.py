@@ -458,6 +458,28 @@ class LandingTests(TestCase):
         for data in bad:
             self.assertEqual(self.call("patch", "/api/editor/landing/", data).status_code, 400, data)
 
+    def test_esencia_visit_and_footer_are_seeded_and_editable(self):
+        landing = self.landing()
+        self.assertEqual(landing["visit"]["email"], "hola@blufinpokeco.com")
+        self.assertEqual([x["network"] for x in landing["footer"]["social"]], ["instagram", "facebook", "tiktok"])
+
+        footer = {**landing["footer"], "social": [{"network": "whatsapp", "url": "https://wa.me/526120000000"}], "email": ""}
+        self.assertEqual(self.call("patch", "/api/editor/landing/", {"footer": footer}).status_code, 200)
+        self.assertEqual(self.landing()["footer"]["social"], footer["social"])
+
+        visit = {**landing["visit"], "address": "Calle 1\nLa Paz"}
+        self.assertEqual(self.call("patch", "/api/editor/landing/", {"visit": visit}).status_code, 200)
+
+        bad = [
+            {"footer": {**footer, "social": [{"network": "myspace", "url": "https://myspace.com/x"}]}},
+            {"footer": {**footer, "social": [{"network": "x", "url": "http://x.com/blufin"}]}},
+            {"footer": {**footer, "email": "no es correo"}},
+            {"visit": {**visit, "address": ""}},
+            {"esencia": {**landing["esencia"], "image_a": "javascript:alert(1)"}},
+        ]
+        for data in bad:
+            self.assertEqual(self.call("patch", "/api/editor/landing/", data).status_code, 400, data)
+
     def test_saving_clears_old_unused_uploads(self):
         used = Media.objects.create(data=b"a", content_type="image/png")
         stale = Media.objects.create(data=b"b", content_type="image/png")

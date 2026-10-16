@@ -32,6 +32,8 @@ it("shows the home page as edited in /admin, in English with Spanish where Engli
         hours_en: "Every day",
       },
       build: { ...LANDING.build, title: "Tu bowl", title_en: "", steps: [{ text: "Base", text_en: "" }, { text: "Proteína", text_en: "Protein" }], cta: "Vamos", cta_en: "Let's go" },
+      visit: { ...LANDING.visit, title: "Visítanos", title_en: "", address: "Calle 1\nLa Paz", hours: "Diario", hours_en: "", email: "" },
+      footer: { ...LANDING.footer, social: [{ network: "whatsapp", url: "https://wa.me/1" }], email: "hola@ejemplo.mx" },
       cravings: { title: "Antojos", title_en: "Cravings", tiles: [{ image: "/api/media/5/", text: "Bowls", text_en: "", link: "/menu?tab=poke" }] },
     },
   } as MenuRows;
@@ -65,4 +67,16 @@ it("shows the home page as edited in /admin, in English with Spanish where Engli
   const tile = within(screen.getByRole("heading", { name: "Cravings" }).parentElement!).getByRole("link");
   expect(tile).toHaveAttribute("href", "/menu?tab=poke");
   expect(within(tile).getByRole("img", { name: "Bowls" })).toHaveAttribute("src", `${API_URL}/api/media/5/`);
+
+  // Ubicación: one row per line, the map follows the address, and an empty email is left out.
+  const visit = screen.getByRole("heading", { name: "Visítanos" }).parentElement!;
+  expect(within(visit).getByText(/Calle 1/).innerHTML).toBe("Calle 1<br>La Paz");
+  expect(screen.getByTitle("Blufin Poke Co map")).toHaveAttribute("src", expect.stringContaining("q=Calle%201%2C%20La%20Paz"));
+  expect(within(visit).getByRole("link", { name: "Get directions →" })).toHaveAttribute("href", "https://maps.google.com/?q=Calle%201%2C%20La%20Paz");
+  expect(within(visit).queryByRole("link", { name: /@/ })).toBeNull();
+  // Footer: the networks and email from /admin.
+  const footer = screen.getByRole("contentinfo");
+  expect(within(footer).getByRole("link", { name: "WhatsApp" })).toHaveAttribute("href", "https://wa.me/1");
+  expect(within(footer).queryByRole("link", { name: "Instagram" })).toBeNull();
+  expect(within(footer).getByRole("link", { name: "hola@ejemplo.mx" })).toHaveAttribute("href", "mailto:hola@ejemplo.mx");
 });

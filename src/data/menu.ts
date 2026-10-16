@@ -7,34 +7,10 @@
 export const unsplash = (id: string, w = 600) =>
   `https://images.unsplash.com/photo-${id}?w=${w}&auto=format&fit=crop&q=70`;
 
-// ---------------------------------------------------------------- Business
-
-export const BUSINESS = {
-  name: "Blufin Poke Co",
-  email: "hola@blufinpokeco.com",
-  addressShort: "Belisario Domínguez 1251, La Paz",
-  addressLines: ["Belisario Domínguez 1251, CP 23000", "La Paz, Baja California Sur"],
-  hoursShort: "Mar – Dom · 13:30 – 21:30",
-  hoursShortEn: "Tue – Sun · 1:30 – 9:30 pm",
-  hoursLines: ["Martes a domingo · 13:30 – 21:30", "Lunes cerrado"],
-  hoursLinesEn: ["Tuesday to Sunday · 1:30 – 9:30 pm", "Closed Mondays"],
-  mapsEmbed:
-    "https://maps.google.com/maps?q=Belisario%20Dominguez%201251%2C%20La%20Paz%2C%20Baja%20California%20Sur&z=15&output=embed",
-  mapsLink: "https://maps.google.com/?q=Belisario+Dominguez+1251+La+Paz+BCS",
-  // PLACEHOLDER: replace with Blufin's real profiles.
-  social: {
-    instagram: "https://instagram.com/",
-    facebook: "https://facebook.com/",
-    tiktok: "https://tiktok.com/",
-  },
-};
-
 // ---------------------------------------------------------------- Photos
 
 export const PHOTOS = {
   bowl: (w = 1200) => unsplash("1604259597308-5321e8e4789c", w),
-  esenciaBowl: unsplash("1546069901-ba9599a7e63c", 900),
-  esenciaBeer: unsplash("1535958636474-b021ee887b13", 700),
   doneBeach: unsplash("1473116763249-2faaef81ccda", 2000),
   menuBar: unsplash("1514933651103-005eec06c04b", 2000),
   tvBeer: unsplash("1535958636474-b021ee887b13", 1200),
