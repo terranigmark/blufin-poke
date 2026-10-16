@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { STEPS, money } from "@/data/menu";
+import { STATUS_LABELS, STEPS, money, type Status } from "@/data/menu";
 import {
   ApiError,
   editorFetch,
@@ -21,8 +21,8 @@ import s from "./editor.module.css";
 
 /*
  * The manager's menu editor, modelled on Cervesoft's /taplist-admin: one page,
- * sign in, then collapsible sections with an availability switch per item and
- * a sheet to edit, add or delete. Every change is saved to the API right away.
+ * sign in, then collapsible sections with an availability switch and a ⋮ menu
+ * per item, and a sheet to edit, add or delete. Every change is saved to the API right away.
  */
 
 type AnyRow = MenuRows[Kind][number];
@@ -100,6 +100,17 @@ const SECTIONS: Section[] = [
     },
   })),
 ];
+
+/** "Marcar como…" in the ⋮ menu, Cervesoft's order; "" is plain available. */
+const STATUSES: [Status, string][] = [
+  ["", "disponible"],
+  ["agotado", "agotado"],
+  ["proximamente", "próximamente"],
+  ["por_agotarse", "por agotarse"],
+  ["novedad", "novedad"],
+];
+const statusLabel = (st?: Status) => (st ? STATUS_LABELS[st][0] : "");
+const DELETE_ASK = (name: string) => `¿Borrar “${name}” del menú? Si solo se acabó, mejor márcalo como agotado u ocúltalo.`;
 
 const sortRows = (kind: Kind, rows: AnyRow[]) =>
   [...rows].sort((a, b) =>
@@ -302,6 +313,22 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       });
   };
 
+  const setStatus = async (sec: Section, r: AnyRow, status: Status) => {
+    if (await persist(sec.kind, { id: r.id, status }, true))
+      setUndo({
+        label: `“${r.name}” ${STATUSES.find(([v]) => v === status)![1]}`,
+        run: () => persist(sec.kind, { id: r.id, status: r.status ?? "" }, true),
+      });
+  };
+
+  /** A copy goes last in its section (beers on the next free tap); the backend gives it its own key. */
+  const duplicate = async (sec: Section, r: AnyRow, all: AnyRow[]) => {
+    const { id: _id, key: _key, ...rest } = r as AnyRow & { key?: string };
+    const { order, tap } = blank(sec.kind, all) as Partial<BeerRow>;
+    const saved = await persist(sec.kind, { ...rest, name: `${r.name.slice(0, 92)} (copia)`, order, ...(tap && { tap }) } as Partial<AnyRow>);
+    if (saved) setUndo({ label: `Duplicaste “${r.name}”`, run: () => remove(sec.kind, saved.id) });
+  };
+
   /** Sheet "Guardar"/"Agregar": undo restores the previous version, or removes the new item. */
   const saveSheet = async (sec: Section, row: Partial<AnyRow>) => {
     const old = row.id ? (data![sec.kind] as AnyRow[]).find((x) => x.id === row.id) : undefined;
@@ -409,7 +436,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                 <ul className={s.list}>
                   {rows.length === 0 && <li className={s.empty}>Nada aquí todavía.</li>}
                   {rows.map((r, i) => (
-                    <li key={r.id} className={s.row} data-hidden={!r.available}>
+                    <li key={r.id} className={s.row} data-hidden={!r.available} data-status={r.status || undefined}>
                       {sec.kind === "beers" ? (
                         <span className={s.dot} style={{ background: (r as BeerRow).color }} />
                       ) : sec.kind === "ingredients" ? (
@@ -417,7 +444,9 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                       ) : null}
                       <button className={s.rowMain} onClick={() => setSheet({ sec, row: r })}>
                         <span className={s.rowName}>{r.name}</span>
-                        <span className={s.rowSub}>{r.available ? sec.sub(r) : "Oculto en el menú"}</span>
+                        <span className={s.rowSub}>
+                          {r.available ? [sec.sub(r), statusLabel(r.status)].filter(Boolean).join(" · ") : "Oculto en el menú"}
+                        </span>
                       </button>
                       {sec.kind !== "beers" && !term && (
                         <span className={s.arrows}>
@@ -438,6 +467,18 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
                         />
                         <span aria-hidden />
                       </label>
+                      <RowMenu
+                        name={r.name}
+                        actions={[
+                          ["Editar", () => setSheet({ sec, row: r })],
+                          ["Duplicar", () => duplicate(sec, r, all)],
+                          ...STATUSES.filter(([v]) => v !== (r.status ?? "")).map(
+                            ([v, label]): Action => [`Marcar como ${label}`, () => setStatus(sec, r, v)],
+                          ),
+                          [r.available ? "Ocultar del menú" : "Mostrar en el menú", () => toggle(sec, r, !r.available)],
+                          ["Eliminar", () => confirm(DELETE_ASK(r.name)) && deleteSheet(sec, r.id), true],
+                        ]}
+                      />
                     </li>
                   ))}
                 </ul>
@@ -478,6 +519,53 @@ function blank(kind: Kind, rows: AnyRow[]): Partial<AnyRow> {
   }
   if (kind === "drinks") return { name: "", available: true, order, pack: "Botella" } as Partial<DrinkRow>;
   return { name: "", available: true, order };
+}
+
+// ---------------------------------------------------------------- Row ⋮ menu (Cervesoft's kebab menu)
+
+/** Label, what it does, and whether it's the red one at the bottom. */
+type Action = [string, () => unknown, danger?: boolean];
+
+function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, [open]);
+
+  return (
+    <div className={s.kebab} ref={ref}>
+      <button className={s.kebabButton} aria-label={`Opciones de ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        ⋮
+      </button>
+      {open && (
+        <div className={s.kebabMenu} role="menu" aria-label={`Opciones de ${name}`}>
+          {actions.map(([label, run, danger]) => (
+            <button
+              key={label}
+              role="menuitem"
+              className={danger ? s.kebabDanger : undefined}
+              onClick={() => {
+                setOpen(false);
+                run();
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------- Edit sheet
@@ -522,7 +610,7 @@ function ItemSheet({
   };
 
   const del = async () => {
-    if (!confirm(`¿Borrar “${row.name}” del menú? Si solo se acabó, mejor ocúltalo con el interruptor.`)) return;
+    if (!confirm(DELETE_ASK(row.name ?? ""))) return;
     setBusy(true);
     await onDelete();
     setBusy(false);

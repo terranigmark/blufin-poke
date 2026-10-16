@@ -3,13 +3,13 @@
 // The Django backend (backend/): the live menu the site shows, and the editor at /login.
 
 import { useEffect, useState } from "react";
-import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, type Menu, type StepKey } from "@/data/menu";
+import { BEERS as BUNDLED_BEERS, EN, MENU, STEPS, drinksFrom, orderable, type Menu, type Status, type StepKey } from "@/data/menu";
 
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "https://api.blufinpoke.com").replace(/\/$/, "");
 
 // ---------------------------------------------------------------- Rows as the API sends them
 
-type Row = { id: number; name: string; name_en: string; available: boolean; order: number };
+type Row = { id: number; name: string; name_en: string; available: boolean; status?: Status; order: number };
 export type SizeRow = Row & { key: string; price: number };
 export type IngredientRow = Row & { step: StepKey; key: string; image_url: string };
 export type ExtraRow = Row & { key: string; price: number; in_builder: boolean };
@@ -43,7 +43,7 @@ const ingredientEn = (i: IngredientRow) =>
 
 export function toMenu(m: MenuRows): Menu {
   const packaged = (cat: DrinkRow["category"]) =>
-    m.drinks.filter((d) => d.category === cat).map(({ name, name_en, price, size, pack }) => ({ name, nameEn: en(name, name_en), price, size, pack }));
+    m.drinks.filter((d) => d.category === cat).map(({ name, name_en, price, size, pack, status }) => ({ name, nameEn: en(name, name_en), price, size, pack, status }));
   const BEERS = m.beers.map((b) => ({
     tap: b.tap,
     name: b.name,
@@ -55,23 +55,25 @@ export function toMenu(m: MenuRows): Menu {
     color: b.color,
     desc: b.description,
     descEn: b.description_en || BUNDLED_BEERS.find((x) => x.desc === b.description)?.descEn,
+    status: b.status,
   }));
   const AGUAS = packaged("aguas");
   const NACIONAL = packaged("nacional");
   return {
-    SIZES: m.sizes.map((z) => ({ id: z.key, name: z.name, nameEn: en(z.name, z.name_en), price: z.price })),
+    SIZES: m.sizes.map((z) => ({ id: z.key, name: z.name, nameEn: en(z.name, z.name_en), price: z.price, status: z.status })),
     STEPS: STEPS.map((st) => ({
       ...st,
       opts: m.ingredients
-        .filter((i) => i.step === st.key)
+        .filter((i) => i.step === st.key && orderable(i))
         .map((i) => ({ id: i.key, name: i.name, nameEn: ingredientEn(i), img: i.image_url || null })),
     })),
-    BOWL_EXTRAS: m.extras.filter((e) => e.in_builder).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, nameEn: en(e.name, e.name_en), price: e.price })),
-    MENU_EXTRAS: m.extras.map(({ name, name_en, price }) => ({ name, nameEn: en(name, name_en), price })),
+    // Arma tu poke only offers what can be ordered now; /menu lists everything with its badge.
+    BOWL_EXTRAS: m.extras.filter((e) => e.in_builder && orderable(e)).map((e) => ({ id: e.key || `x${e.id}`, name: e.name, nameEn: en(e.name, e.name_en), price: e.price })),
+    MENU_EXTRAS: m.extras.map(({ name, name_en, price, status }) => ({ name, nameEn: en(name, name_en), price, status })),
     BEERS,
     AGUAS,
     NACIONAL,
-    DRINKS: drinksFrom(BEERS, NACIONAL, AGUAS),
+    DRINKS: drinksFrom(BEERS.filter(orderable), NACIONAL.filter(orderable), AGUAS.filter(orderable)),
   };
 }
 

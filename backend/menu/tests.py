@@ -111,6 +111,28 @@ class MenuApiTests(TestCase):
         size.refresh_from_db()
         self.assertEqual(size.name_en, "Small bowl")
 
+    def test_status_is_saved_and_shown_on_the_public_menu(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        beer = Beer.objects.get(tap="01")
+        r = self.client.patch(f"/api/editor/beers/{beer.pk}/", {"status": "agotado"}, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 200)
+        # Sold out stays on the menu with its badge; only `available=False` takes it off.
+        stout = next(b for b in self.client.get("/api/menu/").json()["beers"] if b["tap"] == "01")
+        self.assertEqual(stout["status"], "agotado")
+        r = self.client.patch(f"/api/editor/beers/{beer.pk}/", {"status": "otra"}, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 400)
+
+    def test_duplicating_a_beer_needs_its_own_tap(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        copy = {k: v for k, v in self.client.get("/api/editor/", **h).json()["beers"][0].items() if k != "id"}
+        r = self.client.post("/api/editor/beers/", copy, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("tap", r.json())
+        r = self.client.post("/api/editor/beers/", {**copy, "tap": "99", "name": "Copia"}, content_type="application/json", **h)
+        self.assertEqual(r.status_code, 201, r.content)
+
     def test_only_menu_editors_get_tokens(self):
         User.objects.create_user("otro@blufin.mx", PASSWORD)
         self.assertEqual(self.token("otro@blufin.mx").status_code, 403)

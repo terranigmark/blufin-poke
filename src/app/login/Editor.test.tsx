@@ -133,6 +133,83 @@ describe("/admin", () => {
     expect(JSON.parse(String(init!.body))).toMatchObject({ id: 2, name_en: "", description_en: "Roasted coffee." });
   });
 
+  it("lists Cervesoft's actions in the ⋮ menu and closes it with Esc", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    const items = within(screen.getByRole("menu")).getAllByRole("menuitem").map((b) => b.textContent);
+    expect(items).toEqual([
+      "Editar",
+      "Duplicar",
+      "Marcar como agotado",
+      "Marcar como próximamente",
+      "Marcar como por agotarse",
+      "Marcar como novedad",
+      "Ocultar del menú",
+      "Eliminar",
+    ]);
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Editar" }));
+    expect(within(screen.getByRole("dialog")).getByLabelText(/^Grifo/)).toHaveValue("01");
+  });
+
+  it("marks an item sold out, and Deshacer puts it back", async () => {
+    signedIn();
+    const fetch = api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Marcar como agotado" }));
+
+    await screen.findByText(/· Agotado$/);
+    expect(fetch.mock.calls.at(-1)![1]).toMatchObject({ method: "PATCH", body: JSON.stringify({ id: 2, status: "agotado" }) });
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    expect(screen.getByRole("menuitem", { name: "Marcar como disponible" })).toBeInTheDocument();
+    expect(screen.queryByRole("menuitem", { name: "Marcar como agotado" })).not.toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+    await waitFor(() => expect(fetch.mock.calls.at(-1)![1]).toMatchObject({ body: JSON.stringify({ id: 2, status: "" }) }));
+    await waitFor(() => expect(screen.queryByText(/· Agotado$/)).not.toBeInTheDocument());
+  });
+
+  it("duplicates a beer onto the next free tap without its id", async () => {
+    signedIn();
+    const fetch = api((url, init) => (init?.method === "POST" ? json({ ...JSON.parse(String(init.body)), id: 9 }, 201) : undefined));
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Duplicar" }));
+
+    expect(await screen.findByText("American Stout (copia)")).toBeInTheDocument();
+    const [url, init] = fetch.mock.calls.at(-1)!;
+    expect(url).toBe(`${API_URL}/api/editor/beers/`);
+    const body = JSON.parse(String(init!.body));
+    expect(body).toMatchObject({ name: "American Stout (copia)", tap: "02", style: "Stout", price_16: 120 });
+    expect(body).not.toHaveProperty("id");
+  });
+
+  it("deletes from the ⋮ menu only after confirming", async () => {
+    signedIn();
+    const fetch = api((url, init) => (init?.method === "DELETE" ? new Response(null, { status: 204 }) : undefined));
+    const ask = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
+    for (let i = 0; i < 2; i++) {
+      await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+      await userEvent.click(screen.getByRole("menuitem", { name: "Eliminar" }));
+    }
+    await waitFor(() => expect(screen.queryByText("American Stout")).not.toBeInTheDocument());
+    expect(ask).toHaveBeenCalledTimes(2);
+    expect(fetch.mock.calls.filter(([, init]) => init?.method === "DELETE")).toHaveLength(1);
+    ask.mockRestore();
+  });
+
   it("puts the switch back when saving fails", async () => {
     signedIn();
     api((url, init) => (init?.method === "PATCH" ? json({}, 500) : undefined));

@@ -480,3 +480,59 @@
   color: var(--navy);
   font-weight: 700;
 }
+
+/* ---------------------------------------------------------------- Row ⋮ menu */
+
+.row[data-status="agotado"] .rowName {
+  text-decoration: line-through;
+}
+.kebab {
+  position: relative;
+  flex-shrink: 0;
+}
+.kebabButton {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--navy);
+}
+.kebabButton:hover,
+.kebabButton[aria-expanded="true"] {
+  background: var(--cream-2);
+}
+.kebabMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(16, 48, 77, 0.16);
+}
+.kebabMenu button {
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 9px 14px;
+  font-size: 15px;
+  color: var(--navy);
+}
+.kebabMenu button:hover,
+.kebabMenu button:focus-visible {
+  background: var(--cream-2);
+}
+.kebabMenu .kebabDanger {
+  color: #b3261e;
+  border-top: 1px solid var(--line);
+  margin-top: 4px;
+  padding-top: 11px;
+}

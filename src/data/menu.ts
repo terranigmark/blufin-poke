@@ -244,8 +244,18 @@ export const SALSA_RECOMMENDED_MAX = 2;
 export const PROTEIN_NOTE = "* Proteínas sujetas a cambio y/o hasta agotar existencias";
 export const PROTEIN_NOTE_EN = "* Ask for protein availability. They are fresh products which are subject to changes and/or while supplies last";
 
+/** The badge the editor can put on an item ("" = none). Agotado and próximamente can't be ordered. */
+export type Status = "" | "agotado" | "proximamente" | "por_agotarse" | "novedad";
+export const STATUS_LABELS: Record<Exclude<Status, "">, [string, string]> = {
+  agotado: ["Agotado", "Sold out"],
+  proximamente: ["Próximamente", "Coming soon"],
+  por_agotarse: ["Por agotarse", "Almost gone"],
+  novedad: ["Novedad", "New"],
+};
+export const orderable = (i: { status?: Status }) => i.status !== "agotado" && i.status !== "proximamente";
+
 // PLACEHOLDER: bowl prices were invented in the design.
-export type Size = { id: string; name: string; nameEn?: string; price: number };
+export type Size = { id: string; name: string; nameEn?: string; price: number; status?: Status };
 export const SIZES: Size[] = [
   { id: "small", name: "Small", price: 165 },
   { id: "regular", name: "Regular", price: 235 },
@@ -276,6 +286,7 @@ export type Beer = {
   desc: string;
   nameEn?: string;
   descEn?: string;
+  status?: Status;
 };
 
 export const BEERS: Beer[] = [
@@ -290,7 +301,7 @@ export const BEERS: Beer[] = [
 ];
 
 // PLACEHOLDER: "Botella" vs "Lata" was guessed.
-export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata" };
+export type Packaged = { name: string; nameEn?: string; price: number; size: string; pack: "Botella" | "Lata"; status?: Status };
 
 export const AGUAS: Packaged[] = (
   [
@@ -314,7 +325,7 @@ export const NACIONAL: Packaged[] = [
 ];
 
 /** Full extras list for the Menú page. */
-export const MENU_EXTRAS: { name: string; nameEn?: string; price: number }[] = [
+export const MENU_EXTRAS: { name: string; nameEn?: string; price: number; status?: Status }[] = [
   { name: "Proteína", price: 25 },
   { name: "Aguacate", price: 20 },
   { name: "Wakame", price: 20 },

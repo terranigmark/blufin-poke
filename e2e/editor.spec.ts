@@ -82,3 +82,28 @@ test("Deshacer reverts a save, a hide, a delete and a move", async ({ page }) =>
   await expect.poll(() => sizes(page)).toBe("Regular:235,Small:165");
   await undo(start);
 });
+
+test("the ⋮ menu marks a status the public menu shows, duplicates and deletes", async ({ page }) => {
+  await signIn(page);
+  page.on("dialog", (d) => d.accept());
+  const statusOf = async (name: string) =>
+    (await (await page.request.get(API)).json()).sizes.find((z: { name: string }) => z.name === name)?.status;
+  const action = async (row: string, label: string) => {
+    await page.click(`button[aria-label='Opciones de ${row}']`);
+    await page.click(`[role=menuitem]:has-text('${label}')`);
+  };
+
+  await action("Small", "Marcar como agotado");
+  await expect.poll(() => statusOf("Small")).toBe("agotado");
+  const menu = await page.context().newPage();
+  await menu.goto("/menu/?tab=poke");
+  await expect(menu.locator("div[data-status=agotado]")).toContainText(/Agotado|Sold out/); // the test phone reads the site in English
+  await menu.close();
+  await page.click("button:has-text('Deshacer')");
+  await expect.poll(() => statusOf("Small")).toBe("");
+
+  await action("Small", "Duplicar");
+  await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235,Small (copia):165");
+  await action("Small (copia)", "Eliminar");
+  await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235");
+});

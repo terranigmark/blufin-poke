@@ -11,7 +11,17 @@ class MenuItem(models.Model):
     name = models.CharField("nombre", max_length=100)
     # Optional: the website shows `name` in English too when this is empty.
     name_en = models.CharField("nombre en inglés", max_length=100, blank=True)
+    STATUSES = [
+        ("", "Disponible"),
+        ("agotado", "Agotado"),
+        ("proximamente", "Próximamente"),
+        ("por_agotarse", "Por agotarse"),
+        ("novedad", "Novedad"),
+    ]
+
+    # `available` decides whether the item is on the menu at all; `status` is the badge it shows there.
     available = models.BooleanField("disponible", default=True)
+    status = models.CharField("estado", max_length=12, choices=STATUSES, blank=True, default="")
     order = models.PositiveIntegerField("orden", default=0)
 
     class Meta:
