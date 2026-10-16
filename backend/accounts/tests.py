@@ -195,7 +195,7 @@ class PasswordResetTests(TestCase):
         self.assertTrue(self.user.check_password(NEW_PASSWORD))
         self.assertTrue(Activity.objects.filter(email="mesera@blufin.mx", text__contains="enlace del correo").exists())
         # Single use: the token is tied to the old password.
-        self.assertEqual(self.reset(uid, token, "una-tercera-clave-789").status_code, 400)
+        self.assertEqual(self.reset(uid, token, PASSWORD + "-otra").status_code, 400)
 
     def test_same_answer_whether_or_not_the_account_exists(self):
         User.objects.create_user("sin-acceso@blufin.mx", PASSWORD)
