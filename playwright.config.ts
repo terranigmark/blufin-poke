@@ -14,7 +14,7 @@ export default defineConfig({
       cwd: "backend",
       command: `rm -f ${DB} && uv run python manage.py migrate -v0 && uv run python manage.py shell -c "from accounts.models import User; User.objects.create_user('gerente@blufin.mx', 'una-clave-larga-123', can_edit_menu=True)" && uv run python manage.py runserver 8000`,
       url: "http://localhost:8000/api/menu/",
-      env: { DATABASE_URL: `sqlite:///${DB}`, DJANGO_SECRET_KEY: "e2e-only-not-a-secret", DJANGO_DEBUG: "true" },
+      env: { DATABASE_URL: `sqlite:///${DB}`, DJANGO_SECRET_KEY: "e2e-only-not-a-secret", DJANGO_DEBUG: "true", DJANGO_LOGIN_RATE: "100/min" },
       reuseExistingServer: false,
       timeout: 120_000,
     },
