@@ -277,6 +277,13 @@
     box-shadow: 0 14px 30px rgba(16, 48, 77, 0.25);
   }
 }
+/* Two columns on a phone: an odd last tile spans the row instead of leaving a hole. */
+@media (max-width: 499px) {
+  .tile:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    aspect-ratio: 2 / 1;
+  }
+}
 .tile img {
   position: absolute;
   inset: 0;

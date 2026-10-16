@@ -104,6 +104,19 @@ describe("/admin", () => {
     expect(screen.getByText("Small")).toBeInTheDocument();
   });
 
+  it("lets the thumbnail say whether an ingredient has a photo, with no extra label", async () => {
+    signedIn();
+    const ingredients = [
+      { id: 7, step: "base", key: "arroz", name: "Arroz sushi", name_en: "", image_url: "https://x/arroz.jpg", available: true, order: 0 },
+      { id: 8, step: "base", key: "totopos", name: "Totopos", name_en: "", image_url: "", available: true, order: 1 },
+    ];
+    api((url) => (url === `${API_URL}/api/editor/` ? json({ ...ROWS, ingredients }) : undefined));
+    render(<AdminPage />);
+    const row = (await screen.findByText("Totopos")).closest("li")!;
+    expect(row.textContent).toBe("Totopos");
+    expect(screen.queryByText(/Con foto|Sin foto/)).not.toBeInTheDocument();
+  });
+
   it("signs out from the header's ⋮ menu", async () => {
     signedIn();
     api();

@@ -93,6 +93,12 @@ h1,
 h2 {
   font-weight: 400;
 }
+/* No one-word last lines on big titles. */
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
 
 /* Smooth in-page jumps (e.g. /#nosotros) and a soft fade-in for each new page
    (app/(site)/template.tsx). data-scroll-behavior on <html> tells Next to skip

@@ -10,6 +10,8 @@ describe("Menú page", () => {
     render(<MenuView />);
     expect(screen.getByText("Pacífico")).toBeInTheDocument();
     expect(screen.getByText("Kombucha")).toBeInTheDocument();
+    // Size before price, so every price lines up on the right edge like the beers'.
+    expect(screen.getByText("Agua mineral").parentElement!.textContent).toBe("Agua mineral 355 ml$40");
     // Each tap's dot is its beer's SRM colour: the stout is SRM 40.
     expect(screen.getByText("Tap 01").nextElementSibling).toHaveStyle({ background: "#36080A" });
 

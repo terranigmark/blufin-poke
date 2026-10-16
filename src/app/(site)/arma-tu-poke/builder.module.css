@@ -828,6 +828,7 @@
   font-family: var(--script);
   font-size: clamp(26px, 3.4vw, 38px);
   line-height: 1.15;
+  text-wrap: balance;
   color: var(--sand);
 }
 .qrCard {
