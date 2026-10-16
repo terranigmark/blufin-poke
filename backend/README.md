@@ -7,10 +7,13 @@
 | `/api/menu/` | Anyone | The live menu the website shows (available items only) |
 | `/api/auth/login/`, `/api/auth/refresh/` | Menu editors | Email + password → JWT pair (30 min access, 7 day refresh), like Cervesoft |
 | `/api/editor/`, `/api/editor/<sizes\|ingredients\|extras\|beers\|drinks>/` | Menu editors | Everything incl. hidden items; create, edit, delete |
+| `/api/editor/users/` | Owners | The "Usuarios" tab at blufinpoke.com/admin: add, change role, reset password, disable, delete |
 
-Everyone signs in with email and password. To give an employee menu access, open
-`/admin/` → Usuarios → Añadir, enter their email and a password, and tick
-**Puede editar el menú**. Leave "Es staff" off so they only see the menu.
+Everyone signs in with email and password. Two roles: an **owner** is a superuser
+(users, the editor, Django Admin); an **editor** has **Puede editar el menú** (the editor
+only). Owners add and remove people from the **Usuarios** tab at blufinpoke.com/admin; the
+API won't let an owner demote, disable or delete their own account, so there is always
+one owner left. The very first owner is created as in step 4 below, or in Django Admin.
 
 The menu starts with the items the website ships today (`src/data/menu.ts`). The
 website's editor at `blufinpoke.com/admin` (sign in at `/login`) edits it through `/api/`, and the menu,

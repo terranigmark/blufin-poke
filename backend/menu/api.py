@@ -230,6 +230,8 @@ def editor_menu(request):
         {
             **{name: SERIALIZERS[name](model.objects.all(), many=True).data for name, model in MODELS.items()},
             **page_extras(),
+            # Owners also get the "Usuarios" tab.
+            "me": {"email": request.user.email, "owner": request.user.is_superuser},
         }
     )
 

@@ -510,3 +510,57 @@ describe("/admin", () => {
     });
   });
 });
+
+describe("/admin Usuarios", () => {
+  const USERS = [
+    { id: 1, email: "ruth@blufin.mx", name: "Ruth", role: "owner", active: true },
+    { id: 2, email: "mesera@blufin.mx", name: "", role: "editor", active: true },
+  ];
+  /** The editor API as an owner (or not), with the users list and echoing writes. */
+  const usersApi = (owner = true) =>
+    api((url, init) => {
+      if (url === `${API_URL}/api/editor/`) return json({ ...ROWS, me: { email: "ruth@blufin.mx", owner } });
+      if (url === `${API_URL}/api/editor/users/`) return init?.method === "POST" ? json({ id: 3, active: true, ...JSON.parse(String(init.body)) }, 201) : json(USERS);
+      const m = url.match(/editor\/users\/(\d+)\/$/);
+      if (m && init?.method === "DELETE") return new Response(null, { status: 204 });
+      if (m) return json({ ...USERS.find((u) => u.id === Number(m[1])), ...JSON.parse(String(init!.body)) });
+    });
+
+  it("shows the tab to owners only", async () => {
+    signedIn();
+    usersApi(false);
+    render(<AdminPage />);
+    await screen.findByText("American Stout");
+    expect(screen.queryByRole("tab", { name: "Usuarios" })).not.toBeInTheDocument();
+  });
+
+  it("adds a user, disables one after asking with Deshacer, and only lets the owner change their own password", async () => {
+    signedIn();
+    const fetch = usersApi();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("tab", { name: "Usuarios" }));
+    expect(await screen.findByText("Dueño · Ruth · Tú")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de ruth@blufin.mx" }));
+    expect(screen.getAllByRole("menuitem").map((b) => b.textContent)).toEqual(["Cambiar contraseña"]);
+    await userEvent.keyboard("{Escape}");
+
+    await userEvent.click(screen.getByRole("button", { name: "Añadir" }));
+    const form = screen.getByRole("form", { name: "Nuevo usuario" });
+    await userEvent.type(within(form).getByLabelText("Correo"), "cocina@blufin.mx");
+    await userEvent.type(within(form).getByLabelText(/^Contraseña temporal/), "una-clave-larga-123");
+    await userEvent.click(within(form).getByRole("button", { name: "Añadir usuario" }));
+    expect(await screen.findByText("cocina@blufin.mx")).toBeInTheDocument();
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toEqual({ email: "cocina@blufin.mx", name: "", password: "una-clave-larga-123", role: "editor" });
+
+    await userEvent.click(screen.getByRole("button", { name: "Opciones de mesera@blufin.mx" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Desactivar" }));
+    expect(confirm).toHaveBeenLastCalledWith(expect.stringContaining("¿Desactivar a mesera@blufin.mx?"));
+    expect(await screen.findByText("Editor · Desactivado")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+    await waitFor(() => expect(screen.queryByText("Editor · Desactivado")).not.toBeInTheDocument());
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toEqual({ role: "editor", active: true });
+    confirm.mockRestore();
+  });
+});
