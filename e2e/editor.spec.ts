@@ -168,7 +168,7 @@ test("three house bowls added in the editor show on the home page and the menu",
 test("a beer's SRM colour from the editor shows as its tap dot on the menu", async ({ page }) => {
   await signIn(page);
   await page.click("button:has-text('American Stout')");
-  await page.getByRole("dialog").getByRole("radio", { name: "SRM 12" }).check({ force: true });
+  await page.getByRole("dialog").getByRole("spinbutton", { name: "Número SRM" }).fill("12");
   await page.click("dialog button:has-text('Guardar cambios')");
   await expect(page.locator("dialog")).toHaveCount(0);
 
