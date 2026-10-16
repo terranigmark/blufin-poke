@@ -23,11 +23,10 @@ test.describe("on an English device", () => {
     await page.fill("input[name=password]", "una-clave-larga-123");
     await page.click("button:has-text('Entrar')");
     await expect(page).toHaveURL(/\/admin\/$/);
-    await page.getByRole("button", { name: /^Aguas y refrescos/ }).click();
     await page.click("button:has-text('Kombucha')");
     await page.fill("dialog input[name=name_en]", "House kombucha");
-    await page.click("dialog button:has-text('Guardar')");
-    await expect(page.getByText("Cambios guardados")).toBeVisible();
+    await page.click("dialog button:has-text('Guardar cambios')");
+    await expect(page.locator("dialog")).toHaveCount(0); // closes once the server has saved it
 
     await page.goto("/menu/?tab=aguas");
     await expect(page.getByText("House kombucha")).toBeVisible();

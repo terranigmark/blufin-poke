@@ -14,7 +14,6 @@ async function signIn(page: Page) {
   await page.fill("input[name=password]", "una-clave-larga-123");
   await page.click("button:has-text('Entrar')");
   await expect(page).toHaveURL(/\/admin\/$/);
-  await page.click("button:has-text('Tamaños de bowl')");
 }
 
 test("signing in goes to /admin, and /login and /admin redirect by session", async ({ page }) => {
@@ -23,7 +22,8 @@ test("signing in goes to /admin, and /login and /admin redirect by session", asy
   await signIn(page);
   await page.goto("/login/");
   await expect(page).toHaveURL(/\/admin\/$/);
-  await page.click("button:has-text('Salir')");
+  await page.click("button[aria-label='Más']");
+  await page.click("[role=menuitem]:has-text('Salir')");
   await expect(page).toHaveURL(/\/login\/$/);
 });
 
@@ -54,9 +54,8 @@ test("Cancelar asks before discarding edits and saves nothing", async ({ page })
   expect(await sizes(page)).toBe("Small:165,Regular:235");
 });
 
-test("Deshacer reverts a save, a hide, a delete and a move", async ({ page }) => {
+test("Deshacer reverts a save, a hide, a delete and a drag", async ({ page }) => {
   await signIn(page);
-  page.on("dialog", (d) => d.accept());
   const undo = async (expected: string) => {
     await page.click("button:has-text('Deshacer')");
     await expect.poll(() => sizes(page)).toBe(expected);
@@ -65,27 +64,49 @@ test("Deshacer reverts a save, a hide, a delete and a move", async ({ page }) =>
 
   await page.click("button:has-text('Regular')");
   await page.fill("dialog input[name=price]", "250");
-  await page.click("dialog button:has-text('Guardar')");
+  await page.click("dialog button:has-text('Guardar cambios')");
   await expect.poll(() => sizes(page)).toBe("Small:165,Regular:250");
   await undo(start);
 
-  await page.locator("input[aria-label='Small disponible']").click({ force: true });
+  await page.click("button[aria-label='Opciones de Small']");
+  await page.click("[role=menuitem]:has-text('Ocultar del menú')");
   await expect.poll(() => sizes(page)).toBe("Regular:235");
   await undo(start);
 
-  await page.click("button:has-text('Regular')");
-  await page.click("dialog button:has-text('Borrar')");
+  // Deletes straight away, as in Cervesoft: no "are you sure?", Deshacer is the way back.
+  await page.click("button[aria-label='Opciones de Regular']");
+  await page.click("[role=menuitem]:has-text('Eliminar')");
   await expect.poll(() => sizes(page)).toBe("Small:165");
   await undo(start);
 
-  await page.click("button[aria-label='Bajar Small']");
+  // Drag with the keyboard (the same handle a finger or mouse drags): pick up, move down, drop.
+  await page.focus("button[aria-label='Arrastra para reordenar Small']");
+  for (const key of ["Space", "ArrowDown", "Space"]) {
+    await page.keyboard.press(key);
+    await page.waitForTimeout(250); // dnd-kit moves on the next animation frames
+  }
   await expect.poll(() => sizes(page)).toBe("Regular:235,Small:165");
   await undo(start);
 });
 
+test("dragging a row with the mouse reorders it", async ({ page }) => {
+  await signIn(page);
+  const handle = page.locator("button[aria-label='Arrastra para reordenar Small']");
+  const target = page.locator("button[aria-label='Arrastra para reordenar Regular']");
+  const from = (await handle.boundingBox())!;
+  const to = (await target.boundingBox())!;
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y + 20, { steps: 5 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2 + 10, { steps: 10 });
+  await page.mouse.up();
+  await expect.poll(() => sizes(page)).toBe("Regular:235,Small:165");
+  await page.click("button:has-text('Deshacer')");
+  await expect.poll(() => sizes(page)).toBe("Small:165,Regular:235");
+});
+
 test("the ⋮ menu marks a status the public menu shows, duplicates and deletes", async ({ page }) => {
   await signIn(page);
-  page.on("dialog", (d) => d.accept());
   const statusOf = async (name: string) =>
     (await (await page.request.get(API)).json()).sizes.find((z: { name: string }) => z.name === name)?.status;
   const action = async (row: string, label: string) => {

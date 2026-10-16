@@ -83,50 +83,114 @@ describe("/admin", () => {
     expect(localStorage.getItem("blufin.refresh")).toBeNull();
   });
 
-  it("hides an item with its switch", async () => {
+  it("opens every section and shows Cervesoft's header", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    expect(await screen.findByText("American Stout")).toBeInTheDocument();
+    expect(screen.getByText("Small")).toBeInTheDocument();
+    expect(screen.getByText(/^2 artículos · \d+ secciones · Guardado$/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Ver menú público" })).toHaveAttribute("href", expect.stringMatching(/^\/menu\/?$/));
+
+    // Folding a section away, and the search box's clear button.
+    await userEvent.click(screen.getByRole("button", { name: /^Cerveza de barril/ }));
+    expect(screen.queryByText("American Stout")).not.toBeInTheDocument();
+    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar artículos" }), "stout");
+    expect(screen.getByText("American Stout")).toBeInTheDocument();
+    expect(screen.queryByText("Small")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Borrar búsqueda" }));
+    expect(screen.getByText("Small")).toBeInTheDocument();
+  });
+
+  it("signs out from the header's ⋮ menu", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Más" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Salir" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/login/"));
+    expect(localStorage.getItem("blufin.refresh")).toBeNull();
+  });
+
+  it("hides an item from the ⋮ menu", async () => {
     signedIn();
     const fetch = api();
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    await userEvent.click(screen.getByRole("checkbox", { name: "American Stout disponible" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Ocultar del menú" }));
 
-    await screen.findByText("Cambios guardados");
+    await screen.findByText("Guardado", { exact: false });
     const [url, init] = fetch.mock.calls.at(-1)!;
     expect(url).toBe(`${API_URL}/api/editor/beers/2/`);
     expect(init).toMatchObject({ method: "PATCH", body: JSON.stringify({ id: 2, available: false }) });
-    expect(screen.getByText("Oculto en el menú")).toBeInTheDocument();
+    expect(await screen.findByText(/· Oculto$/)).toBeInTheDocument();
+    expect(screen.getByText(/1 oculto$/)).toBeInTheDocument();
   });
 
   it("edits an item's price in the sheet", async () => {
     signedIn();
     const fetch = api();
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Tamaños de bowl/ }));
-    await userEvent.click(screen.getByRole("button", { name: /^Small/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^Small/ }));
 
     const sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Editar artículo" })).toBeInTheDocument();
     const price = within(sheet).getByLabelText("Precio (MXN)");
     await userEvent.clear(price);
     await userEvent.type(price, "175");
-    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar" }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const [, init] = fetch.mock.calls.at(-1)!;
-    expect(JSON.parse(String(init!.body))).toMatchObject({ id: 1, name: "Small", name_en: "", price: 175, available: true });
+    expect(JSON.parse(String(init!.body))).toMatchObject({ id: 1, name: "Small", name_en: "", price: 175, available: true, status: "" });
     expect(screen.getByText("$175")).toBeInTheDocument();
+  });
+
+  it("sets one status at a time and hides from the sheet's switches", async () => {
+    signedIn();
+    const fetch = api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: /^Small/ }));
+    const sheet = screen.getByRole("dialog");
+    const agotado = within(sheet).getByRole("checkbox", { name: /^Agotado/ });
+    const novedad = within(sheet).getByRole("checkbox", { name: /^Novedad/ });
+    await userEvent.click(agotado);
+    await userEvent.click(novedad);
+    expect(agotado).not.toBeChecked();
+    expect(novedad).toBeChecked();
+    await userEvent.click(within(sheet).getByRole("checkbox", { name: /^Oculto/ }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(JSON.parse(String(fetch.mock.calls.at(-1)![1]!.body))).toMatchObject({ id: 1, status: "novedad", available: false });
+  });
+
+  it("adds from the section's Añadir and from the round + button", async () => {
+    signedIn();
+    api();
+    render(<AdminPage />);
+    await userEvent.click(await screen.findByRole("button", { name: "Añadir a Cerveza de barril" }));
+    let sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByRole("heading", { name: "Añadir artículo" })).toBeInTheDocument();
+    expect(within(sheet).getByLabelText(/^Grifo/)).toHaveValue("02");
+    await userEvent.click(within(sheet).getByRole("button", { name: "Cancelar" }));
+
+    // The round button adds to the section used last.
+    await userEvent.click(screen.getByRole("button", { name: "Añadir artículo" }));
+    sheet = screen.getByRole("dialog");
+    expect(within(sheet).getByText(/^Cerveza de barril ·/)).toBeInTheDocument();
   });
 
   it("edits a beer's English name and description, which are optional", async () => {
     signedIn();
     const fetch = api();
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    await userEvent.click(screen.getByRole("button", { name: /^American Stout/ }));
+    await userEvent.click(await screen.findByRole("button", { name: /^American Stout/ }));
 
     const sheet = screen.getByRole("dialog");
     expect(within(sheet).getByLabelText(/^Nombre en inglés/)).not.toBeRequired();
     await userEvent.type(within(sheet).getByLabelText(/^Descripción en inglés/), "Roasted coffee.");
-    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar" }));
+    await userEvent.click(within(sheet).getByRole("button", { name: "Guardar cambios" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
     const [, init] = fetch.mock.calls.at(-1)!;
@@ -137,8 +201,7 @@ describe("/admin", () => {
     signedIn();
     api();
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
     const items = within(screen.getByRole("menu")).getAllByRole("menuitem").map((b) => b.textContent);
     expect(items).toEqual([
       "Editar",
@@ -164,14 +227,14 @@ describe("/admin", () => {
     signedIn();
     const fetch = api();
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Marcar como agotado" }));
 
     await screen.findByText(/· Agotado$/);
     expect(fetch.mock.calls.at(-1)![1]).toMatchObject({ method: "PATCH", body: JSON.stringify({ id: 2, status: "agotado" }) });
+    // As in Cervesoft, the sold-out line turns into "Marcar como disponible" in the same place.
     await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
-    expect(screen.getByRole("menuitem", { name: "Marcar como disponible" })).toBeInTheDocument();
+    expect(within(screen.getByRole("menu")).getAllByRole("menuitem")[2]).toHaveTextContent("Marcar como disponible");
     expect(screen.queryByRole("menuitem", { name: "Marcar como agotado" })).not.toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
 
@@ -184,8 +247,7 @@ describe("/admin", () => {
     signedIn();
     const fetch = api((url, init) => (init?.method === "POST" ? json({ ...JSON.parse(String(init.body)), id: 9 }, 201) : undefined));
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Duplicar" }));
 
     expect(await screen.findByText("American Stout (copia)")).toBeInTheDocument();
@@ -196,30 +258,31 @@ describe("/admin", () => {
     expect(body).not.toHaveProperty("id");
   });
 
-  it("deletes from the ⋮ menu only after confirming", async () => {
+  it("deletes straight from the ⋮ menu, and Deshacer brings it back", async () => {
     signedIn();
-    const fetch = api((url, init) => (init?.method === "DELETE" ? new Response(null, { status: 204 }) : undefined));
-    const ask = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+    const fetch = api((url, init) =>
+      init?.method === "DELETE" ? new Response(null, { status: 204 }) : init?.method === "POST" ? json({ ...JSON.parse(String(init.body)), id: 9 }, 201) : undefined,
+    );
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    for (let i = 0; i < 2; i++) {
-      await userEvent.click(screen.getByRole("button", { name: "Opciones de American Stout" }));
-      await userEvent.click(screen.getByRole("menuitem", { name: "Eliminar" }));
-    }
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Eliminar" }));
     await waitFor(() => expect(screen.queryByText("American Stout")).not.toBeInTheDocument());
-    expect(ask).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls.filter(([, init]) => init?.method === "DELETE")).toHaveLength(1);
-    ask.mockRestore();
+    expect(screen.getByText("Eliminaste “American Stout”")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Deshacer" }));
+    expect(await screen.findByText("American Stout")).toBeInTheDocument();
+    const [url, init] = fetch.mock.calls.at(-1)!;
+    expect(url).toBe(`${API_URL}/api/editor/beers/`);
+    expect(JSON.parse(String(init!.body))).toMatchObject({ tap: "01", name: "American Stout" });
   });
 
-  it("puts the switch back when saving fails", async () => {
+  it("puts a hidden item back when saving fails", async () => {
     signedIn();
     api((url, init) => (init?.method === "PATCH" ? json({}, 500) : undefined));
     render(<AdminPage />);
-    await userEvent.click(await screen.findByRole("button", { name: /^Cerveza de barril/ }));
-    const toggle = screen.getByRole("checkbox", { name: "American Stout disponible" });
-    await userEvent.click(toggle);
+    await userEvent.click(await screen.findByRole("button", { name: "Opciones de American Stout" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Ocultar del menú" }));
     expect(await screen.findByText("El servidor no respondió. Intenta de nuevo en un momento.")).toBeInTheDocument();
-    expect(toggle).toBeChecked();
+    expect(screen.queryByText(/· Oculto$/)).not.toBeInTheDocument();
   });
 });

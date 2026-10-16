@@ -1,5 +1,17 @@
 "use client";
 
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -20,9 +32,10 @@ import {
 import s from "./editor.module.css";
 
 /*
- * The manager's menu editor, modelled on Cervesoft's /taplist-admin: one page,
- * sign in, then collapsible sections with an availability switch and a ⋮ menu
- * per item, and a sheet to edit, add or delete. Every change is saved to the API right away.
+ * The manager's menu editor, a copy of Cervesoft's /taplist-admin (cervesoft-frontend
+ * app/taplist-admin/page.tsx): sign in, then one card per section with rows you drag to
+ * reorder, a ⋮ menu per row, and a sheet to edit or add. Every change is saved to the API
+ * right away, and the last one can be undone.
  */
 
 type AnyRow = MenuRows[Kind][number];
@@ -101,16 +114,15 @@ const SECTIONS: Section[] = [
   })),
 ];
 
-/** "Marcar como…" in the ⋮ menu, Cervesoft's order; "" is plain available. */
-const STATUSES: [Status, string, IconName][] = [
-  ["", "disponible", "check"],
-  ["agotado", "agotado", "ban"],
-  ["proximamente", "próximamente", "hourglass"],
-  ["por_agotarse", "por agotarse", "flame"],
-  ["novedad", "novedad", "sparkles"],
+/** The statuses in Cervesoft's order: "Marcar como…" label, icon, and the hint under its switch in the sheet. */
+const STATUSES: [Exclude<Status, "">, string, IconName, string][] = [
+  ["agotado", "agotado", "x", "Sigue en el menú, tachado, y no se puede pedir en Arma tu poke."],
+  ["proximamente", "próximamente", "hourglass", "Se muestra con la etiqueta Próximamente y todavía no se puede pedir. Al activarlo se quita “agotado”."],
+  ["por_agotarse", "por agotarse", "flame", "Se muestra con la etiqueta Por agotarse, para que lo pidan antes de que se acabe. Al activarlo se quitan los otros estados."],
+  ["novedad", "novedad", "sparkles", "Se muestra con la etiqueta Novedad, para que vean lo que acaba de llegar. Al activarlo se quitan los otros estados."],
 ];
 const statusLabel = (st?: Status) => (st ? STATUS_LABELS[st][0] : "");
-const DELETE_ASK = (name: string) => `¿Borrar “${name}” del menú? Si solo se acabó, mejor márcalo como agotado u ocúltalo.`;
+const items = (n: number) => `${n} artículo${n === 1 ? "" : "s"}`;
 
 const sortRows = (kind: Kind, rows: AnyRow[]) =>
   [...rows].sort((a, b) =>
@@ -227,12 +239,21 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const [loadError, setLoadError] = useState("");
   const [save, setSave] = useState<Save>("idle");
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  // Sections start open, as in Cervesoft; this remembers the ones folded away.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // The round + button adds to the section used last.
+  const lastSection = useRef(SECTIONS[0]);
   const [sheet, setSheetState] = useState<Sheet>(null);
   const setSheet = (next: Sheet) => {
     if (typeof save === "object") setSave("idle"); // don't greet a new sheet with an old error
+    if (next) lastSection.current = next.sec;
     setSheetState(next);
   };
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
   const [undo, setUndo] = useState<Undo>(null);
   useEffect(() => {
     if (!undo) return;
@@ -293,14 +314,16 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     }
   };
 
-  /** Swap a row with its neighbour, renumbering the section so every item has its own position. */
-  const move = (sec: Section, rows: AnyRow[], i: number, dir: -1 | 1) => {
-    const next = [...rows];
-    [next[i], next[i + dir]] = [next[i + dir], next[i]];
+  /** A dropped row: renumber the section so every item has its own position. */
+  const reorder = (sec: Section, rows: AnyRow[], { active, over }: DragEndEvent) => {
+    const from = rows.findIndex((r) => r.id === active.id);
+    const to = rows.findIndex((r) => r.id === over?.id);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = arrayMove(rows, from, to);
     const moved = next.filter((r, order) => r.order !== order);
     moved.forEach((r) => persist(sec.kind, { id: r.id, order: next.indexOf(r) }, true));
     setUndo({
-      label: `Moviste “${rows[i].name}”`,
+      label: `Moviste “${rows[from].name}”`,
       run: () => Promise.all(moved.map((r) => persist(sec.kind, { id: r.id, order: r.order }, true))),
     });
   };
@@ -316,7 +339,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
   const setStatus = async (sec: Section, r: AnyRow, status: Status) => {
     if (await persist(sec.kind, { id: r.id, status }, true))
       setUndo({
-        label: `“${r.name}” ${STATUSES.find(([v]) => v === status)![1]}`,
+        label: `“${r.name}” ${STATUSES.find(([v]) => v === status)?.[1] ?? "disponible"}`,
         run: () => persist(sec.kind, { id: r.id, status: r.status ?? "" }, true),
       });
   };
@@ -329,7 +352,7 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     if (saved) setUndo({ label: `Duplicaste “${r.name}”`, run: () => remove(sec.kind, saved.id) });
   };
 
-  /** Sheet "Guardar"/"Agregar": undo restores the previous version, or removes the new item. */
+  /** Sheet "Guardar cambios"/"Añadir artículo": undo restores the previous version, or removes the new item. */
   const saveSheet = async (sec: Section, row: Partial<AnyRow>) => {
     const old = row.id ? (data![sec.kind] as AnyRow[]).find((x) => x.id === row.id) : undefined;
     const saved = await persist(sec.kind, row);
@@ -338,16 +361,13 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
     setUndo(
       old
         ? { label: `Guardaste “${saved.name}”`, run: () => persist(sec.kind, old) }
-        : { label: `Agregaste “${saved.name}”`, run: () => remove(sec.kind, saved.id) },
+        : { label: `Añadiste “${saved.name}”`, run: () => remove(sec.kind, saved.id) },
     );
   };
 
-  /** Undo puts a deleted item back as a new row with the same content. */
-  const deleteSheet = async (sec: Section, id: number) => {
-    const old = (data![sec.kind] as AnyRow[]).find((x) => x.id === id)!;
-    if (!(await remove(sec.kind, id))) return;
-    setSheet(null);
-    setUndo({ label: `Borraste “${old.name}”`, run: () => persist(sec.kind, { ...old, id: undefined }) });
+  /** Deletes straight away, as in Cervesoft; Deshacer puts it back as a new row with the same content and key. */
+  const deleteRow = async (sec: Section, r: AnyRow) => {
+    if (await remove(sec.kind, r.id)) setUndo({ label: `Eliminaste “${r.name}”`, run: () => persist(sec.kind, { ...r, id: undefined }) });
   };
 
   const term = search.trim().toLowerCase();
@@ -378,6 +398,9 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
       </main>
     );
 
+  const total = SECTIONS.reduce((n, sec) => n + rowsOf(data, sec).length, 0);
+  const add = (sec: Section) => setSheet({ sec, row: { ...blank(sec.kind, rowsOf(data, sec)), ...sec.where } });
+
   return (
     <div className={s.page}>
       <header className={s.header}>
@@ -385,106 +408,82 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <div>
             <Brand />
             <p className={s.saveState} aria-live="polite">
-              {save === "saving" ? "Guardando…" : save === "saved" ? "Cambios guardados" : typeof save === "object" ? <span className={s.errorText}>{save.error}</span> : "Los cambios se guardan al momento"}
+              {items(total)} · {SECTIONS.length} secciones ·{" "}
+              {save === "saving" ? "Guardando…" : typeof save === "object" ? <span className={s.errorText}>{save.error}</span> : "Guardado"}
             </p>
           </div>
           <div className={s.headerActions}>
-            <Link href="/menu/" target="_blank" className={s.ghost}>
-              Ver menú
+            <Link href="/menu/" target="_blank" className={s.iconButton} aria-label="Ver menú público">
+              <Icon name="externalLink" />
             </Link>
-            <button className={s.ghost} onClick={onSignOut}>
-              Salir
-            </button>
+            <RowMenu label="Más" actions={[["Salir", "logOut", onSignOut]]} />
           </div>
         </div>
-        <input
-          className={s.search}
-          type="search"
-          placeholder="Buscar en el menú"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          aria-label="Buscar en el menú"
-        />
+        <div className={s.searchBox}>
+          <Icon name="search" />
+          <input type="search" placeholder="Buscar artículos" value={search} onChange={(e) => setSearch(e.target.value)} aria-label="Buscar artículos" />
+          {search && (
+            <button onClick={() => setSearch("")} aria-label="Borrar búsqueda">
+              <Icon name="x" />
+            </button>
+          )}
+        </div>
       </header>
 
       <main className={s.main}>
         {groups.map(({ sec, all, rows }) => {
-          const expanded = !!term || open[sec.id];
+          const expanded = !!term || !collapsed[sec.id];
           const hidden = all.filter((r) => !r.available).length;
+          // Beers stay in tap order, and a filtered list has gaps, so neither can be dragged.
+          const sortable = sec.kind !== "beers" && !term;
           return (
             <section key={sec.id} className={s.card}>
               <div className={s.cardHead}>
-                <button className={s.cardToggle} onClick={() => setOpen((o) => ({ ...o, [sec.id]: !o[sec.id] }))} aria-expanded={expanded}>
+                <button className={s.cardToggle} onClick={() => setCollapsed((c) => ({ ...c, [sec.id]: !c[sec.id] }))} aria-expanded={expanded}>
                   <span className={s.chevron} data-open={expanded} aria-hidden>
                     ›
                   </span>
                   <span className={s.cardTitle}>{sec.title}</span>
                   <span className={s.count}>
-                    {all.length}
+                    {term ? `${rows.length} de ${all.length}` : items(all.length)}
                     {hidden ? ` · ${hidden} oculto${hidden > 1 ? "s" : ""}` : ""}
                   </span>
                 </button>
-                <button
-                  className={s.add}
-                  aria-label={`Agregar a ${sec.title}`}
-                  onClick={() => setSheet({ sec, row: { ...blank(sec.kind, all), ...sec.where } })}
-                >
-                  + Agregar
+                <button className={s.add} aria-label={`Añadir a ${sec.title}`} onClick={() => add(sec)}>
+                  <Icon name="plus" />
+                  Añadir
                 </button>
               </div>
-              {expanded && (
-                <ul className={s.list}>
-                  {rows.length === 0 && <li className={s.empty}>Nada aquí todavía.</li>}
-                  {rows.map((r, i) => (
-                    <li key={r.id} className={s.row} data-hidden={!r.available} data-status={r.status || undefined}>
-                      {sec.kind === "beers" ? (
-                        <span className={s.dot} style={{ background: (r as BeerRow).color }} />
-                      ) : sec.kind === "ingredients" ? (
-                        (r as IngredientRow).image_url ? <img className={s.thumb} src={(r as IngredientRow).image_url} alt="" /> : <span className={s.thumb} />
-                      ) : null}
-                      <button className={s.rowMain} onClick={() => setSheet({ sec, row: r })}>
-                        <span className={s.rowName}>{r.name}</span>
-                        <span className={s.rowSub}>
-                          {r.available ? [sec.sub(r), statusLabel(r.status)].filter(Boolean).join(" · ") : "Oculto en el menú"}
-                        </span>
-                      </button>
-                      {sec.kind !== "beers" && !term && (
-                        <span className={s.arrows}>
-                          <button aria-label={`Subir ${r.name}`} disabled={i === 0} onClick={() => move(sec, rows, i, -1)}>
-                            ↑
-                          </button>
-                          <button aria-label={`Bajar ${r.name}`} disabled={i === rows.length - 1} onClick={() => move(sec, rows, i, 1)}>
-                            ↓
-                          </button>
-                        </span>
-                      )}
-                      <label className={s.switch} title={r.available ? "Disponible" : "Oculto"}>
-                        <input
-                          type="checkbox"
-                          checked={r.available}
-                          onChange={(e) => toggle(sec, r, e.target.checked)}
-                          aria-label={`${r.name} disponible`}
-                        />
-                        <span aria-hidden />
-                      </label>
-                      <RowMenu
-                        name={r.name}
-                        actions={[
-                          ["Editar", "pencil", () => setSheet({ sec, row: r })],
-                          ["Duplicar", "copy", () => duplicate(sec, r, all)],
-                          ...STATUSES.filter(([v]) => v !== (r.status ?? "")).map(
-                            ([v, label, icon]): Action => [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
-                          ),
-                          r.available
-                            ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)]
-                            : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
-                          ["Eliminar", "trash", () => confirm(DELETE_ASK(r.name)) && deleteSheet(sec, r.id), true],
-                        ]}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {expanded &&
+                (rows.length === 0 ? (
+                  <p className={s.empty}>Nada aquí todavía.</p>
+                ) : (
+                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => reorder(sec, rows, e)}>
+                    <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+                      <ul className={s.list}>
+                        {rows.map((r) => (
+                          <ItemRow
+                            key={r.id}
+                            sec={sec}
+                            r={r}
+                            sortable={sortable}
+                            onEdit={() => setSheet({ sec, row: r })}
+                            actions={[
+                              ["Editar", "pencil", () => setSheet({ sec, row: r })],
+                              ["Duplicar", "copy", () => duplicate(sec, r, all)],
+                              // Cervesoft's toggles: the line for the current status turns into "Marcar como disponible".
+                              ...STATUSES.map(([v, label, icon]): Action =>
+                                r.status === v ? ["Marcar como disponible", "check", () => setStatus(sec, r, "")] : [`Marcar como ${label}`, icon, () => setStatus(sec, r, v)],
+                              ),
+                              r.available ? ["Ocultar del menú", "eyeOff", () => toggle(sec, r, false)] : ["Mostrar en el menú", "eye", () => toggle(sec, r, true)],
+                              ["Eliminar", "trash", () => deleteRow(sec, r), true],
+                            ]}
+                          />
+                        ))}
+                      </ul>
+                    </SortableContext>
+                  </DndContext>
+                ))}
             </section>
           );
         })}
@@ -497,7 +496,6 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           sheet={sheet}
           onClose={() => setSheet(null)}
           onSave={(row) => saveSheet(sheet.sec, row)}
-          onDelete={() => deleteSheet(sheet.sec, sheet.row.id!)}
           error={typeof save === "object" ? save.error : ""}
         />
       )}
@@ -508,7 +506,43 @@ function Panel({ onSignOut }: { onSignOut: () => void }) {
           <button onClick={runUndo}>Deshacer</button>
         </div>
       )}
+      <button className={s.fab} aria-label="Añadir artículo" onClick={() => add(lastSection.current)}>
+        <Icon name="plus" />
+      </button>
     </div>
+  );
+}
+
+/** One row, as in Cervesoft: drag handle, picture, name and details (tap to edit), ⋮ menu. */
+function ItemRow({ sec, r, sortable, onEdit, actions }: { sec: Section; r: AnyRow; sortable: boolean; onEdit: () => void; actions: Action[] }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: r.id, disabled: !sortable });
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }}
+      className={s.row}
+      data-hidden={!r.available}
+      data-status={r.status || undefined}
+    >
+      {sortable && (
+        <button className={s.handle} aria-label={`Arrastra para reordenar ${r.name}`} {...attributes} {...listeners}>
+          <Icon name="grip" />
+        </button>
+      )}
+      {sec.kind === "beers" ? (
+        <span className={s.dot} style={{ background: (r as BeerRow).color }} />
+      ) : sec.kind === "ingredients" ? (
+        (r as IngredientRow).image_url ? <img className={s.thumb} src={(r as IngredientRow).image_url} alt="" /> : <span className={s.thumb} />
+      ) : null}
+      <button className={s.rowMain} onClick={onEdit}>
+        <span className={s.rowName}>
+          {!r.available && <Icon name="eyeOff" />}
+          <span>{r.name}</span>
+        </span>
+        <span className={s.rowSub}>{[sec.sub(r), statusLabel(r.status), r.available ? "" : "Oculto"].filter(Boolean).join(" · ")}</span>
+      </button>
+      <RowMenu label={`Opciones de ${r.name}`} actions={actions} />
+    </li>
   );
 }
 
@@ -530,20 +564,32 @@ const ICONS = {
   pencil: <><path d="M21.17 6.81a1 1 0 0 0-3.98-3.98L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z" /><path d="m15 5 4 4" /></>,
   copy: <><rect width="14" height="14" x="8" y="8" rx="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></>,
   check: <><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></>,
-  ban: <><circle cx="12" cy="12" r="10" /><path d="m4.9 4.9 14.2 14.2" /></>,
   hourglass: <><path d="M5 22h14M5 2h14" /><path d="M17 22v-4.17a2 2 0 0 0-.59-1.42L12 12l-4.41 4.41A2 2 0 0 0 7 17.83V22" /><path d="M7 2v4.17a2 2 0 0 0 .59 1.42L12 12l4.41-4.41A2 2 0 0 0 17 6.17V2" /></>,
   flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />,
   sparkles: <><path d="M9.94 15.5A2 2 0 0 0 8.5 14.06l-6.14-1.58a.5.5 0 0 1 0-.96L8.5 9.94A2 2 0 0 0 9.94 8.5l1.58-6.14a.5.5 0 0 1 .96 0l1.58 6.14a2 2 0 0 0 1.44 1.44l6.14 1.58a.5.5 0 0 1 0 .96l-6.14 1.58a2 2 0 0 0-1.44 1.44l-1.58 6.14a.5.5 0 0 1-.96 0z" /><path d="M20 3v4M22 5h-4" /></>,
   eyeOff: <><path d="M10.73 5.08a10.74 10.74 0 0 1 11.2 6.57 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-1.44 2.49" /><path d="M14.08 14.16a3 3 0 0 1-4.24-4.24" /><path d="M17.48 17.5a10.75 10.75 0 0 1-15.42-5.15 1 1 0 0 1 0-.7 10.75 10.75 0 0 1 4.45-5.14" /><path d="m2 2 20 20" /></>,
   eye: <><path d="M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0" /><circle cx="12" cy="12" r="3" /></>,
   trash: <><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></>,
+  x: <path d="M18 6 6 18M6 6l12 12" />,
+  plus: <path d="M5 12h14M12 5v14" />,
+  search: <><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>,
+  externalLink: <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />,
+  logOut: <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />,
+  more: <><circle cx="12" cy="12" r="1" /><circle cx="12" cy="5" r="1" /><circle cx="12" cy="19" r="1" /></>,
+  grip: <><circle cx="9" cy="12" r="1" /><circle cx="9" cy="5" r="1" /><circle cx="9" cy="19" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="5" r="1" /><circle cx="15" cy="19" r="1" /></>,
 };
 type IconName = keyof typeof ICONS;
+
+const Icon = ({ name }: { name: IconName }) => (
+  <svg className={s.icon} viewBox="0 0 24 24" aria-hidden>
+    {ICONS[name]}
+  </svg>
+);
 
 /** Label, icon, what it does, and whether it's the red one at the bottom. */
 type Action = [string, IconName, () => unknown, danger?: boolean];
 
-function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
+function RowMenu({ label, actions }: { label: string; actions: Action[] }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -561,14 +607,14 @@ function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
 
   return (
     <div className={s.kebab} ref={ref}>
-      <button className={s.kebabButton} aria-label={`Opciones de ${name}`} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
-        ⋮
+      <button className={s.iconButton} aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <Icon name="more" />
       </button>
       {open && (
-        <div className={s.kebabMenu} role="menu" aria-label={`Opciones de ${name}`}>
-          {actions.map(([label, icon, run, danger]) => (
+        <div className={s.kebabMenu} role="menu" aria-label={label}>
+          {actions.map(([text, icon, run, danger]) => (
             <button
-              key={label}
+              key={text}
               role="menuitem"
               className={danger ? s.kebabDanger : undefined}
               onClick={() => {
@@ -576,10 +622,8 @@ function RowMenu({ name, actions }: { name: string; actions: Action[] }) {
                 run();
               }}
             >
-              <svg viewBox="0 0 24 24" aria-hidden>
-                {ICONS[icon]}
-              </svg>
-              {label}
+              <Icon name={icon} />
+              {text}
             </button>
           ))}
         </div>
@@ -594,13 +638,11 @@ function ItemSheet({
   sheet: { sec, row },
   onClose,
   onSave,
-  onDelete,
   error,
 }: {
   sheet: NonNullable<Sheet>;
   onClose: () => void;
   onSave: (row: Partial<AnyRow>) => Promise<void>;
-  onDelete: () => Promise<void>;
   error: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -608,6 +650,8 @@ function ItemSheet({
   const [img, setImg] = useState((row as IngredientRow).image_url ?? "");
   // Set by any edit in the form, so closing without saving asks before throwing the edits away.
   const [dirty, setDirty] = useState(false);
+  // One status at a time, as in Cervesoft: switching one on turns the others off.
+  const [status, setStatus] = useState<Status>(row.status ?? "");
   useEffect(() => ref.current?.showModal(), []);
   const isNew = !row.id;
 
@@ -618,7 +662,7 @@ function ItemSheet({
   const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const out: Record<string, unknown> = { ...sec.where, id: row.id, available: f.get("available") === "on" };
+    const out: Record<string, unknown> = { ...sec.where, id: row.id, status, available: f.get("hidden") !== "on" };
     if (isNew) out.order = row.order;
     for (const fl of FIELDS[sec.kind]) {
       const v = f.get(fl.name);
@@ -626,13 +670,6 @@ function ItemSheet({
     }
     setBusy(true);
     await onSave(out as Partial<AnyRow>);
-    setBusy(false);
-  };
-
-  const del = async () => {
-    if (!confirm(DELETE_ASK(row.name ?? ""))) return;
-    setBusy(true);
-    await onDelete();
     setBusy(false);
   };
 
@@ -651,7 +688,10 @@ function ItemSheet({
     >
       <form onSubmit={submit} onInput={() => setDirty(true)} className={s.sheetBody}>
         <div className={s.sheetHead}>
-          <h2>{isNew ? `Agregar · ${sec.title}` : row.name}</h2>
+          <div>
+            <h2>{isNew ? "Añadir artículo" : "Editar artículo"}</h2>
+            <p className={s.muted}>{sec.title} · Los cambios se ven al momento en el menú público.</p>
+          </div>
           <button type="button" className={s.close} onClick={cancel} aria-label="Cerrar sin guardar">
             ×
           </button>
@@ -691,10 +731,14 @@ function ItemSheet({
           ),
         )}
 
-        <label className={s.check}>
-          <input type="checkbox" name="available" defaultChecked={row.available ?? true} />
-          <span>Disponible (se ve en el menú)</span>
-        </label>
+        {STATUSES.map(([v, , , hint]) => (
+          <SwitchRow key={v} label={STATUS_LABELS[v][0]} hint={hint}>
+            <input type="checkbox" checked={status === v} onChange={(e) => setStatus(e.target.checked ? v : "")} />
+          </SwitchRow>
+        ))}
+        <SwitchRow label="Oculto" hint="Se conserva aquí pero se quita del menú público.">
+          <input type="checkbox" name="hidden" defaultChecked={row.available === false} />
+        </SwitchRow>
 
         {error && (
           <p className={s.error} role="alert">
@@ -703,21 +747,30 @@ function ItemSheet({
         )}
 
         <div className={s.sheetActions}>
-          {!isNew && (
-            <button type="button" className={s.danger} onClick={del} disabled={busy}>
-              Borrar
-            </button>
-          )}
-          <span className={s.sheetEnd}>
-            <button type="button" className={s.ghost} onClick={cancel} disabled={busy}>
-              Cancelar
-            </button>
-            <button className={s.primary} disabled={busy}>
-              {busy ? "Guardando…" : isNew ? "Agregar" : "Guardar"}
-            </button>
-          </span>
+          <button type="button" className={s.ghost} onClick={cancel} disabled={busy}>
+            Cancelar
+          </button>
+          <button className={s.primary} disabled={busy}>
+            {busy ? "Guardando…" : isNew ? "Añadir artículo" : "Guardar cambios"}
+          </button>
         </div>
       </form>
     </dialog>
+  );
+}
+
+/** Cervesoft's switch rows in the edit sheet: label, a line on what it does, switch on the right. */
+function SwitchRow({ label, hint, children }: { label: string; hint: string; children: React.ReactNode }) {
+  return (
+    <label className={s.switchRow}>
+      <span>
+        <strong>{label}</strong>
+        <small>{hint}</small>
+      </span>
+      <span className={s.switch}>
+        {children}
+        <span aria-hidden />
+      </span>
+    </label>
   );
 }
