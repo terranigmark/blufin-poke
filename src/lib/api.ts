@@ -120,20 +120,54 @@ export function toMenu(m: MenuRows): Menu {
   };
 }
 
-// One request per page load, shared by every component that asks.
+// One request per page load, shared by every component that asks, then again every 10 minutes
+// and whenever the screen comes back, so a TV left on picks up edits. Ten minutes like
+// Cervesoft's taplist: polling every minute kept the Neon database awake all day.
+export const POLL_MS = 600_000;
 type Live = { menu: Menu; landing: Landing };
-let live: Promise<Live> | null = null;
 let cached: Live | null = null;
+let lastBody = "";
+let loading = false;
+const listeners = new Set<(live: Live) => void>();
+let stopPolling = () => {};
+
+function load() {
+  if (loading) return;
+  loading = true;
+  fetch(`${API_URL}/api/menu/`)
+    .then((r) => (r.ok ? r.text() : Promise.reject(r.status)))
+    .then((body) => {
+      if (body === lastBody) return; // unchanged: don't redraw the TV
+      lastBody = body;
+      const rows: MenuRows = JSON.parse(body);
+      const live = (cached = { menu: toMenu(rows), landing: { ...LANDING, ...rows.landing } });
+      listeners.forEach((l) => l(live));
+    })
+    .catch(() => {}) // keep the last good menu (or the bundled one); the next poll tries again
+    .finally(() => (loading = false));
+}
+
+function startPolling() {
+  const tick = () => document.visibilityState === "visible" && load();
+  const id = setInterval(tick, POLL_MS);
+  document.addEventListener("visibilitychange", tick);
+  return () => {
+    clearInterval(id);
+    document.removeEventListener("visibilitychange", tick);
+  };
+}
 
 function useLive(): Live | null {
   const [value, setValue] = useState(cached);
   useEffect(() => {
-    live ??= fetch(`${API_URL}/api/menu/`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((rows: MenuRows) => (cached = { menu: toMenu(rows), landing: { ...LANDING, ...rows.landing } }));
-    live.then(setValue, () => {
-      live = null; // try again on the next page
-    });
+    listeners.add(setValue);
+    if (cached) setValue(cached);
+    else load();
+    if (listeners.size === 1) stopPolling = startPolling();
+    return () => {
+      listeners.delete(setValue);
+      if (!listeners.size) stopPolling();
+    };
   }, []);
   return value;
 }
