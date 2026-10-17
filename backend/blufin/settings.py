@@ -85,6 +85,20 @@ DATABASES = {
     )
 }
 
+# File-based so both gunicorn workers share entries: a save clears the public menu for both.
+# One container only; more instances would need Redis (same note as Cervesoft).
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+        "LOCATION": os.environ.get("DJANGO_CACHE_DIR", "/tmp/blufin-cache"),
+    }
+}
+
+# How long GET /api/menu/ is served without touching Postgres. Neon bills for the time its compute
+# stays awake, and every request that reaches it wakes it; the pages poll every 10 minutes, so this
+# stays well above that. Saves clear it, so edits still show on the next poll.
+PUBLIC_MENU_CACHE_SECONDS = int(os.environ.get("PUBLIC_MENU_CACHE_SECONDS", "3600"))
+
 AUTH_USER_MODEL = "accounts.User"
 
 AUTH_PASSWORD_VALIDATORS = [

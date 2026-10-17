@@ -11,6 +11,8 @@ import re
 
 from datetime import timedelta
 
+from django.conf import settings
+from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -250,6 +252,8 @@ for name, model in MODELS.items():
         basename=name,
     )
 
+PUBLIC_MENU_KEY = "public-menu"
+
 
 def page_extras():
     """Sections, display settings and highlights: the same for the website and the editor."""
@@ -264,16 +268,21 @@ def page_extras():
 @api_view(["GET"])
 @permission_classes([permissions.AllowAny])
 def public_menu(request):
-    """What the website shows: available items only, in the editor's order."""
-    return Response(
-        {
+    """What the website shows: available items only, in the editor's order.
+
+    Served from the cache so the pages' polling doesn't wake Neon; any menu save clears it (menu/apps.py).
+    """
+    data = cache.get(PUBLIC_MENU_KEY)
+    if data is None:
+        data = {
             **{
                 name: SERIALIZERS[name](model.objects.filter(available=True), many=True).data
                 for name, model in MODELS.items()
             },
             **page_extras(),
         }
-    )
+        cache.set(PUBLIC_MENU_KEY, data, settings.PUBLIC_MENU_CACHE_SECONDS)
+    return Response(data)
 
 
 @api_view(["GET"])

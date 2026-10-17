@@ -148,6 +148,22 @@ class MenuApiTests(TestCase):
         r = self.client.patch(f"/api/editor/beers/{beer.pk}/", {"status": "otra"}, content_type="application/json", **h)
         self.assertEqual(r.status_code, 400)
 
+    def test_public_menu_is_cached_until_an_edit(self):
+        User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
+        h = self.auth("mesera@blufin.mx")
+        self.client.get("/api/menu/")
+        # The TV and the site poll this; a cached answer must not touch the database (Neon).
+        with self.assertNumQueries(0):
+            self.client.get("/api/menu/")
+        beer = Beer.objects.get(tap="01")
+        self.client.patch(f"/api/editor/beers/{beer.pk}/", {"name": "Nueva"}, content_type="application/json", **h)
+        self.assertIn("Nueva", [b["name"] for b in self.client.get("/api/menu/").json()["beers"]])
+        # The home page and Django Admin edits clear it too.
+        landing = Landing.get()
+        landing.content = {**landing.content, "belt": {"words": [{"text": "Hola", "text_en": ""}]}}
+        landing.save()
+        self.assertEqual(self.client.get("/api/menu/").json()["landing"]["belt"]["words"][0]["text"], "Hola")
+
     def test_duplicating_a_beer_needs_its_own_tap(self):
         User.objects.create_user("mesera@blufin.mx", PASSWORD, can_edit_menu=True)
         h = self.auth("mesera@blufin.mx")
